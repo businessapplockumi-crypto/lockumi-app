@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { auth } from '../services/auth'
+import { auth, formatoCodigo as F, modoReal } from '../services/auth'
 import type { Usuario } from '../types'
 import { Demo, Icono } from '../ui'
 import { LogoAnimado } from '../LogoAnimado'
@@ -24,13 +24,13 @@ function Hoja({ onCerrar, onOk }: { onCerrar: () => void; onOk: (u: Usuario) => 
     return () => { removeEventListener('keydown', tecla); document.body.style.overflow = ''; prev?.focus() }
   }, [onCerrar])
   useEffect(() => { ref.current?.querySelector<HTMLElement>('input,button.boton-social')?.focus() }, [paso])
-  const social = async (m: 'google' | 'apple') => { setC(m); onOk(await (m === 'google' ? auth.loginGoogle() : auth.loginApple())) }
+  const social = async (m: 'google' | 'apple') => { setC(m); setErr(''); try { onOk(await (m === 'google' ? auth.loginGoogle() : auth.loginApple())) } catch { setC(null); setErr('No pudimos conectar. Inténtalo de nuevo.') } }
   const enviar = async () => {
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setErr('Escribe un correo válido.')
-    setC('correo'); await auth.sendOtp(email.trim()); setC(null); setCodigo(''); setReenviado(false); setPaso('codigo')
+    setC('correo'); try { await auth.sendOtp(email.trim()) } catch (e) { setC(null); return setErr(e instanceof Error && /not supported/i.test(e.message) ? 'Ese proveedor de correo aún no es compatible. Prueba con Gmail u Outlook.' : 'No pudimos enviar el código. Inténtalo de nuevo.') } setC(null); setCodigo(''); setReenviado(false); setPaso('codigo')
   }
   const verificar = async () => {
-    if (!/^\d{6}$/.test(codigo)) return setErr('El código tiene 6 dígitos.')
+    if (codigo.length !== F.largo) return setErr(modoReal ? 'El código tiene 9 caracteres.' : 'El código tiene 6 dígitos.')
     setC('codigo'); try { onOk(await auth.verifyOtp(email.trim(), codigo)) } catch { setC(null); setErr('Ese código no funcionó. Inténtalo de nuevo.') }
   }
   const titulo = { opciones: 'Entrar a Lockumi', correo: 'Continuar con tu correo', codigo: 'Te enviamos un código' }[paso]
@@ -46,27 +46,28 @@ function Hoja({ onCerrar, onOk }: { onCerrar: () => void; onOk: (u: Usuario) => 
       {paso === 'opciones' && <div className="pila">
         <button type="button" className="boton-social" disabled={!!cargando} onClick={() => social('google')}><G /><span>{cargando === 'google' ? 'Conectando…' : 'Continuar con Google'}</span></button>
         <button type="button" className="boton-social" disabled={!!cargando} onClick={() => social('apple')}><A /><span>{cargando === 'apple' ? 'Conectando…' : 'Continuar con Apple'}</span></button>
+        {err && <p className="error" role="alert">{err}</p>}
         <div className="sep">o</div>
         <button type="button" className="boton boton--secundario boton--ancho" disabled={!!cargando} onClick={() => setPaso('correo')}>
           <svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m4 7 8 6 8-6" /></svg> Continuar con tu correo</button>
       </div>}
       {paso === 'correo' && <form className="pila" noValidate onSubmit={e => { e.preventDefault(); enviar() }}>
-        <p className="nota">Te enviaremos un código de 6 dígitos para entrar. Sin contraseñas.</p>
+        <p className="nota">Te enviaremos un código {modoReal ? 'de 9 caracteres' : 'de 6 dígitos'} para entrar. Sin contraseñas.</p>
         <label className="campo"><span>Correo electrónico</span><input type="email" autoComplete="email" inputMode="email" value={email} onChange={e => { setEmail(e.target.value); setErr('') }} placeholder="nombre@correo.com" /></label>
         {err && <p className="error" role="alert">{err}</p>}
         <button type="submit" className="boton boton--primario boton--ancho" disabled={!!cargando}>{cargando ? 'Enviando…' : 'Enviar código'}</button>
       </form>}
       {paso === 'codigo' && <form className="pila" noValidate onSubmit={e => { e.preventDefault(); verificar() }}>
-        <p className="nota">Escribe el código que enviamos a <strong className="cortar">{email.trim()}</strong>. <Demo t="Demo: cualquier código de 6 dígitos" /></p>
-        <label className="campo"><span>Código de 6 dígitos</span>
-          <input className="codigo" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={codigo} placeholder="••••••"
-            onChange={e => { setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6)); setErr('') }} /></label>
+        <p className="nota">Escribe el código que enviamos a <strong className="cortar">{email.trim()}</strong>. {!modoReal && <Demo t="Demo: cualquier código de 6 dígitos" />}</p>
+        <label className="campo"><span>{F.etiqueta}</span>
+          <input className="codigo" inputMode={F.teclado} autoCapitalize="none" autoComplete="one-time-code" maxLength={F.largo} value={codigo} placeholder={"•".repeat(F.largo)}
+            onChange={e => { setCodigo(F.limpiar(e.target.value)); setErr('') }} /></label>
         {err && <p className="error" role="alert">{err}</p>}
-        <button type="submit" className="boton boton--primario boton--ancho" disabled={!!cargando || codigo.length !== 6}>{cargando ? 'Verificando…' : 'Entrar'}</button>
+        <button type="submit" className="boton boton--primario boton--ancho" disabled={!!cargando || codigo.length !== F.largo}>{cargando ? 'Verificando…' : 'Entrar'}</button>
         <p className="nota centro" role="status">{reenviado ? 'Te enviamos un código nuevo.' : '¿No te llegó?'}{' '}
           <button type="button" className="enlace" onClick={async () => { await auth.sendOtp(email.trim()); setReenviado(true) }}>Reenviar código</button></p>
       </form>}
-      <p className="nota centro hoja__pie"><Icono id="i-escudo" className="ico--salvia" /> Acceso seguro con Cavos · <Demo /></p>
+      <p className="nota centro hoja__pie"><Icono id="i-escudo" className="ico--salvia" /> Acceso seguro con Cavos{!modoReal && <> · <Demo /></>}</p>
     </div>
   </div>
 }

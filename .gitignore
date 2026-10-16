@@ -3,3 +3,7 @@ dist
 *.log
 .vercel
 test-results
+
+.env
+.env.local
+.env.*.local
