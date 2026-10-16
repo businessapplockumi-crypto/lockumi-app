@@ -79,14 +79,11 @@ export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
     { ico: 'i-balanza', t: 'Reclamos claros', d: 'La mayoría se resuelve en la app.' },
   ]
   return <main id="contenido" tabIndex={-1} className="cont cont--form entrada-app">
-    <div className="marca-lockup marca-lockup--a" role="img" aria-label="Lockumi">
-      <LogoAnimado className="entrada-app__arte" />
-      <span className="marca-lockup__nombre" dangerouslySetInnerHTML={{ __html: WORDMARK_SVG }} />
-    </div>
-    <h1>El depósito de tu alquiler, protegido</h1>
-    <ul className="beneficios">{beneficios.map(b => <li key={b.t} className="glass">
-      <span className="beneficios__ico"><Icono id={b.ico} /></span><span><strong>{b.t}</strong><br /><span className="nota">{b.d}</span></span></li>)}</ul>
-    <button type="button" className="boton boton--primario boton--ancho" onClick={() => setAbierta(true)} aria-haspopup="dialog">Entrar</button>
+    <h1 className="marca-c" aria-label="Lockumi"><span dangerouslySetInnerHTML={{ __html: WORDMARK_SVG }} /></h1>
+    <LogoAnimado className="entrada-app__arte marca-c__arte" />
+    <p className="lema-c">El depósito de tu alquiler, protegido</p>
+    <ul className="chips-c">{beneficios.map(b => <li key={b.t}><Icono id={b.ico} /> {b.t}</li>)}</ul>
+    <div className="cta-c"><button type="button" className="boton boton--primario boton--ancho" onClick={() => setAbierta(true)} aria-haspopup="dialog">Entrar <Icono id="i-flecha" /></button></div>
     <p className="nota centro">Con Google, Apple o tu correo. Sin contraseñas.</p>
     <p className="centro"><Demo /></p>
     {abierta && <Hoja onCerrar={() => setAbierta(false)} onOk={onOk} />}
