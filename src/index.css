@@ -254,9 +254,17 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .entrada-app:has(.marca-c){gap:14px;padding-top:20px}
 .marca-c{align-self:center;width:62%;max-width:420px;margin:0}
 .marca-c svg{display:block;width:100%;height:auto}
-.marca-c__arte .portada__arte{width:clamp(130px,36vw,190px)}
+.marca-c__arte{--logo-escala:.3333}
 /* El título de A conserva el mismo aspecto aunque ahora sea h2 (el h1 es la marca) */
 .entrada-app .entrada-app__titulo{font-weight:800;font-size:clamp(28px,7.5vw,40px);line-height:1.15;max-width:16ch;text-align:center;align-self:center}
 /* Variante D en escritorio: bloque superior proporcionado y sin desborde en pantallas bajas */
-@media (min-width:960px){.entrada-app:has(.marca-c){padding-top:32px}.marca-c{width:280px}.marca-c__arte .portada__arte,.entrada-app .marca-c__arte .portada__arte{width:190px}}
-@media (min-width:960px) and (max-height:820px){.entrada-app:has(.marca-c){padding-top:24px;gap:12px}.marca-c{width:240px}.marca-c__arte .portada__arte,.entrada-app .marca-c__arte .portada__arte{width:160px}}
+@media (min-width:960px){.entrada-app:has(.marca-c){padding-top:32px}.marca-c{width:280px}.marca-c__arte{--logo-escala:.4524}}
+@media (min-width:960px) and (max-height:820px){.entrada-app:has(.marca-c){padding-top:24px;gap:12px}.marca-c{width:240px}.marca-c__arte{--logo-escala:.381}}
+
+/* Logo animado: copia del hero de lockumi.com con sus medidas de escritorio (lienzo 420px, adornos 68px)
+   y escalado como un solo bloque. Así los adornos guardan la proporción con la casa sin depender del viewport. */
+.logo-escala{position:relative;align-self:center;width:calc(420px * var(--logo-escala,.4524));height:calc(420px * var(--logo-escala,.4524));flex:none}
+.logo-escala__lienzo{position:absolute;top:0;left:0;width:420px;height:420px;transform:scale(var(--logo-escala,.4524));transform-origin:0 0}
+.logo-escala .portada__arte{width:420px;margin:0}
+.logo-escala .chip-glass{width:68px;height:68px;border-radius:24px}
+.logo-escala .chip-ilus{width:48px;height:48px}

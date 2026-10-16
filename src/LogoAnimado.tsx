@@ -6,7 +6,10 @@ import { LOGO_LANDING_HTML } from './logoLandingMarkup'
 export function LogoAnimado({ className = '' }: { className?: string }) {
   const [listo, setListo] = useState(false)
   useEffect(() => { let b = 0; const a = requestAnimationFrame(() => { b = requestAnimationFrame(() => setListo(true)) }); return () => { cancelAnimationFrame(a); cancelAnimationFrame(b) } }, [])
-  return <div className={'js' + (listo ? ' listo' : '') + ' logo-animado ' + className}>
-    <div className="portada__arte" aria-hidden="true" dangerouslySetInnerHTML={{ __html: LOGO_LANDING_HTML }} />
+  // Lienzo fijo de 420px (tamaño del hero de lockumi.com en escritorio) escalado como un solo bloque.
+  return <div className={'logo-escala ' + className}>
+    <div className={'logo-escala__lienzo js' + (listo ? ' listo' : '') + ' logo-animado'}>
+      <div className="portada__arte" aria-hidden="true" dangerouslySetInnerHTML={{ __html: LOGO_LANDING_HTML }} />
+    </div>
   </div>
 }
