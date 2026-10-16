@@ -239,3 +239,66 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .entrada-app{padding-top:32px;gap:16px}
 .entrada-app .entrada-app__logo{align-self:center;height:34px}
 .entrada-app h1{text-align:center;align-self:center}
+
+/* ===== Entrada estilo portada de lockumi.com (valores copiados de landing/css/styles.css) ===== */
+.entrada-hero{position:relative;isolation:isolate;min-height:100svh;display:flex;align-items:center;padding:clamp(16px,4vw,48px) 0}
+.entrada-hero__grid{display:grid;gap:14px;align-items:center}
+.entrada-hero__arte{display:flex;flex-direction:column;align-items:center;gap:6px}
+.entrada-hero__arte .portada__arte{width:min(200px,26svh,56vw)}
+.entrada-hero__marca{display:block;width:clamp(116px,32vw,150px)}
+.entrada-hero__marca svg{display:block;width:100%;height:auto}
+.entrada-hero__texto{display:grid;gap:14px}
+/* h1 y .h1-sub de la portada (v6 + v11) */
+.entrada-hero h1{font-family:var(--f-titulo);font-weight:900;font-size:clamp(2.125rem,1.6rem + 2.2vw,3.625rem);line-height:1.04;letter-spacing:-.028em;color:var(--cafe);text-wrap:balance;max-width:none}
+.entrada-hero .h1-sub{color:var(--enlace);font-weight:900;margin-top:.08em;background:linear-gradient(transparent 68%,rgba(255,107,53,.18) 68%,rgba(255,107,53,.18) 92%,transparent 92%);-webkit-box-decoration-break:clone;box-decoration-break:clone;display:inline}
+.entrada-hero h1 .h1-sub::before{content:"";display:block}
+.confianza-linea{display:flex;gap:8px;align-items:center;font-size:.875rem;line-height:1.45;color:var(--cafe);font-weight:500}
+.confianza-linea .ico{width:20px;height:20px}
+/* CTA primario de la portada (v5 + v11 + brillo «respira») */
+.entrada-hero__cta{position:relative}
+.entrada-hero__cta::before{content:"";position:absolute;left:0;top:0;width:100%;height:52px;border-radius:999px;background:rgba(255,107,53,.45);filter:blur(14px);z-index:-1;opacity:.35;animation:respira 2.8s ease-in-out 1.8s infinite}
+@keyframes respira{0%,100%{opacity:.25;transform:scale(.96)}50%{opacity:.7;transform:scale(1.06)}}
+.entrada-hero .boton--primario{min-height:52px;padding:0 24px;font-size:16px;gap:8px;background:var(--accion);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px rgba(158,46,0,.18),0 10px 26px rgba(255,107,53,.38)}
+.entrada-hero .boton--primario:hover{background:var(--accion-hover);transform:translateY(-1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 3px 6px rgba(158,46,0,.2),0 14px 32px rgba(255,107,53,.45)}
+.entrada-hero .boton--primario .ico{transition:transform var(--t-micro) var(--ease)}
+.entrada-hero .boton--primario:hover .ico{transform:translateX(3px)}
+.entrada-hero .boton--primario:active{transform:translateY(0) scale(.96);transition-duration:90ms}
+.entrada-hero .nota{font-size:.875rem;line-height:1.45}
+@media (min-width:960px){
+  .entrada-hero__grid{grid-template-columns:1.15fr .85fr;gap:clamp(32px,4vw,64px);max-width:1120px}
+  .entrada-hero__arte{order:2}
+  .entrada-hero__arte .portada__arte{width:min(420px,31vw)}
+  .entrada-hero__marca{width:170px}
+  .entrada-hero__texto{gap:var(--s4);max-width:560px}
+  .entrada-hero .h1-sub{font-size:.86em}
+  .entrada-hero .boton--primario{width:auto;justify-self:start}
+  .entrada-hero__cta::before{width:var(--ancho-cta,240px)}
+}
+/* Adornos (.orn) de la landing, versión final */
+.adornos-v9{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.orn{--t:10px;--s:32px;position:absolute;width:var(--s);height:var(--s);opacity:.95;transform:rotate(var(--r));will-change:transform;filter:drop-shadow(0 4px 8px rgba(61,42,34,.08));animation:var(--a) var(--d,9s) ease-in-out var(--dl,0s) infinite alternate}
+.orn svg{width:100%;height:100%;display:block;overflow:visible}
+.orn[data-pos="tl"]{top:var(--t);left:var(--x)}
+.orn[data-pos="br"]{bottom:var(--t);right:var(--x)}
+.orn--flota{--a:orn-flota}.orn--mece{--a:orn-mece}
+@media (min-width:720px){.orn{--s:36px;--t:10px}}
+@media (min-width:960px){.orn{--s:48px;--t:44px}}
+.p-hoja{transform-origin:0% 100%;animation:hoja-mece 3.8s ease-in-out infinite alternate}
+.p-hoja__lamina{animation:hoja-color 9s ease-in-out infinite}
+@keyframes hoja-mece{from{transform:rotate(-10deg)}to{transform:rotate(9deg)}}
+@keyframes hoja-color{0%,100%{fill:#E4F3E9}25%{fill:#CDEBB4}50%{fill:#FFE1D1}75%{fill:#FFF0BF}}
+.p-latido{transform-origin:50% 55%;animation:latido 2.4s ease-in-out infinite}
+@keyframes latido{0%,40%,100%{transform:scale(1)}12%{transform:scale(1.14)}24%{transform:scale(1.02)}32%{transform:scale(1.1)}}
+.orn:nth-of-type(2n) svg *{animation-delay:-1.3s}
+@keyframes orn-flota{from{transform:rotate(var(--r)) translate3d(0,0,0)}to{transform:rotate(var(--r)) translate3d(0,-6px,0)}}
+@keyframes orn-mece{from{transform:rotate(calc(var(--r) - 4deg))}to{transform:rotate(calc(var(--r) + 4deg)) translate3d(0,-3px,0)}}
+@media (prefers-reduced-motion:reduce){.orn,.orn svg *,.entrada-hero__cta::before{animation:none!important}.entrada-hero .boton--primario:hover{transform:none!important}}
+.entrada-hero__arte{margin-bottom:10px}
+.entrada-hero__arte .portada__arte{width:min(220px,28svh,58vw)}
+@media (min-width:960px){
+  .entrada-hero__arte{margin-bottom:0}
+  .entrada-hero__arte .portada__arte{width:min(420px,31vw)}
+  .entrada-hero__cta{justify-self:start;width:fit-content}
+  .entrada-hero__cta::before{width:100%}
+  .entrada-hero .boton--primario{min-width:240px}
+}

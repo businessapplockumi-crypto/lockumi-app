@@ -3,6 +3,7 @@ import { auth } from '../services/auth'
 import type { Usuario } from '../types'
 import { Demo, Icono } from '../ui'
 import { LogoAnimado } from '../LogoAnimado'
+import { WORDMARK_SVG } from '../wordmark'
 
 type Paso = 'opciones' | 'correo' | 'codigo'
 const G = () => <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
@@ -70,22 +71,28 @@ function Hoja({ onCerrar, onOk }: { onCerrar: () => void; onOk: (u: Usuario) => 
   </div>
 }
 
+// Adornos «hojita» y «corazón»: copia literal de la primera sección de landing/index.html (.adornos-v9)
+const ADORNOS = '<span class="orn orn--flota orn--movil" data-pos="tl" style="--x:7%;--r:-8deg;--d:7.5s;--dl:-0.0s"><svg viewBox="0 0 40 40" data-ico="hoja"><g class="p-hoja"><path class="p-hoja__lamina" d="M8 32C8 17 18 8 33 7c0 15-10 25-25 25Z" fill="#E4F3E9" stroke="#4E9A6A" stroke-width="2.4" stroke-linejoin="round"/><path d="M11 29 24 16" stroke="#4E9A6A" stroke-width="2.4" stroke-linecap="round"/></g></svg></span><span class="orn orn--mece orn--movil" data-pos="br" style="--x:9%;--r:6deg;--d:9.0s;--dl:-1.3s"><svg viewBox="0 0 40 40" data-ico="corazon"><path class="p-latido" d="M20 33S7 25 7 16a6.5 6.5 0 0 1 13-1.5A6.5 6.5 0 0 1 33 16c0 9-13 17-13 17Z" fill="#FFE6DA" stroke="#E8531F" stroke-width="2.4" stroke-linejoin="round"/></svg></span>'
+
 export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
   const [abierta, setAbierta] = useState(false)
-  const beneficios = [
-    { ico: 'i-candado', t: 'Tu depósito queda apartado', d: 'Nadie puede liberarlo solo.' },
-    { ico: 'i-camara', t: 'Actas con fotos', d: 'Entrada y salida, firmadas por ambos.' },
-    { ico: 'i-balanza', t: 'Reclamos claros', d: 'La mayoría se resuelve en la app.' },
-  ]
-  return <main id="contenido" tabIndex={-1} className="cont cont--form entrada-app">
-    <img src="/img/logo-lockumi.svg" alt="Lockumi" className="entrada-app__logo" />
-    <LogoAnimado className="entrada-app__arte" />
-    <h1>El depósito de tu alquiler, protegido</h1>
-    <ul className="beneficios">{beneficios.map(b => <li key={b.t} className="glass">
-      <span className="beneficios__ico"><Icono id={b.ico} /></span><span><strong>{b.t}</strong><br /><span className="nota">{b.d}</span></span></li>)}</ul>
-    <button type="button" className="boton boton--primario boton--ancho" onClick={() => setAbierta(true)} aria-haspopup="dialog">Entrar</button>
-    <p className="nota centro">Con Google, Apple o tu correo. Sin contraseñas.</p>
-    <p className="centro"><Demo /></p>
+  return <main id="contenido" tabIndex={-1} className="entrada-hero">
+    <div className="adornos-v9" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ADORNOS }} />
+    <div className="cont entrada-hero__grid">
+      <div className="entrada-hero__arte">
+        <LogoAnimado />
+        <span className="entrada-hero__marca" role="img" aria-label="Lockumi" dangerouslySetInnerHTML={{ __html: WORDMARK_SVG }} />
+      </div>
+      <div className="entrada-hero__texto">
+        {/* Titular y línea de confianza: texto literal de la portada de lockumi.com */}
+        <h1>Tu depósito, a salvo. <span className="h1-sub">Para inquilinos y dueños.</span></h1>
+        <p className="confianza-linea"><Icono id="i-escudo" className="ico--salvia" /> <span>Tu depósito queda apartado en un contrato digital con reglas acordadas, y ninguno de los dos puede moverlo solo.</span></p>
+        <div className="entrada-hero__cta">
+          <button type="button" className="boton boton--primario boton--ancho" onClick={() => setAbierta(true)} aria-haspopup="dialog">Entrar <Icono id="i-flecha" /></button>
+        </div>
+        <p className="nota">Con Google, Apple o tu correo. Sin contraseñas. <Demo /></p>
+      </div>
+    </div>
     {abierta && <Hoja onCerrar={() => setAbierta(false)} onOk={onOk} />}
   </main>
 }
