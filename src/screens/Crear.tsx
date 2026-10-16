@@ -4,20 +4,18 @@ import { escrow } from '../services/escrow'
 import { ir } from '../router'
 import type { Usuario } from '../types'
 import { CampoFecha, Demo, Deco } from '../ui'
-export function Crear({ u, onRol }: { u: Usuario; onRol: (r: 'dueno') => void }) {
+export function Crear({ u }: { u: Usuario }) {
   const [f, setF] = useState({ direccion:'', monto:'', email:'' }); const [inicio, setInicio] = useState(''); const [fin, setFin] = useState('')
   const [reglas, setReglas] = useState<string[]>(['No se permiten mascotas']); const [regla, setRegla] = useState(''); const [err, setErr] = useState('')
-  if (u.rol !== 'dueno') return <main id="contenido" tabIndex={-1} className="cont cont--form"><div className="glass tarjeta pila"><p>Solo el dueño puede crear un alquiler.</p>
-    <button type="button" className="boton boton--secundario boton--chico" onClick={() => onRol('dueno')}>Ver como dueño</button></div></main>
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => { setF({ ...f, [k]: e.target.value }); setErr('') }
   const agregar = () => { if (regla.trim()) { setReglas([...reglas, regla.trim()]); setRegla('') } }
   const crear = async () => {
     const m = Number(f.monto)
-    if (!f.direccion.trim()) return setErr('Escribí la dirección o un nombre para el inmueble.')
+    if (!f.direccion.trim()) return setErr('Escribe la dirección o un nombre para el inmueble.')
     if (!(m > 0)) return setErr('El monto del depósito debe ser mayor que cero.')
-    if (!inicio || !fin) return setErr('Completá las fechas de entrada y salida (dd/mm/aaaa).')
+    if (!inicio || !fin) return setErr('Completa las fechas de entrada y salida (dd/mm/aaaa).')
     if (fin <= inicio) return setErr('La fecha de salida debe ser posterior a la de entrada.')
-    if (!/^\S+@\S+\.\S+$/.test(f.email)) return setErr('Escribí un correo válido para el inquilino.')
+    if (!/^\S+@\S+\.\S+$/.test(f.email)) return setErr('Escribe un correo válido para el inquilino.')
     const a = store.crear({ direccion: f.direccion.trim(), monto: m, inicio, fin, reglas, duenoEmail: u.email, inquilinoEmail: f.email.trim() })
     const { escrowId } = await escrow.crear(a.id, m); store.cambiar(a.id, x => { x.escrowId = escrowId }); ir('/alquiler/' + a.id)
   }
@@ -39,6 +37,7 @@ export function Crear({ u, onRol }: { u: Usuario; onRol: (r: 'dueno') => void })
       <label className="campo"><span>Correo del inquilino</span><input type="email" value={f.email} onChange={set('email')} placeholder="inquilino@correo.com" autoComplete="off" /></label>
       {err && <p className="error" role="alert">{err}</p>}
       <button type="submit" className="boton boton--primario boton--ancho">Crear alquiler e invitar</button>
+      <p className="nota">Como creas el alquiler, quedas como dueño. La persona invitada entra como inquilino.</p>
       <p className="nota">El depósito quedará en una cuenta de garantía (escrow) que nadie puede liberar solo. La invitación por correo también es simulada. <Demo /></p>
     </form>
   </main>

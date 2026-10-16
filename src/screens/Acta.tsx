@@ -20,7 +20,7 @@ export function CuartoEditor({ a, cual, idx, rol }: { a: Alquiler; cual: 'entrad
     setErr('')
     for (const f of Array.from(files ?? []).slice(0, 4)) {
       try { const src = await reducirImagen(f); editar(cc => cc.fotos.push({ src, por: rol, fecha: new Date(ahoraDe(a)).toISOString() })) }
-      catch { setErr('No pudimos leer esa imagen. Probá con otra.') }
+      catch { setErr('No pudimos leer esa imagen. Prueba con otra.') }
     }
     if (ref.current) ref.current.value = ''
   }

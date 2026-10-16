@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { store, useAlquileres, ahoraDe, actaVacia, DIA } from '../store'
+import { store, useAlquileres, ahoraDe, actaVacia, DIA, vistaDe, rolDe, fijarVista } from '../store'
 import { escrow } from '../services/escrow'
 import { rendimiento, REPARTO } from '../services/yield'
-import { ETIQUETA_ESTADO, NOMBRE_ROL, type Alquiler, type Rol, type Foto } from '../types'
+import { ETIQUETA_ESTADO, NOMBRE_ROL, type Alquiler, type Rol, type Foto, type Usuario } from '../types'
 import { fotoEjemplo } from '../demoFotos'
 import { Demo, Deco, Icono, LineaTiempo, usd, fecha, fechaHora } from '../ui'
 import { CuartoEditor, Firmas } from './Acta'
@@ -72,7 +72,7 @@ function Apartado({ a, rol }: P) {
     </div>
     <Rendimiento a={a} />
     <div className="glass tarjeta pila"><h3>Fin del alquiler</h3>
-      <p className="nota">Cuando el inquilino entrega el inmueble, hacen juntos el acta de salida. {rol === 'dueno' ? 'Podés iniciarla vos o el inquilino.' : 'Podés iniciarla vos o el dueño.'}</p>
+      <p className="nota">Cuando el inquilino entrega el inmueble, hacen juntos el acta de salida. {rol === 'dueno' ? 'Puedes iniciarla tú o el inquilino.' : 'Puedes iniciarla tú o el dueño.'}</p>
       <button type="button" className="boton boton--primario" onClick={() => store.cambiar(a.id, x => { x.estado = 'salida'; x.salida = actaVacia() }, 'Acta de salida iniciada')}>Iniciar acta de salida</button></div>
   </div>
 }
@@ -107,9 +107,9 @@ function Ventana({ a, rol, onRol }: P) {
     </div>
     {rol === 'dueno'
       ? <div className="glass tarjeta pila"><h3>¿Encontraste daños?</h3>
-        <p className="nota">Compará con el acta de entrada y, si hace falta, presentá un reclamo con fotos y monto. Si todo está bien, no tenés que hacer nada.</p>
+        <p className="nota">Compara con el acta de entrada y, si hace falta, presenta un reclamo con fotos y monto. Si todo está bien, no tienes que hacer nada.</p>
         {form ? <FormReclamo a={a} /> : <button type="button" className="boton boton--primario" onClick={() => setForm(true)}>Presentar reclamo</button>}</div>
-      : <div className="glass tarjeta"><Esperando quien="dueno" que="revise el inmueble (si no reclama, recibís todo de vuelta)" onRol={onRol} /></div>}
+      : <div className="glass tarjeta"><Esperando quien="dueno" que="revise el inmueble (si no reclama, recibes todo de vuelta)" onRol={onRol} /></div>}
   </div>
 }
 
@@ -118,12 +118,12 @@ function FormReclamo({ a }: { a: Alquiler }) {
   const enviar = () => {
     const m = Number(monto)
     if (!(m > 0) || m > a.monto) return setErr(`El monto debe ser mayor que cero y no superar el depósito (${usd(a.monto)}).`)
-    if (motivo.trim().length < 5) return setErr('Describí brevemente el motivo.')
-    if (!fotos.length) return setErr('Agregá al menos una foto como evidencia.')
+    if (motivo.trim().length < 5) return setErr('Describe brevemente el motivo.')
+    if (!fotos.length) return setErr('Agrega al menos una foto como evidencia.')
     store.cambiar(a.id, x => { x.estado = 'reclamo'; x.reclamo = { monto: m, motivo: motivo.trim(), fotos, fecha: ahoraISO(x) } }, `El dueño presentó un reclamo por ${usd(m)}`)
   }
   return <div className="pila">
-    <label className="campo"><span>Monto que reclamás (USD)</span><input type="number" inputMode="decimal" min="1" max={a.monto} value={monto} onChange={e => { setMonto(e.target.value); setErr('') }} /></label>
+    <label className="campo"><span>Monto que reclamas (USD)</span><input type="number" inputMode="decimal" min="1" max={a.monto} value={monto} onChange={e => { setMonto(e.target.value); setErr('') }} /></label>
     <label className="campo"><span>Motivo</span><textarea rows={3} value={motivo} onChange={e => { setMotivo(e.target.value); setErr('') }} placeholder="Ej.: mancha en la pared de la sala que no estaba en la entrada" /></label>
     <div><ul className="fotos">{fotos.map((f, i) => <li key={i}><img src={f.src} alt={`Evidencia ${i + 1}`} /></li>)}</ul>
       <button type="button" className="boton boton--secundario boton--chico" onClick={() => setFotos([...fotos, { src: fotoEjemplo('Sala', 'salida', 0), por: 'dueno', fecha: ahoraISO(a) }])}><Icono id="i-camara" /> Agregar foto de ejemplo</button></div>
@@ -190,8 +190,9 @@ function Cerrado({ a }: P) {
   </div>
 }
 
-export function Detalle({ id, rol, onRol }: { id: string; rol: Rol; onRol: (r: Rol) => void }) {
+export function Detalle({ id, u }: { id: string; u: Usuario }) {
   useAlquileres(); const a = store.obtener(id)
+  const rol: Rol = a ? vistaDe(a, u.email) : 'dueno'; const onRol = (r: Rol) => fijarVista(id, r)
   useEffect(() => { window.scrollTo(0, 0) }, [a?.estado])
   if (!a) return <main id="contenido" tabIndex={-1} className="cont"><div className="glass tarjeta">No encontramos ese alquiler. <a href="#/">Volver a tus alquileres</a></div></main>
   const p = { a, rol, onRol }
@@ -199,6 +200,9 @@ export function Detalle({ id, rol, onRol }: { id: string; rol: Rol; onRol: (r: R
   return <main id="contenido" tabIndex={-1} className="cont" style={{ paddingBottom: 48 }}>
     <a href="#/" className="volver">← Tus alquileres</a>
     <div className="cab titulo"><h1>{a.direccion}</h1><span className={'chip ' + (a.estado === 'reclamo' || a.estado === 'mediacion' ? 'chip--coral' : 'chip--exito')}>{ETIQUETA_ESTADO[a.estado]}</span></div>
+    <div className="vista"><span className="nota">Tu rol aquí: <strong>{NOMBRE_ROL[rolDe(a, u.email)]}</strong></span>
+      <div className="vista__demo"><Demo t="Demo en un dispositivo" /><div className="roles" role="group" aria-label="Ver la demo como">
+        {(['dueno', 'inquilino'] as Rol[]).map(r => <button key={r} type="button" aria-pressed={rol === r} onClick={() => onRol(r)}>{NOMBRE_ROL[r]}</button>)}</div></div></div>
     <p className="nota">Viendo como <strong>{NOMBRE_ROL[rol]}</strong> · Depósito {usd(a.monto)} · {fecha(a.inicio)} → {fecha(a.fin)}</p>
     <div className="detalle">
       <div className="detalle__principal"><Panel {...p} /></div>

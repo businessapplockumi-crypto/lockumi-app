@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import type { Estado, Rol, Usuario, Alquiler } from './types'
-import { NOMBRE_ROL } from './types'
+import type { Estado, Usuario, Alquiler } from './types'
 
 export const Demo = ({ t = 'Demo: simulado' }: { t?: string }) => <span className="demo" title="Integración simulada para la demo">{t}</span>
 export const Icono = ({ id, className = '' }: { id: string; className?: string }) =>
@@ -8,13 +7,11 @@ export const Icono = ({ id, className = '' }: { id: string; className?: string }
 export const Deco = ({ id, size = 48, className = '' }: { id: string; size?: number; className?: string }) =>
   <svg className={'deco ' + className} width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href={'#' + id} /></svg>
 
-export function Barra({ u, onRol, onSalir }: { u: Usuario; onRol: (r: Rol) => void; onSalir: () => void }) {
+export function Barra({ u, onSalir }: { u: Usuario; onSalir: () => void }) {
   return <header className="cont barra">
     <a href="#/" className="logo" aria-label="Lockumi, ir a tus alquileres"><img src="/img/logo-lockumi.svg" alt="" /></a>
     <div className="barra__der">
-      <div className="roles" role="group" aria-label="Ver la demo como">
-        {(['dueno','inquilino'] as Rol[]).map(r => <button key={r} type="button" aria-pressed={u.rol===r} onClick={() => onRol(r)}>{NOMBRE_ROL[r]}</button>)}
-      </div>
+      <span className="barra__usuario cortar" title={u.email}>{u.email}</span>
       <button type="button" className="boton-icono" onClick={onSalir} aria-label="Salir" title="Salir">
         <svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14M10 16l-4-4 4-4M6 12h10"/></svg>
       </button>

@@ -50,9 +50,15 @@ export const store = {
       return c
     }); guardar()
   },
-  reiniciar() { datos = semilla(); guardar() },
+  reiniciar() { datos = semilla(); localStorage.removeItem('lockumi.vista'); guardar() },
   subscribe(f: () => void) { subs.add(f); return () => { subs.delete(f) } },
 }
 export const useAlquileres = () => useSyncExternalStore(store.subscribe, store.todos)
+const KV = 'lockumi.vista'
+/** Rol real según el alquiler: quien lo creó es dueño; quien fue invitado, inquilino. */
+export const rolDe = (a: Alquiler, email?: string): Rol => email && email.toLowerCase() === a.inquilinoEmail.toLowerCase() ? 'inquilino' : 'dueno'
+/** Demo en un solo dispositivo: vista elegida con «Ver como…» para un alquiler (si no hay, el rol real). */
+export const vistaDe = (a: Alquiler, email?: string): Rol => { try { const v = JSON.parse(localStorage.getItem(KV) || '{}')[a.id]; return v ?? rolDe(a, email) } catch { return rolDe(a, email) } }
+export const fijarVista = (id: string, r: Rol) => { let m: Record<string, Rol> = {}; try { m = JSON.parse(localStorage.getItem(KV) || '{}') } catch { /* vacío */ } m[id] = r; localStorage.setItem(KV, JSON.stringify(m)); datos = [...datos]; subs.forEach(f => f()) }
 export const actaCompleta = (a: Acta) => a.cuartos.every(c => c.fotos.length > 0 && c.items.every(i => i.estado))
 export const firmo = (a: Acta, r: Rol) => Boolean(a.firmas[r])

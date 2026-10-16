@@ -1,6 +1,6 @@
 export type Rol = 'dueno' | 'inquilino'
 export type Estado = 'entrada'|'pendiente_pago'|'apartado'|'salida'|'ventana_reclamo'|'reclamo'|'mediacion'|'cerrado'
-export interface Usuario { email: string; nombre: string; rol: Rol; metodo: 'correo'|'google'|'apple' }
+export interface Usuario { email: string; nombre: string; metodo: 'correo'|'google'|'apple' }
 export interface Evento { fecha: string; texto: string }
 export interface Foto { src: string; por: Rol; fecha: string }
 export type EstadoItem = 'bien' | 'detalle' | null

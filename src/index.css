@@ -201,3 +201,34 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .alquiler .cortar{text-align:left}
 #root{min-height:100vh}
+/* ===== Entrada (login) estilo hoja ===== */
+.centro{text-align:center}
+.entrada-app{position:relative;padding-top:56px;padding-bottom:40px;display:flex;flex-direction:column;gap:18px;min-height:100vh;justify-content:center}
+.entrada-app h1{font-size:clamp(28px,7.5vw,40px);max-width:16ch}
+.entrada-app__logo{height:40px;width:auto;align-self:flex-start}
+.entrada-app__deco{position:absolute;right:var(--margen);top:24px;width:120px;height:100px}
+.entrada-app__deco .deco{position:absolute}.entrada-app__deco .deco:nth-child(1){right:0;top:0}.entrada-app__deco .deco:nth-child(2){right:78px;top:52px}.entrada-app__deco .deco:nth-child(3){right:10px;top:70px}
+.beneficios{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.beneficios li{display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:20px;line-height:20px}
+.beneficios__ico{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:rgba(111,191,138,.22);color:var(--exito);flex:none}
+.beneficios__ico .ico{width:22px;height:22px;vertical-align:0}
+.velo{position:fixed;inset:0;z-index:60;background:rgba(61,42,34,.38);display:flex;align-items:flex-end;justify-content:center;animation:aparece var(--t-micro) ease-out}
+.hoja{width:100%;max-width:440px;max-height:92vh;overflow:auto;background:var(--fondo);border-radius:28px 28px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--sombra-2);animation:sube 280ms var(--ease)}
+@media (min-width:720px){.velo{align-items:center}.hoja{border-radius:28px;padding:16px 28px 24px}.hoja__asa{display:none}}
+.hoja__asa{width:40px;height:5px;border-radius:9px;background:rgba(61,42,34,.2);margin:0 auto 8px}
+.hoja__cab{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px}
+.hoja__cab h2{font-size:20px;text-align:center;flex:1}
+.hoja__pie{margin-top:18px}
+.boton-social{width:100%;min-height:52px;display:flex;align-items:center;justify-content:center;gap:12px;position:relative;border-radius:var(--r-pildora);border:1.5px solid #D9C6BC;background:#fff;color:#1F1F1F;font:600 16px/20px var(--f-texto);cursor:pointer;transition:background var(--t-micro),box-shadow var(--t-micro)}
+.boton-social svg{position:absolute;left:20px}
+.boton-social:hover{background:#FFFBF8;box-shadow:0 2px 8px rgba(61,42,34,.08)}
+.boton-social[disabled]{opacity:.6;cursor:wait}
+.codigo{font:600 26px/32px var(--f-texto)!important;letter-spacing:.5em;text-align:center}
+.enlace{border:0;background:none;padding:0;color:var(--enlace);font:600 14px/20px var(--f-texto);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+@keyframes aparece{from{opacity:0}}
+@keyframes sube{from{transform:translateY(40px);opacity:.4}}
+.barra__usuario{font-size:13px;color:var(--cafe-suave);max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vista{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin:6px 0}
+.vista__demo{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cont.cont--form{max-width:560px}
+.entrada-app .login__cab{margin-bottom:4px}

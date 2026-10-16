@@ -3,7 +3,7 @@
 Demo navegable (no se publica en lockumi.com). Vite + React + TypeScript, estado en localStorage con datos de ejemplo ficticios, rutas con hash (`#/…`) para desplegar como sitio estático. Estilo y tokens "Terracota viva" copiados de la landing (Inter para texto, Nunito para títulos, glass, chips verdes).
 
 ## Pantallas
-1. **Entrar** (`#/` sin sesión) — login con correo o Google/Apple al estilo Cavos, sin billetera ni frase semilla; selector de rol Dueño/Inquilino. ✅ Fase 1
+1. **Entrar** (`#/` sin sesión) — pantalla con logo, 3 beneficios y botón «Entrar»; hoja de acceso con Google, Apple o correo + código de 6 dígitos (simulado, Cavos). Sin billetera ni frase semilla. El rol sale de cada alquiler (quien crea = dueño; invitado = inquilino). ✅ v3
 2. **Tus alquileres** (`#/`) — lista de alquileres con estado, monto y fechas; selector de rol en la barra. ✅ Fase 1
 3. **Nuevo alquiler** (`#/crear`) — monto del depósito, fechas de entrada y salida, reglas (lista), correo del inquilino. ✅ Fase 1
 4. **Detalle / línea de tiempo** (`#/alquiler/:id`) — datos, reglas e historial. ✅ Fase 2 (línea de tiempo con todos los estados, datos e historial)
@@ -49,3 +49,8 @@ No se usan llaves ni secretos. Toda integración simulada lleva la insignia "Dem
 - Todo vive en el navegador (localStorage): cada persona ve su propia copia; dueño e inquilino se simulan con el selector de rol en el mismo dispositivo.
 - Fotos reales se reducen y guardan localmente; con muchas fotos el almacenamiento del navegador puede llenarse.
 - Correo de invitación, firmas, pago, escrow, rendimiento y mediador son simulados.
+
+## v3 (16 oct 2026): acceso nuevo
+- `src/services/auth.ts` expone `loginGoogle`, `loginApple`, `sendOtp`, `verifyOtp`, `handleCallback` sobre una interfaz `CavosLike` con la forma de CavosAuth de @cavos/kit (`getGoogleOAuthUrl`, `getAppleOAuthUrl`, `handleCallback`, `sendOtp`, `verifyOtp`). Proveedor actual: simulado; la dependencia no se agregó.
+- Sin selector de rol al entrar; dentro de cada alquiler queda el selector «Ver la demo como» (demo en un solo dispositivo).
+- Texto en español neutro con tuteo (sin voseo).

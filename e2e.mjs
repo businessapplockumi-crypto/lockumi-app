@@ -13,7 +13,7 @@ for (const w of ANCHOS) {
   const foto = async (n, full = true) => {
     const sw = await p.evaluate(() => document.documentElement.scrollWidth)
     if (sw > w) fallas.push(`[${w}] desborde en ${n}: ${sw}px`)
-    if (OUT) await p.screenshot({ path: `${OUT}${n}-${w}.png`, fullPage: full })
+    if (OUT && (process.env.TODAS || n.startsWith('L:'))) await p.screenshot({ path: `${OUT}${n.replace('L:', '')}-${w}.png`, fullPage: full })
   }
   const rol = (r) => p.getByRole('group', { name: 'Ver la demo como' }).getByRole('button', { name: r }).click()
   const llenarActa = async () => {
@@ -26,8 +26,12 @@ for (const w of ANCHOS) {
   const espera = (t) => p.getByText(t, { exact: false }).first().waitFor({ timeout: 8000 })
 
   await p.goto(BASE); await p.evaluate(() => localStorage.clear()); await p.reload()
-  await espera('Entrá a Lockumi'); await foto('01-login')
-  await p.getByLabel('Correo electrónico').fill('katherine@ejemplo.cr'); await p.getByRole('button', { name: 'Recibir enlace de acceso' }).click()
+  await espera('Con Google, Apple o tu correo'); await foto('L:entrada')
+  await p.getByRole('button', { name: 'Entrar', exact: true }).click(); await espera('Continuar con Google'); await p.waitForTimeout(400); await foto('L:acceso', false)
+  await p.getByRole('button', { name: 'Continuar con tu correo' }).click(); await p.getByLabel('Correo electrónico').fill('katherine@ejemplo.cr'); await foto('L:correo', false)
+  await p.getByRole('button', { name: 'Enviar código' }).click(); await espera('Te enviamos un código')
+  await p.getByLabel('Código de 6 dígitos').fill('482913'); await foto('L:codigo', false)
+  await p.getByRole('dialog').getByRole('button', { name: 'Entrar', exact: true }).click()
   await espera('Tus alquileres'); await foto('02-inicio')
   await p.getByRole('link', { name: '+ Nuevo alquiler' }).click(); await espera('Nuevo alquiler')
   await p.getByLabel('Dirección o nombre del inmueble').fill('Apartamento 3B, Escazú')
@@ -61,7 +65,7 @@ for (const w of ANCHOS) {
   await p.getByRole('button', { name: 'Iniciar acta de salida' }).click(); await espera('A la izquierda ves')
   await llenarActa(); await firmar(); await rol('Inquilino'); await firmar(); await rol('Dueño')
   await p.getByRole('button', { name: 'Presentar reclamo' }).click()
-  await p.getByLabel('Monto que reclamás (USD)').fill('200'); await p.getByLabel('Motivo').fill('Mancha en la pared de la sala que no estaba en la entrada')
+  await p.getByLabel('Monto que reclamas (USD)').fill('200'); await p.getByLabel('Motivo').fill('Mancha en la pared de la sala que no estaba en la entrada')
   await p.getByRole('button', { name: /Agregar foto de ejemplo/ }).click(); await foto('11-reclamo-form')
   await p.getByRole('button', { name: 'Enviar reclamo' }).click(); await espera('Reclamo abierto')
   await rol('Inquilino'); await foto('12-reclamo-inquilino')
