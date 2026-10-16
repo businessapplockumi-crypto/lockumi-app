@@ -6,14 +6,14 @@ Demo navegable (no se publica en lockumi.com). Vite + React + TypeScript, estado
 1. **Entrar** (`#/` sin sesión) — login con correo o Google/Apple al estilo Cavos, sin billetera ni frase semilla; selector de rol Dueño/Inquilino. ✅ Fase 1
 2. **Tus alquileres** (`#/`) — lista de alquileres con estado, monto y fechas; selector de rol en la barra. ✅ Fase 1
 3. **Nuevo alquiler** (`#/crear`) — monto del depósito, fechas de entrada y salida, reglas (lista), correo del inquilino. ✅ Fase 1
-4. **Detalle / línea de tiempo** (`#/alquiler/:id`) — datos, reglas e historial. 🟡 Básico (falta la línea de tiempo con todos los estados)
-5. **Acta de entrada** — fotos + checklist por cuarto, de ambas partes; firmas simuladas con fecha y hora. ⏳ Fase 2
-6. **Pago del depósito** — el inquilino paga; queda "apartado" en escrow; mensaje: nadie lo libera solo. ⏳ Fase 2
-7. **Rendimiento opcional** — interruptor USDC (Blend); VARIABLE y NO GARANTIZADO; reparto 40% inquilino / 40% dueño / 20% Lockumi; sin tasa fija (cualquier número va marcado como "ejemplo"). ⏳ Fase 2
-8. **Acta de salida** — fotos + checklist, comparación lado a lado con la entrada. ⏳ Fase 2
-9. **Ventana de reclamo** — 7 días con cuenta regresiva; sin reclamo, el depósito vuelve solo al inquilino; botón "simular paso de 7 días". ⏳ Fase 2
-10. **Reclamo** — el dueño presenta fotos y monto; el inquilino acepta o rechaza. ⏳ Fase 2
-11. **Mediación** — el mediador decide el reparto; mensaje: la mayoría de los casos se resuelve en la app, la mediación es solo para pocos. ⏳ Fase 2
+4. **Detalle / línea de tiempo** (`#/alquiler/:id`) — datos, reglas e historial. ✅ Fase 2 (línea de tiempo con todos los estados, datos e historial)
+5. **Acta de entrada** — fotos + checklist por cuarto, de ambas partes; firmas simuladas con fecha y hora. ✅ Fase 2
+6. **Pago del depósito** — el inquilino paga; queda "apartado" en escrow; mensaje: nadie lo libera solo. ✅ Fase 2
+7. **Rendimiento opcional** — interruptor USDC (Blend); VARIABLE y NO GARANTIZADO; reparto 40% inquilino / 40% dueño / 20% Lockumi; sin tasa fija (cualquier número va marcado como "ejemplo"). ✅ Fase 2
+8. **Acta de salida** — fotos + checklist, comparación lado a lado con la entrada. ✅ Fase 2
+9. **Ventana de reclamo** — 7 días con cuenta regresiva; sin reclamo, el depósito vuelve solo al inquilino; botón "simular paso de 7 días". ✅ Fase 2
+10. **Reclamo** — el dueño presenta fotos y monto; el inquilino acepta o rechaza. ✅ Fase 2
+11. **Mediación** — el mediador decide el reparto; mensaje: la mayoría de los casos se resuelve en la app, la mediación es solo para pocos. ✅ Fase 2
 
 ## Simulado vs. real
 | Pieza | Estado | Archivo |
@@ -26,13 +26,26 @@ Demo navegable (no se publica en lockumi.com). Vite + React + TypeScript, estado
 No se usan llaves ni secretos. Toda integración simulada lleva la insignia "Demo: simulado".
 
 ## Checklist de la fase 2
-- [ ] Máquina de estados completa (`borrador → entrada → pendiente_pago → apartado → salida → ventana_reclamo → reclamo → mediacion → cerrado`) con acciones según el rol
-- [ ] Acta de entrada: cuartos, checklist, subida de fotos (vista previa local), firmas de ambas partes con fecha y hora
-- [ ] Pago del depósito + aviso de escrow multiparte
-- [ ] Interruptor de rendimiento con avisos de "variable / no garantizado" y reparto 40/40/20
-- [ ] Acta de salida + comparación lado a lado
-- [ ] Ventana de 7 días: cuenta regresiva, botón "simular paso de 7 días", devolución automática
-- [ ] Reclamo (fotos/monto) → aceptar/rechazar → pantalla del mediador (reparto)
-- [ ] Línea de tiempo visual con todos los estados
-- [ ] Decoraciones SVG, repaso del texto (español neutro, CR), accesibilidad
-- [ ] Capturas a 390/1366 de todas las pantallas; despliegue de vista previa (proyecto aparte, NO la landing)
+- [x] Máquina de estados completa (`borrador → entrada → pendiente_pago → apartado → salida → ventana_reclamo → reclamo → mediacion → cerrado`) con acciones según el rol
+- [x] Acta de entrada: cuartos, checklist, subida de fotos (vista previa local), firmas de ambas partes con fecha y hora
+- [x] Pago del depósito + aviso de escrow multiparte
+- [x] Interruptor de rendimiento con avisos de "variable / no garantizado" y reparto 40/40/20
+- [x] Acta de salida + comparación lado a lado
+- [x] Ventana de 7 días: cuenta regresiva, botón "simular paso de 7 días", devolución automática
+- [x] Reclamo (fotos/monto) → aceptar/rechazar → pantalla del mediador (reparto)
+- [x] Línea de tiempo visual con todos los estados
+- [x] Decoraciones SVG, repaso del texto (español neutro, CR), accesibilidad
+- [x] Capturas a 390/1366 de todas las pantallas; despliegue de vista previa (proyecto aparte, NO la landing)
+
+## Estado al cierre de la fase 2 (16 oct 2026)
+- Recorrido completo verificado con Playwright (`node e2e.mjs <url> [carpeta] [anchos]`) a 390 y 1366: entrar → crear → acta de entrada → firmas → pago → rendimiento → acta de salida → 7 días → devolución automática; y reclamo → rechazo → mediación → cierre. Sin desbordes ni errores JS.
+- Fechas: campo propio dd/mm/aaaa con la fecha escrita debajo (ej.: "1 nov 2026"), igual en cualquier navegador.
+- Fondo: la aurora ahora es `absolute` y cubre todo el documento (antes era `fixed` y se cortaba en capturas de página completa).
+- Barra a 390: logo más compacto y "Salir" como ícono.
+- `prefers-reduced-motion`: se apagan animaciones y transiciones.
+- Vista previa: proyecto Vercel aparte `lockumi-app-demo`, con protección en todos los despliegues; acceso por enlace compartible de 7 días.
+
+## Limitaciones conocidas
+- Todo vive en el navegador (localStorage): cada persona ve su propia copia; dueño e inquilino se simulan con el selector de rol en el mismo dispositivo.
+- Fotos reales se reducen y guardan localmente; con muchas fotos el almacenamiento del navegador puede llenarse.
+- Correo de invitación, firmas, pago, escrow, rendimiento y mediador son simulados.
