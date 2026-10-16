@@ -1,0 +1,40 @@
+import { describe, it, expect } from 'vitest'
+import { firmar, estadoFirma, ambos, etapaDe, pasoTexto, turno, ErrorFirma } from '../../flujo'
+import type { Alquiler } from '../../types'
+const T = '2026-10-16T20:00:00Z'
+describe('firmas', () => {
+  it('cada uno firma solo por sí mismo', () => {
+    expect(() => firmar({}, 'dueno', 'inquilino', T)).toThrow(ErrorFirma)
+    expect(() => firmar({}, 'inquilino', 'dueno', T)).toThrow('Solo puedes firmar por ti.')
+  })
+  it('no se firma dos veces', () => { expect(() => firmar({ dueno: T }, 'dueno', 'dueno', T)).toThrow('Ya firmaste.') })
+  it('estados: te toca → esperando → firmado por los dos', () => {
+    let f = {}
+    expect(estadoFirma(f, 'dueno').texto).toBe('Te toca firmar')
+    f = firmar(f, 'dueno', 'dueno', T)
+    expect(estadoFirma(f, 'dueno').texto).toBe('Firmaste ✓ · Esperando la firma del inquilino')
+    expect(estadoFirma(f, 'inquilino').texto).toBe('Te toca firmar')
+    expect(ambos(f)).toBe(false)
+    f = firmar(f, 'inquilino', 'inquilino', T)
+    expect(ambos(f)).toBe(true)
+    expect(estadoFirma(f, 'inquilino').texto).toBe('Firmado por los dos')
+    expect(estadoFirma(f, 'dueno').texto).toBe('Firmado por los dos')
+  })
+  it('el inquilino firma primero', () => {
+    const f = firmar({}, 'inquilino', 'inquilino', T)
+    expect(estadoFirma(f, 'inquilino').texto).toBe('Firmaste ✓ · Esperando la firma del dueño')
+  })
+})
+describe('etapas y turnos', () => {
+  const base = { contrato: { firmas: {} }, entrada: { firmas: {}, cuartos: [] } } as unknown as Alquiler
+  it('paso X de 8', () => {
+    expect(pasoTexto({ estado: 'firmas' })).toBe('Paso 2 de 8')
+    expect(etapaDe({ estado: 'en_curso' })).toBe(4)
+    expect(pasoTexto({ estado: 'cerrado' })).toBe('Paso 8 de 8')
+  })
+  it('qué te toca según rol', () => {
+    expect(turno({ ...base, estado: 'pendiente_pago' }, 'inquilino').tu).toBe('Paga el depósito.')
+    expect(turno({ ...base, estado: 'pendiente_pago' }, 'dueno').otra).toMatch(/inquilino tiene que pagar/)
+    expect(turno({ ...base, estado: 'firmas', contrato: { firmas: { dueno: T } } }, 'inquilino').otra).toBe('El dueño ya firmó.')
+  })
+})

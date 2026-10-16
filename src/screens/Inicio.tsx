@@ -6,7 +6,7 @@ import { modoReal } from '../services/auth'
 import { Billetera } from './Billetera'
 export function Inicio({ u }: { u: Usuario }) {
   const todos = useAlquileres()
-  const chip = (e: string) => e === 'apartado' || e === 'cerrado' ? 'chip--exito' : e === 'reclamo' || e === 'mediacion' ? 'chip--coral' : 'chip--neutro'
+  const chip = (e: string) => e === 'en_curso' || e === 'cerrado' ? 'chip--exito' : e === 'reclamo' || e === 'mediacion' ? 'chip--coral' : 'chip--neutro'
   return <main id="contenido" tabIndex={-1} className="cont" style={{ paddingBottom: 48 }}>
     <div className="hero glass">
       <div><p className="etiqueta">Hola, {u.nombre}</p><h1>Tus alquileres</h1>

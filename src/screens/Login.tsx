@@ -75,7 +75,7 @@ function Hoja({ onCerrar, onOk }: { onCerrar: () => void; onOk: (u: Usuario) => 
 export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
   const [abierta, setAbierta] = useState(false)
   const beneficios = [
-    { ico: 'i-candado', t: 'Tu depósito queda apartado', d: 'Nadie puede liberarlo solo.' },
+    { ico: 'i-candado', t: 'Tu depósito queda guardado', d: 'Nadie puede liberarlo solo.' },
     { ico: 'i-camara', t: 'Actas con fotos', d: 'Entrada y salida, firmadas por ambos.' },
     { ico: 'i-balanza', t: 'Reclamos claros', d: 'La mayoría se resuelve en la app.' },
   ]

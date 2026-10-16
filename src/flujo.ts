@@ -1,0 +1,62 @@
+// Lógica del flujo del alquiler (pura, con pruebas en __tests__/flujo.test.ts).
+import type { Alquiler, Estado, Rol } from './types'
+
+export const otro = (r: Rol): Rol => r === 'dueno' ? 'inquilino' : 'dueno'
+export const NOMBRE: Record<Rol, string> = { dueno: 'dueño', inquilino: 'inquilino' }
+
+/** Las 8 etapas que ven las dos personas. */
+export const ETAPAS = ['Contrato', 'Firmas', 'Depósito', 'Fotos de entrada', 'Alquiler en curso', 'Fotos de salida', '7 días para reclamos', 'Devolución o mediador'] as const
+const ETAPA_DE: Record<Estado, number> = { firmas: 1, pendiente_pago: 2, fotos_entrada: 3, en_curso: 4, salida: 5, ventana_reclamo: 6, reclamo: 7, mediacion: 7, cerrado: 7 }
+/** Índice 0..7 de la etapa actual. "Contrato" (0) queda hecho al crear el alquiler. */
+export const etapaDe = (a: Pick<Alquiler, 'estado'>) => ETAPA_DE[a.estado]
+export const pasoTexto = (a: Pick<Alquiler, 'estado'>) => `Paso ${etapaDe(a) + 1} de ${ETAPAS.length}`
+
+export type Firmas = Partial<Record<Rol, string>>
+export class ErrorFirma extends Error {}
+/** Firma de `actor`. Nadie puede firmar por la otra persona ni firmar dos veces. */
+export function firmar(f: Firmas, actor: Rol, por: Rol, cuando: string): Firmas {
+  if (actor !== por) throw new ErrorFirma('Solo puedes firmar por ti.')
+  if (f[actor]) throw new ErrorFirma('Ya firmaste.')
+  return { ...f, [actor]: cuando }
+}
+export const ambos = (f: Firmas) => Boolean(f.dueno && f.inquilino)
+export type EstadoFirma = 'te-toca' | 'esperando' | 'listo'
+export function estadoFirma(f: Firmas, yo: Rol): { tipo: EstadoFirma; texto: string } {
+  if (ambos(f)) return { tipo: 'listo', texto: 'Firmado por los dos' }
+  if (f[yo]) return { tipo: 'esperando', texto: `Firmaste ✓ · Esperando la firma del ${NOMBRE[otro(yo)]}` }
+  return { tipo: 'te-toca', texto: 'Te toca firmar' }
+}
+
+/** Qué te toca a ti, qué le toca a la otra persona y qué sigue, en palabras simples. */
+export function turno(a: Alquiler, yo: Rol): { tu: string; otra: string; sigue: string } {
+  const o = NOMBRE[otro(yo)]
+  const c = a.contrato.firmas, e = a.entrada.firmas, s = a.salida?.firmas ?? {}
+  switch (a.estado) {
+    case 'firmas': return {
+      tu: c[yo] ? 'Ya firmaste el contrato.' : 'Lee el contrato y fírmalo.',
+      otra: c[otro(yo)] ? `El ${o} ya firmó.` : `El ${o} tiene que firmar.`,
+      sigue: 'Cuando firmen los dos, el inquilino paga el depósito.' }
+    case 'pendiente_pago': return yo === 'inquilino'
+      ? { tu: 'Paga el depósito.', otra: 'El dueño espera tu pago.', sigue: 'Después, toman juntos las fotos de entrada.' }
+      : { tu: 'No tienes que hacer nada por ahora.', otra: 'El inquilino tiene que pagar el depósito.', sigue: 'Después, toman juntos las fotos de entrada.' }
+    case 'fotos_entrada': return {
+      tu: e[yo] ? 'Ya confirmaste las fotos de entrada.' : 'Toma fotos de cada espacio y confirma.',
+      otra: e[otro(yo)] ? `El ${o} ya confirmó.` : `El ${o} también tiene que revisar y confirmar.`,
+      sigue: 'Cuando confirmen los dos, empieza el alquiler.' }
+    case 'en_curso': return {
+      tu: 'Disfruta el alquiler. El depósito está guardado.', otra: `El ${o} no tiene nada pendiente.`,
+      sigue: 'Al terminar, toman juntos las fotos de salida.' }
+    case 'salida': return {
+      tu: s[yo] ? 'Ya confirmaste las fotos de salida.' : 'Toma fotos de cada espacio y confirma.',
+      otra: s[otro(yo)] ? `El ${o} ya confirmó.` : `El ${o} también tiene que revisar y confirmar.`,
+      sigue: 'Después hay 7 días para reclamos. Si no hay, el depósito vuelve al inquilino.' }
+    case 'ventana_reclamo': return yo === 'dueno'
+      ? { tu: 'Si encontraste un daño, puedes reclamar. Si todo está bien, no hagas nada.', otra: 'El inquilino espera.', sigue: 'Si no reclamas en 7 días, el depósito vuelve al inquilino.' }
+      : { tu: 'No tienes que hacer nada.', otra: 'El dueño puede reclamar si encontró un daño.', sigue: 'Si no hay reclamo en 7 días, recibes tu depósito.' }
+    case 'reclamo': return yo === 'inquilino'
+      ? { tu: 'Responde el reclamo: acéptalo o recházalo.', otra: 'El dueño espera tu respuesta.', sigue: 'Si lo rechazas, una persona mediadora decide.' }
+      : { tu: 'No tienes que hacer nada por ahora.', otra: 'El inquilino tiene que responder tu reclamo.', sigue: 'Si lo rechaza, una persona mediadora decide.' }
+    case 'mediacion': return { tu: 'No tienes que hacer nada.', otra: 'Una persona mediadora está revisando las fotos.', sigue: 'La persona mediadora decide cómo se reparte el depósito.' }
+    case 'cerrado': return { tu: 'Listo. No tienes nada pendiente.', otra: 'Listo.', sigue: 'El alquiler terminó.' }
+  }
+}

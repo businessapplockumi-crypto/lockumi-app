@@ -1,6 +1,7 @@
 import { modoReal } from './services/auth'
 import { useEffect, useState, type ReactNode } from 'react'
-import type { Estado, Usuario, Alquiler } from './types'
+import type { Usuario, Alquiler } from './types'
+import { ETAPAS, etapaDe } from './flujo'
 
 export const Demo = ({ t = 'Demo: simulado' }: { t?: string }) => modoReal ? null : <span className="demo" title="Integración simulada para la demo">{t}</span>
 export const Icono = ({ id, className = '' }: { id: string; className?: string }) =>
@@ -25,8 +26,9 @@ const d = (s: string | number) => typeof s === 'string' && s.length === 10 ? new
 export const fecha = (s: string | number) => d(s).toLocaleDateString('es-CR', { day:'numeric', month:'short', year:'numeric' })
 export const fechaHora = (s: string | number) => d(s).toLocaleString('es-CR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
 
-/** Campo de fecha en formato dd/mm/aaaa (consistente en cualquier navegador). Valor: ISO aaaa-mm-dd o ''. */
-export function CampoFecha({ etiqueta, valor, onCambio, id }: { etiqueta: string; valor: string; onCambio: (iso: string) => void; id: string }) {
+/** Campo de fecha en formato dd/mm/aaaa (consistente en cualquier navegador). Valor: ISO aaaa-mm-dd (aunque sea un día
+ *  imposible, para que la validación lo explique) o '' si está incompleta. */
+export function CampoFecha({ etiqueta, valor, onCambio, onSalir, id, error, ayuda }: { etiqueta: string; valor: string; onCambio: (iso: string) => void; onSalir?: () => void; id: string; error?: string; ayuda?: string }) {
   const aTexto = (iso: string) => iso ? iso.split('-').reverse().join('/') : ''
   const [t, setT] = useState(aTexto(valor))
   useEffect(() => { if (!valor) return; setT(aTexto(valor)) }, [valor])
@@ -35,38 +37,26 @@ export function CampoFecha({ etiqueta, valor, onCambio, id }: { etiqueta: string
     const f = n.length > 4 ? `${n.slice(0,2)}/${n.slice(2,4)}/${n.slice(4)}` : n.length > 2 ? `${n.slice(0,2)}/${n.slice(2)}` : n
     setT(f)
     const m = f.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
-    if (m) { const iso = `${m[3]}-${m[2]}-${m[1]}`; const x = new Date(iso + 'T12:00:00'); onCambio(!isNaN(+x) && x.getDate() === +m[1] ? iso : '') } else onCambio('')
+    onCambio(m ? `${m[3]}-${m[2]}-${m[1]}` : '')
   }
-  const ok = /^\d{4}-\d{2}-\d{2}$/.test(valor)
-  return <div className="campo"><label htmlFor={id} className="campo__et">{etiqueta}</label>
-    <input id={id} inputMode="numeric" autoComplete="off" placeholder="dd/mm/aaaa" value={t} onChange={e => cambiar(e.target.value)} aria-describedby={id + '-ayuda'} />
-    <small id={id + '-ayuda'} className="ayuda">{ok ? fecha(valor) : t.length === 10 ? 'Fecha no válida' : 'Formato dd/mm/aaaa'}</small>
+  const ok = !error && /^\d{4}-\d{2}-\d{2}$/.test(valor)
+  return <div className={'campo' + (error ? ' campo--error' : '')}><label htmlFor={id} className="campo__et">{etiqueta}</label>
+    <input id={id} inputMode="numeric" autoComplete="off" placeholder="dd/mm/aaaa" value={t} onChange={e => cambiar(e.target.value)} onBlur={onSalir}
+      aria-invalid={!!error} aria-describedby={id + '-ayuda'} />
+    <small id={id + '-ayuda'} className={error ? 'campo__error' : 'ayuda'} role={error ? 'alert' : undefined}>{error ?? (ok ? fecha(valor) : ayuda ?? 'Formato dd/mm/aaaa')}</small>
   </div>
 }
 
-const PASOS: { e: Estado; t: string; ico: string }[] = [
-  { e: 'entrada', t: 'Acta de entrada', ico: 'i-camara' },
-  { e: 'pendiente_pago', t: 'Pago del depósito', ico: 'i-registro' },
-  { e: 'apartado', t: 'Depósito apartado', ico: 'i-candado' },
-  { e: 'salida', t: 'Acta de salida', ico: 'i-ojo' },
-  { e: 'ventana_reclamo', t: 'Ventana de 7 días', ico: 'i-escudo' },
-  { e: 'reclamo', t: 'Reclamo', ico: 'i-balanza' },
-  { e: 'mediacion', t: 'Mediación', ico: 'i-balanza' },
-  { e: 'cerrado', t: 'Cerrado', ico: 'i-check' },
-]
+/** Línea de tiempo simple, igual para las dos personas. */
 export function LineaTiempo({ a }: { a: Alquiler }) {
-  const orden = PASOS.map(p => p.e); const actual = orden.indexOf(a.estado)
-  const hubo = (e: Estado) => e === 'reclamo' ? Boolean(a.reclamo) : e === 'mediacion' ? a.reclamo?.respuesta === 'rechazado' : true
-  return <ol className="tiempo" aria-label="Estado del alquiler">
-    <li className="tiempo__paso tiempo__paso--hecho"><span className="tiempo__punto"><Icono id="i-check" /></span><span>Alquiler creado</span></li>
-    {PASOS.map((p, i) => {
-      const omitido = i < actual && !hubo(p.e) || (a.estado === 'cerrado' && !hubo(p.e))
-      const estado = omitido ? 'omitido' : i < actual || (a.estado === 'cerrado' && i === actual) ? 'hecho' : i === actual ? 'actual' : 'futuro'
-      const opcional = p.e === 'reclamo' || p.e === 'mediacion'
-      return <li key={p.e} className={'tiempo__paso tiempo__paso--' + estado} aria-current={estado === 'actual' ? 'step' : undefined}>
-        <span className="tiempo__punto"><Icono id={estado === 'hecho' ? 'i-check' : p.ico} /></span>
-        <span>{p.t}{opcional && <em className="nota"> {omitido ? '· no hizo falta' : '· solo si hace falta'}</em>}</span>
-        <span className="sr">{estado === 'hecho' ? ' (completado)' : estado === 'actual' ? ' (paso actual)' : estado === 'omitido' ? ' (no hizo falta)' : ' (pendiente)'}</span>
+  const actual = etapaDe(a); const fin = a.estado === 'cerrado'
+  return <ol className="tiempo" aria-label="Cómo va el alquiler">
+    {ETAPAS.map((t, i) => {
+      const estado = i < actual || (fin && i === actual) ? 'hecho' : i === actual ? 'actual' : 'futuro'
+      return <li key={t} className={'tiempo__paso tiempo__paso--' + estado} aria-current={estado === 'actual' ? 'step' : undefined}>
+        <span className="tiempo__punto">{estado === 'hecho' ? <Icono id="i-check" /> : <b>{i + 1}</b>}</span>
+        <span>{t}{estado === 'actual' && <em className="nota"> · ahora</em>}</span>
+        <span className="sr">{estado === 'hecho' ? ' (listo)' : estado === 'actual' ? ' (paso actual)' : ' (pendiente)'}</span>
       </li>
     })}
   </ol>
