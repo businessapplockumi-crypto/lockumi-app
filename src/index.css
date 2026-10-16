@@ -12,7 +12,7 @@
   --margen:20px;--r-campo:16px;--r-tarjeta:20px;--r-pildora:999px;
   --sombra-2:0 2px 4px rgba(61,42,34,.07),0 16px 40px rgba(61,42,34,.10);
   --foco:0 0 0 3px var(--fondo),0 0 0 5px var(--accion);
-  --ease:cubic-bezier(.22,1,.36,1);--t-micro:160ms;
+  --ease:cubic-bezier(.22,1,.36,1);--t-micro:160ms;--t-ui:280ms;--t-hero:600ms;
   --glass:rgba(255,255,255,.62);--glass-fuerte:rgba(255,255,255,.9);--glass-borde:rgba(255,255,255,.78);
   --glass-sombra:inset 0 1px 0 rgba(255,255,255,.85),0 2px 6px rgba(61,42,34,.05),0 14px 36px rgba(61,42,34,.09);
   --blur:12px;--r-glass:28px;
@@ -127,9 +127,9 @@ fieldset.campo legend{font-weight:600;font-size:14px;margin-bottom:6px;padding:0
 .deco{display:inline-block;flex:none}
 .deco--en-linea{vertical-align:-6px;margin-right:4px}
 .deco--esquina{position:absolute;right:16px;top:16px}
-.deco--flota{animation:flota 6s ease-in-out infinite}
+.deco--flota{animation:flota-deco 6s ease-in-out infinite}
 .deco--b{animation-delay:-2s}.deco--c{animation-delay:-4s}
-@keyframes flota{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-3deg)}}
+@keyframes flota-deco{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-3deg)}}
 /* Login */
 .login{padding-top:28px;padding-bottom:48px}
 .login__cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
@@ -232,3 +232,10 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .vista__demo{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .cont.cont--form{max-width:560px}
 .entrada-app .login__cab{margin-bottom:4px}
+/* Arte de la landing en la entrada: solo se escala el contenedor (proporciones intactas) */
+.logo-animado{display:flex;justify-content:center}
+.entrada-app__arte .portada__arte{width:clamp(150px,44vw,190px)}
+@media (min-width:960px){.entrada-app__arte .portada__arte{width:220px}}
+.entrada-app{padding-top:32px;gap:16px}
+.entrada-app .entrada-app__logo{align-self:center;height:34px}
+.entrada-app h1{text-align:center;align-self:center}

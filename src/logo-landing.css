@@ -1,0 +1,159 @@
+/* COPIA LITERAL de landing/css/styles.css (main b87873e): reglas que usan cualquier clase del arte
+   de la portada (.portada__arte y todas las clases de su markup) en el mismo orden, con sus @media y @keyframes.
+   Comentarios quitados. Regenerar con: python3 scripts/copiar-logo.py */
+.portada__arte{justify-self:center}
+.casita-hero{width:min(220px,58vw);height:auto}
+.js .casita-hero{opacity:0;transform:scale(.96);transition:opacity var(--t-hero) var(--ease),transform var(--t-hero) var(--ease)}
+.js .casita-hero__cerradura{transform-box:fill-box;transform-origin:50% 30%;transform:rotate(-90deg);transition:transform var(--t-ui) cubic-bezier(.3,1.4,.5,1) 520ms}
+.listo .casita-hero{opacity:1;transform:none}
+.listo .casita-hero__cerradura{transform:none}
+@media (min-width:960px){
+  .portada__arte{order:2}
+  .casita-hero{width:400px}
+}
+@media (prefers-reduced-motion:reduce){
+  .js .revela,.js .entra,.js .casita-hero{transform:none!important;transition:opacity 120ms linear!important}
+  .js .revela,.js .entra,.js .casita-hero{opacity:1!important}
+  .js .casita-hero__cerradura{transform:none!important}
+}
+@media (prefers-reduced-transparency:reduce){
+  .glass,.chip-glass,.barra-fija{background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+}
+.portada__arte{position:relative;justify-self:center;width:min(300px,78vw);aspect-ratio:1;display:grid;place-items:center;will-change:transform}
+.casita-hero{width:100%;height:auto;position:relative;z-index:1;filter:drop-shadow(0 18px 28px rgba(219,59,0,.22))}
+.hero-halo{position:absolute;inset:-6%;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,107,53,.34),rgba(255,138,91,.18) 45%,rgba(111,191,138,.12) 70%,rgba(111,191,138,0));
+  animation:halo 7s ease-in-out infinite}
+@keyframes halo{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.06);opacity:1}}
+.chip-glass{position:absolute;z-index:2;width:52px;height:52px;border-radius:18px;display:grid;place-items:center;color:var(--enlace);
+  background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px) saturate(1.6);backdrop-filter:blur(10px) saturate(1.6);
+  border:1px solid rgba(255,255,255,.85);box-shadow:var(--glass-sombra);animation:flota 6s ease-in-out infinite}
+.chip-glass .ico{width:24px;height:24px}
+.chip-glass--1{top:12%;left:-4%;animation-delay:-1s}
+.chip-glass--2{top:46%;right:-6%;animation-delay:-3s;color:var(--exito)}
+.chip-glass--3{bottom:4%;left:4%;animation-delay:-4.5s;color:var(--exito)}
+@keyframes flota{0%,100%{translate:0 0}50%{translate:0 -8px}}
+.js .casita-hero{animation:flota 7s ease-in-out 1.6s infinite}
+.js .casita-hero__cerradura{transition:none;transform:rotate(-90deg)}
+.listo .casita-hero__cerradura{animation:cerrar 760ms var(--ease) 620ms both}
+@keyframes cerrar{0%{transform:rotate(-90deg)}62%{transform:rotate(9deg)}78%{transform:rotate(-3deg) scale(1.14)}100%{transform:none}}
+.casita-hero__pulso{transform-box:fill-box;transform-origin:center;opacity:0}
+.listo .casita-hero__pulso{animation:pulso 1100ms var(--ease) 1250ms 2 both}
+@keyframes pulso{0%{opacity:.85;transform:scale(.6)}100%{opacity:0;transform:scale(2.1)}}
+.casita-hero__brillo{transform-box:view-box}
+.listo .casita-hero__brillo{animation:brillo 7s var(--ease) 1.5s infinite}
+@keyframes brillo{0%{transform:translateX(0)}22%,100%{transform:translateX(220px)}}
+@media (min-width:960px){
+  .portada__arte{width:min(520px,40vw)}
+  .chip-glass{width:64px;height:64px;border-radius:22px}
+  .chip-glass .ico{width:28px;height:28px}
+}
+@media (prefers-reduced-motion:reduce){
+  .blob,.hero-halo,.chip-glass,.js .casita-hero,.casita-hero__brillo,.casita-hero__pulso{animation:none!important}
+  .blob,.portada__arte{translate:none!important}
+  .listo .casita-hero__cerradura{animation:none!important;transform:none!important}
+}
+.casita-hero{filter:drop-shadow(0 22px 30px rgba(219,59,0,.24))}
+.chip-glass{animation-name:flota-chip!important}
+@keyframes flota-chip{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-12px) rotate(-4deg)}}
+.casita-hero__planta{transform-box:fill-box;transform-origin:85% 100%}
+.listo .casita-hero__planta{animation:mece-planta 4.8s ease-in-out 1s infinite}
+@keyframes mece-planta{0%,100%{transform:rotate(0)}50%{transform:rotate(-7deg)}}
+.js .casita-hero__cerradura{transform-box:fill-box;transform-origin:50% 30%;transform:rotate(-90deg)}
+.listo .casita-hero__cerradura{animation:cerradura-ciclo 5.6s var(--ease) 700ms infinite both}
+@keyframes cerradura-ciclo{0%,12%{transform:rotate(-90deg) scale(1)}
+  20%{transform:rotate(-100deg) scale(1.3)}
+  31%{transform:rotate(14deg) scale(1.34)}
+  37%{transform:rotate(-6deg) scale(1.22)}
+  44%{transform:rotate(0) scale(1)}
+  86%{transform:rotate(0) scale(1)}
+  100%{transform:rotate(-90deg) scale(1)}}
+.casita-hero__puerta-luz{opacity:0}
+.listo .casita-hero__puerta-luz{animation:puerta-luz 5.6s ease-out 700ms infinite both}
+@keyframes puerta-luz{0%,30%{opacity:0}34%{opacity:.6}60%,100%{opacity:0}}
+.listo .casita-hero__pulso{animation:pulso-ciclo 5.6s var(--ease) 700ms infinite both}
+@keyframes pulso-ciclo{0%,30%{opacity:0;transform:scale(.5)}32%{opacity:.95;transform:scale(.6)}58%,100%{opacity:0;transform:scale(2.6)}}
+.listo .chip-glass--1 .ico{animation:chip-pop 5.6s var(--ease) 700ms infinite both}
+@keyframes chip-pop{0%,30%{transform:none}36%{transform:scale(1.35) rotate(-10deg)}44%,100%{transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .blob,.portada__arte,.chip-glass{translate:none!important}
+  .chip-glass,.chip-glass .ico,.casita-hero__planta,.casita-hero__puerta-luz,.casita-hero__pulso,.portada__texto .entra::before{animation:none!important}
+  .listo .casita-hero__cerradura,.js .casita-hero__cerradura{animation:none!important;transform:none!important}
+}
+.listo .casita-hero__brillo{animation:brillo-v5 6.5s var(--ease) 1.5s infinite}
+@keyframes brillo-v5{0%{transform:translateX(0)}28%,100%{transform:translateX(760px)}}
+@media (prefers-reduced-motion:reduce){
+  .listo .casita-hero__brillo{animation:none!important}
+}
+.casita-hero{overflow:visible}
+.casita-hero__llave{opacity:0;transform-box:fill-box;transform-origin:6.6% 50%}
+.listo .casita-hero__llave{animation:llave 6.4s var(--ease) 700ms infinite both}
+@keyframes llave{0%{opacity:0;transform:translate(230px,-60px) rotate(-28deg) scale(.9)}
+  8%{opacity:1}
+  26%{opacity:1;transform:translate(26px,0) rotate(0) scale(1)}
+  33%{transform:translate(0,0) rotate(0) scale(1.04)}
+  40%{transform:translate(0,0) rotate(0) scale(1)}
+  52%{transform:translate(0,0) rotate(98deg) scale(1)}
+  57%{transform:translate(0,0) rotate(88deg) scale(1)}
+  61%,70%{opacity:1;transform:translate(0,0) rotate(90deg) scale(1)}
+  80%{opacity:0;transform:translate(0,40px) rotate(90deg) scale(.96)}
+  100%{opacity:0;transform:translate(230px,-60px) rotate(-28deg) scale(.9)}}
+.listo .casita-hero__cerradura{animation:cerradura-v6 6.4s var(--ease) 700ms infinite both}
+@keyframes cerradura-v6{0%,40%{transform:rotate(-90deg)}52%{transform:rotate(8deg) scale(1.08)}57%{transform:rotate(-2deg)}61%,88%{transform:none}100%{transform:rotate(-90deg)}}
+.listo .casita-hero__pulso{animation:pulso-v6 6.4s var(--ease) 700ms infinite both}
+@keyframes pulso-v6{0%,51%{opacity:0;transform:scale(.5)}53%{opacity:.95;transform:scale(.6)}74%,100%{opacity:0;transform:scale(2.6)}}
+.listo .casita-hero__puerta-luz{animation:puerta-v6 6.4s ease-out 700ms infinite both}
+@keyframes puerta-v6{0%,51%{opacity:0}55%{opacity:.6}76%,100%{opacity:0}}
+.candado-chip__arco{transform-box:fill-box;transform-origin:50% 100%}
+.listo .chip-glass--1 .ico{animation:chip-v6 6.4s var(--ease) 700ms infinite both}
+@keyframes chip-v6{0%,52%{transform:none}57%{transform:scale(1.35) rotate(-10deg)}64%,100%{transform:none}}
+.listo .candado-chip__arco{animation:arco-v6 6.4s var(--ease) 700ms infinite both}
+@keyframes arco-v6{0%,51%{transform:translateY(-3.5px)}55%{transform:translateY(.6px)}58%,88%{transform:none}94%,100%{transform:translateY(-3.5px)}}
+@media (prefers-reduced-motion:reduce){
+  .casita-hero__llave{display:none}
+  .listo .casita-hero__cerradura{animation:none!important;transform:none!important}
+  .listo .chip-glass--1 .ico,.listo .candado-chip__arco,.sobre-candado,.adorno{animation:none!important}
+  .listo .candado-chip__arco{transform:none!important}
+}
+.chip-glass{width:64px;height:64px;border-radius:24px;background:rgba(255,250,246,.82);border:2px solid rgba(255,176,138,.55);
+  box-shadow:inset 0 1px 0 #fff,0 6px 14px rgba(219,59,0,.12),0 16px 32px rgba(255,107,53,.16)}
+.chip-ilus{width:46px;height:46px;overflow:visible}
+@media (min-width:960px){
+  .chip-glass{width:84px;height:84px;border-radius:30px}
+  .chip-ilus{width:60px;height:60px}
+}
+.chip-glass--1{transform-origin:50% 60%}
+.candado-chip__arco{transform-box:fill-box;transform-origin:50% 100%}
+.listo .chip-glass--1 .chip-ilus{animation:chip-v6 6.4s var(--ease) 700ms infinite both}
+.listo .chip-glass--1 .candado-chip__arco{animation:arco-v6b 6.4s var(--ease) 700ms infinite both}
+@keyframes arco-v6b{0%,51%{transform:translateY(-5px)}55%{transform:translateY(1px)}58%,88%{transform:none}94%,100%{transform:translateY(-5px)}}
+.chip-hoja{transform-box:fill-box;transform-origin:0% 100%}
+.listo .chip-hoja{animation:mece-planta 3.6s ease-in-out infinite}
+.camara-flash,.camara-destello{transform-box:fill-box;transform-origin:50% 50%}
+.listo .camara-flash{animation:flash 3.2s ease-in-out 1.2s infinite}
+.listo .camara-destello{animation:destello 3.2s ease-in-out 1.2s infinite}
+@keyframes flash{0%,70%,100%{opacity:1;transform:none}78%{opacity:1;transform:scale(1.9)}86%{opacity:.6;transform:scale(1)}}
+@keyframes destello{0%,70%{opacity:0;transform:scale(.3) rotate(0)}80%{opacity:1;transform:scale(1.2) rotate(45deg)}100%{opacity:0;transform:scale(.6) rotate(90deg)}}
+.check-chip__trazo{stroke-dasharray:1;stroke-dashoffset:0}
+.listo .check-chip__trazo{animation:check-v6b 6.4s var(--ease) 700ms infinite both}
+@keyframes check-v6b{0%,54%{stroke-dashoffset:1}64%,92%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
+.listo .chip-glass--3 .chip-ilus{transform-origin:50% 80%;animation:check-salto 6.4s var(--ease) 700ms infinite both}
+@keyframes check-salto{0%,58%{transform:none}64%{transform:translateY(-4px) scale(1.1)}72%,100%{transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .listo .chip-glass--1 .chip-ilus,.listo .chip-glass--1 .candado-chip__arco,.listo .chip-hoja,.listo .camara-flash,.listo .camara-destello,.listo .check-chip__trazo,.listo .chip-glass--3 .chip-ilus,.ilus{animation:none!important}
+  .listo .chip-glass--1 .candado-chip__arco,.check-chip__trazo{transform:none!important;stroke-dashoffset:0!important}
+  .camara-destello{opacity:0}
+}
+.portada__arte{width:min(220px,25svh,62vw)}
+.chip-glass{width:48px;height:48px;border-radius:17px}
+.chip-ilus{width:34px;height:34px}
+@media (min-width:720px){
+  .portada__arte{width:min(300px,34vw)}
+  .chip-glass{width:60px;height:60px;border-radius:22px}
+  .chip-ilus{width:42px;height:42px}
+}
+@media (min-width:960px){
+  .portada__arte{width:min(420px,31vw)}
+  .chip-glass{width:68px;height:68px;border-radius:24px}
+  .chip-ilus{width:48px;height:48px}
+}
