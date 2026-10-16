@@ -101,3 +101,12 @@ export const auth: AuthService = {
   actual() { try { const s = localStorage.getItem(K); return s ? JSON.parse(s) : null } catch { return null } },
   salir() { localStorage.removeItem(K); if (modoReal) void real().then(p => p.salir?.()) },
 }
+
+/** Configuración de Cavos para la billetera: Stellar testnet. Un solo App ID sirve para los entornos
+ *  `production` y `development` del panel; `environment` (de quién son el gas y la config) es independiente
+ *  de `network` (qué red). Fuente: https://docs.cavos.xyz/docs/environments */
+export const CAVOS_BILLETERA = {
+  chains: ['stellar'] as const, defaultChain: 'stellar' as const,
+  network: 'testnet' as const, environment: 'production' as const,
+  appSalt: 'lockumi', // NUNCA cambiar cuando haya usuarios (deriva la dirección)
+}
