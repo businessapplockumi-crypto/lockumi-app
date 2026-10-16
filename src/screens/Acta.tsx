@@ -3,7 +3,6 @@ import { store, actaCompleta, ahoraDe } from '../store'
 import type { Alquiler, Rol, Cuarto, Foto } from '../types'
 import { NOMBRE_ROL } from '../types'
 import { fotoEjemplo } from '../demoFotos'
-import { modoReal } from '../services/auth'
 import { Icono } from '../ui'
 import { TomarFoto } from '../Camara'
 import { textoFoto } from '../fotos'
@@ -29,8 +28,8 @@ export function CuartoEditor({ a, cual, idx, rol }: { a: Alquiler; cual: 'entrad
     <h2 id={`c-${cual}-${idx}`}>{c.nombre}</h2>
     {ent && <div><p className="mini">Así estaba al entrar</p><FotoLista fotos={ent.fotos} /></div>}
     <div><p className="mini">{ent ? 'Así está hoy' : 'Fotos'}</p><FotoLista fotos={c.fotos} vacio="Toma al menos una foto de este espacio." /></div>
-    <TomarFoto por={rol} onFoto={agregar} etiqueta={c.fotos.length ? 'Tomar otra foto' : 'Tomar foto'} />
-    {!modoReal && <button type="button" className="enlace" onClick={() => agregar({ src: fotoEjemplo(c.nombre, cual, c.fotos.length + idx), por: rol, fecha: new Date(ahoraDe(a)).toISOString(), tomadaEn: ahoraDe(a), origen: 'ejemplo' })}>Demo: usar una foto de ejemplo</button>}
+    <TomarFoto por={rol} onFoto={agregar} etiqueta={c.fotos.length ? 'Tomar otra foto' : 'Tomar foto'} principal={!c.fotos.length} />
+    {<button type="button" className="enlace" onClick={() => agregar({ src: fotoEjemplo(c.nombre, cual, c.fotos.length + idx), por: rol, fecha: new Date(ahoraDe(a)).toISOString(), tomadaEn: ahoraDe(a), origen: 'ejemplo' })}>Demo: usar una foto de ejemplo</button>}
     <fieldset className="campo"><legend>¿Cómo está cada cosa?</legend>
       <ul className="lista checklist">{c.items.map((it, j) => {
         const e0 = ent?.items[j].estado

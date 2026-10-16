@@ -56,9 +56,11 @@ function Pago({ a, rol }: P) {
 /** Fotos de entrada o salida: un espacio por pantalla y al final la confirmación. */
 function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
   const acta = a[cual]!; const n = acta.cuartos.length
-  const inicial = acta.firmas[rol] ? n : Math.max(0, acta.cuartos.findIndex(c => !cuartoListo(c)))
-  const [i, setI] = useState(inicial === -1 ? n : inicial); const [err, setErr] = useState('')
+  const falta = acta.cuartos.findIndex(c => !cuartoListo(c))
+  const [i, setI] = useState(acta.firmas[rol] || falta === -1 ? n : falta); const [err, setErr] = useState('')
   useEffect(() => { window.scrollTo(0, 0) }, [i])
+  const firmaCuarto = JSON.stringify(acta.cuartos[i] ?? null)
+  useEffect(() => { setErr('') }, [firmaCuarto])
   const siguiente = () => {
     const c = acta.cuartos[i]
     if (!c.fotos.length) return setErr('Falta una foto de este espacio. Toca "Tomar foto".')
@@ -116,7 +118,7 @@ function Ventana({ a, rol }: P) {
         <p>¿Encontraste un daño que no estaba en las fotos de entrada? Puedes reclamar. Si todo está bien, no hagas nada.</p>
         <button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={() => setForm(true)}>Reclamar un daño</button></>)
       : <Espera texto="Esperando. Si el dueño no reclama en 7 días, recibes tu depósito completo." />}
-    {!modoReal && <button type="button" className="enlace" onClick={() => store.cambiar(a.id, x => { x.diasSimulados += 7; if (!x.reclamo && ahoraDe(x) >= fin) cerrarAutomatico(x) }, 'Demo: se adelantaron 7 días')}>Demo: adelantar 7 días</button>}
+    {<button type="button" className="enlace" onClick={() => store.cambiar(a.id, x => { x.diasSimulados += 7; if (!x.reclamo && ahoraDe(x) >= fin) cerrarAutomatico(x) }, 'Demo: se adelantaron 7 días')}>Demo: adelantar 7 días</button>}
   </section>
 }
 
@@ -136,8 +138,8 @@ function FormReclamo({ a, onCancelar }: { a: Alquiler; onCancelar: () => void })
     <label className={'campo' + (env && e.monto ? ' campo--error' : '')}><span>¿Cuánto reclamas? (USD)</span><input inputMode="decimal" value={monto} onChange={x => setMonto(x.target.value)} />{env && e.monto && <small className="campo__error" role="alert">{e.monto}</small>}</label>
     <label className={'campo' + (env && e.motivo ? ' campo--error' : '')}><span>¿Qué pasó?</span><textarea rows={3} value={motivo} onChange={x => setMotivo(x.target.value)} placeholder="Ej.: mancha en la pared de la sala que no estaba al entrar" />{env && e.motivo && <small className="campo__error" role="alert">{e.motivo}</small>}</label>
     <FotoLista fotos={fotos} vacio="Sin fotos del daño todavía." />
-    <TomarFoto por="dueno" etiqueta="Tomar foto del daño" onFoto={f => setFotos(v => [...v, f])} />
-    {!modoReal && <button type="button" className="enlace" onClick={() => setFotos(v => [...v, { src: fotoEjemplo('Sala', 'salida', 0), por: 'dueno', fecha: ahoraISO(a), tomadaEn: ahoraDe(a), origen: 'ejemplo' }])}>Demo: usar una foto de ejemplo</button>}
+    <TomarFoto por="dueno" etiqueta="Tomar foto del daño" principal={false} onFoto={f => setFotos(v => [...v, f])} />
+    {<button type="button" className="enlace" onClick={() => setFotos(v => [...v, { src: fotoEjemplo('Sala', 'salida', 0), por: 'dueno', fecha: ahoraISO(a), tomadaEn: ahoraDe(a), origen: 'ejemplo' }])}>Demo: usar una foto de ejemplo</button>}
     {env && e.fotos && <p className="error" role="alert">{e.fotos}</p>}
     <div className="pie-paso"><button type="button" className="boton boton--secundario" onClick={onCancelar}>Cancelar</button>
       <button type="button" className="boton boton--primario boton--grande pie-paso__principal" onClick={enviar}>Enviar reclamo</button></div>
@@ -177,7 +179,7 @@ function Mediacion({ a }: P) {
     <p>No hubo acuerdo. Una persona mediadora revisa las fotos de entrada y salida y decide cómo se reparte el depósito.</p>
     <Espera texto="No tienes que hacer nada. Te avisaremos cuando haya una decisión." />
     <Evidencia a={a} />
-    {!modoReal && (!panel ? <button type="button" className="enlace" onClick={() => setPanel(true)}>Demo: decidir como mediador</button>
+    {(!panel ? <button type="button" className="enlace" onClick={() => setPanel(true)}>Demo: decidir como mediador</button>
       : <div className="mediador pila"><label className="campo"><span>Para el dueño: {usd(aDueno)} · para el inquilino: {usd(a.monto - aDueno)}</span>
           <input type="range" min={0} max={r.monto} step={10} value={aDueno} onChange={e => setAD(Number(e.target.value))} aria-valuetext={`${usd(aDueno)} para el dueño`} /></label>
         <button type="button" className="boton boton--primario boton--ancho" onClick={decidir}>Decidir</button></div>)}
@@ -198,7 +200,7 @@ function Cerrado({ a }: P) {
 export function Detalle({ id, u }: { id: string; u: Usuario }) {
   useAlquileres(); const a = store.obtener(id)
   const real: Rol = a ? rolDe(a, u.email) : 'dueno'
-  const rol: Rol = a ? (modoReal ? real : vistaDe(a, u.email)) : 'dueno'
+  const rol: Rol = a ? vistaDe(a, u.email) : 'dueno'
   useEffect(() => { window.scrollTo(0, 0) }, [a?.estado, rol])
   if (!a) return <main id="contenido" tabIndex={-1} className="cont"><div className="glass tarjeta">No encontramos ese alquiler. <a href="#/">Volver a tus alquileres</a></div></main>
   const p = { a, rol }; const t = turno(a, rol); const etapa = etapaDe(a)
@@ -210,10 +212,10 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
   return <main id="contenido" tabIndex={-1} className="cont" style={{ paddingBottom: 48 }}>
     <a href="#/" className="volver">← Tus alquileres</a>
     <h1 className="h-lugar">{a.direccion}</h1>
-    {!modoReal && <div className="vista-demo" role="group" aria-label="Demo: cambiar de persona">
+    <div className="vista-demo" role="group" aria-label="Demo: cambiar de persona">
       <span>Estás viendo como <strong>{NOMBRE[rol]}</strong></span>
       <button type="button" className="boton boton--secundario boton--chico" onClick={() => fijarVista(id, otro(rol))}>Ver como {NOMBRE[otro(rol)]}</button>
-      <Demo t="Demo" /></div>}
+      <span className="demo">Demo en un solo aparato</span></div>
     <div className="paso-cab"><p className="paso-cab__n">{a.estado === 'cerrado' ? 'Terminado' : pasoTexto(a)}</p><p className="paso-cab__t">{ETAPAS[etapa]}</p>
       <div className="barra-paso" aria-hidden="true"><span style={{ width: `${((etapa + (a.estado === 'cerrado' ? 1 : 0.5)) / ETAPAS.length) * 100}%` }} /></div></div>
     <div className="detalle">
