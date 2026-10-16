@@ -14,7 +14,7 @@ export interface CavosLike {
   salir?(): void
 }
 
-const APP_ID = (import.meta.env.VITE_CAVOS_APP_ID as string | undefined)?.trim() || ''
+export const APP_ID = (import.meta.env.VITE_CAVOS_APP_ID as string | undefined)?.trim() || ''
 export const modoReal = APP_ID !== ''
 
 /** Formato del código por correo: el simulado usa 6 dígitos; Cavos envía 9 caracteres (minúsculas y dígitos). */
@@ -39,8 +39,9 @@ const simulado: CavosLike = {
 
 /** Proveedor real sobre CavosAuth, cargado bajo demanda. */
 let realP: Promise<CavosLike> | null = null
+let cavosAuth: import('@cavos/kit').CavosAuth | null = null
 const real = () => realP ??= import('@cavos/kit').then(({ CavosAuth }) => {
-  const c = new CavosAuth({ appId: APP_ID })
+  const c = cavosAuth = new CavosAuth({ appId: APP_ID })
   const a = (i: { userId: string; email?: string; name?: string }) => ({ email: i.email ?? i.userId, nombre: i.name })
   return {
     getGoogleOAuthUrl: (r) => c.getGoogleOAuthUrl(r),
@@ -109,4 +110,11 @@ export const CAVOS_BILLETERA = {
   chains: ['stellar'] as const, defaultChain: 'stellar' as const,
   network: 'testnet' as const, environment: 'production' as const,
   appSalt: 'lockumi', // NUNCA cambiar cuando haya usuarios (deriva la dirección)
+}
+
+/** Identidad del último login real de Cavos (persistida por el kit), para conectar la billetera. */
+export async function identidadCavos() {
+  if (!modoReal) return null
+  await real()
+  return cavosAuth?.restoreIdentity() ?? null
 }

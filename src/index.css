@@ -268,3 +268,11 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .logo-escala .portada__arte{width:420px;margin:0}
 .logo-escala .chip-glass{width:68px;height:68px;border-radius:24px}
 .logo-escala .chip-ilus{width:48px;height:48px}
+
+/* Billetera Stellar testnet (solo con login real de Cavos) */
+.billetera{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.billetera__fila{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px}
+.billetera__dir{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:4px 0 0}
+.billetera__dir code{font-size:1.05rem;font-weight:700;letter-spacing:.02em}
+.billetera__saldo{margin:0;font-size:1.1rem}
+.billetera__fondeo{display:flex;flex-direction:column;gap:8px;align-items:flex-start}

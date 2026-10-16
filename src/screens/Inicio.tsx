@@ -2,6 +2,8 @@ import { useAlquileres, store, rolDe } from '../store'
 import { NOMBRE_ROL } from '../types'
 import { ETIQUETA_ESTADO, type Usuario } from '../types'
 import { Demo, Deco, usd, fecha } from '../ui'
+import { modoReal } from '../services/auth'
+import { Billetera } from './Billetera'
 export function Inicio({ u }: { u: Usuario }) {
   const todos = useAlquileres()
   const chip = (e: string) => e === 'apartado' || e === 'cerrado' ? 'chip--exito' : e === 'reclamo' || e === 'mediacion' ? 'chip--coral' : 'chip--neutro'
@@ -12,6 +14,7 @@ export function Inicio({ u }: { u: Usuario }) {
       <a className="boton boton--primario" href="#/crear">+ Nuevo alquiler</a>
       <div className="hero__deco" aria-hidden="true"><Deco id="d-casita" size={64} className="deco--flota" /><Deco id="d-hoja" size={34} className="deco--flota deco--b" /><Deco id="d-llave" size={42} className="deco--flota deco--c" /></div>
     </div>
+    {(modoReal || (import.meta.env.DEV && localStorage.getItem('lockumi.billetera.prueba'))) && <Billetera />}
     {todos.length === 0 && <div className="glass tarjeta"><p>Todavía no hay alquileres.</p></div>}
     <ul className="rejilla" role="list">
       {todos.map(a => <li key={a.id}><a className="glass tarjeta alquiler" href={'#/alquiler/' + a.id}>
