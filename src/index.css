@@ -239,3 +239,13 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .entrada-app{padding-top:32px;gap:16px}
 .entrada-app .entrada-app__logo{align-self:center;height:34px}
 .entrada-app h1{text-align:center;align-self:center}
+
+/* Variante A: wordmark centrado debajo del logo animado */
+.marca-lockup{display:flex;align-items:center;align-self:center}
+.marca-lockup__nombre svg{display:block;width:100%;height:auto}
+.marca-lockup--a{flex-direction:column;gap:8px}
+.marca-lockup--a .entrada-app__arte .portada__arte{width:clamp(150px,44vw,190px)}
+.marca-lockup--a .marca-lockup__nombre{width:clamp(68px,19vw,84px)}
+@media (min-width:960px){.marca-lockup--a .entrada-app__arte .portada__arte{width:220px}.marca-lockup--a .marca-lockup__nombre{width:96px}}
+.marca-lockup--a{gap:10px;margin-bottom:4px}
+.marca-lockup--a .marca-lockup__nombre{width:clamp(76px,21vw,90px)}
