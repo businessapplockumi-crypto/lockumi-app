@@ -249,3 +249,11 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 @media (min-width:960px){.marca-lockup--a .entrada-app__arte .portada__arte{width:220px}.marca-lockup--a .marca-lockup__nombre{width:96px}}
 .marca-lockup--a{gap:10px;margin-bottom:4px}
 .marca-lockup--a .marca-lockup__nombre{width:clamp(76px,21vw,90px)}
+
+/* Variante D: A con el bloque superior de C (wordmark grande arriba, logo animado debajo) */
+.entrada-app:has(.marca-c){gap:14px;padding-top:20px}
+.marca-c{align-self:center;width:62%;max-width:420px;margin:0}
+.marca-c svg{display:block;width:100%;height:auto}
+.marca-c__arte .portada__arte{width:clamp(130px,36vw,190px)}
+/* El título de A conserva el mismo aspecto aunque ahora sea h2 (el h1 es la marca) */
+.entrada-app .entrada-app__titulo{font-weight:800;font-size:clamp(28px,7.5vw,40px);line-height:1.15;max-width:16ch;text-align:center;align-self:center}
