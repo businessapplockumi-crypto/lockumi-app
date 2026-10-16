@@ -1,7 +1,8 @@
+import { modoReal } from './services/auth'
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Estado, Usuario, Alquiler } from './types'
 
-export const Demo = ({ t = 'Demo: simulado' }: { t?: string }) => <span className="demo" title="Integración simulada para la demo">{t}</span>
+export const Demo = ({ t = 'Demo: simulado' }: { t?: string }) => modoReal ? null : <span className="demo" title="Integración simulada para la demo">{t}</span>
 export const Icono = ({ id, className = '' }: { id: string; className?: string }) =>
   <svg className={'ico ' + className} aria-hidden="true" focusable="false"><use href={'#' + id} /></svg>
 export const Deco = ({ id, size = 48, className = '' }: { id: string; size?: number; className?: string }) =>

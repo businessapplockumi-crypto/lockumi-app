@@ -2,7 +2,7 @@
 // Fuentes: https://docs.cavos.xyz/docs/stellar (Cavos.connect con chains ["stellar"], network "testnet")
 //          https://developers.stellar.org/docs/data/apis/horizon/api-reference/resources/accounts (GET /accounts/{id}, 404 si no existe)
 //          https://developers.stellar.org/docs/learn/fundamentals/networks#friendbot (fondeo de testnet)
-import { CAVOS_BILLETERA, identidadCavos, modoReal, APP_ID } from './auth'
+import { CAVOS_BILLETERA, authCavos, modoReal, APP_ID } from './auth'
 
 export const HORIZON_TESTNET = 'https://horizon-testnet.stellar.org'
 export const FRIENDBOT = 'https://friendbot.stellar.org'
@@ -37,6 +37,16 @@ export async function fondear(g: string, f: Fetch = fetch): Promise<void> {
 export const formatoXlm = (s: string) =>
   new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(Number(s)) + ' XLM'
 
+export class ErrorBilletera extends Error { codigo: string; constructor(codigo: string, mensaje: string) { super(mensaje); this.codigo = codigo } }
+/** Código y mensaje técnicos de cualquier error, para mostrarlos en "Ver detalle". */
+export function detalleError(e: unknown): { codigo: string; mensaje: string } {
+  if (e instanceof ErrorBilletera) return { codigo: e.codigo, mensaje: e.message }
+  const m = e instanceof Error ? e.message : String(e)
+  const codigo = /no login token/.test(m) ? 'sin-token' : /allowed web origins/.test(m) ? 'origen-no-registrado'
+    : /registry .*failed: (\d+)/.test(m) ? 'registro-' + m.match(/failed: (\d+)/)![1] : /vault/i.test(m) ? 'vault' : (e as { name?: string })?.name || 'desconocido'
+  return { codigo, mensaje: m.slice(0, 400) }
+}
+
 let conexion: Promise<Billetera> | null = null
 /** Conecta la billetera con la identidad del login de Cavos. Solo en modo real. */
 export function conectarBilletera(): Promise<Billetera> {
@@ -46,10 +56,12 @@ export function conectarBilletera(): Promise<Billetera> {
   }
   if (!modoReal) return Promise.reject(new Error('simulado'))
   return conexion ??= (async () => {
-    const identity = await identidadCavos()
-    if (!identity) throw new Error('sin-identidad')
+    const auth = await authCavos()
+    if (!auth) throw new ErrorBilletera('sin-identidad', 'No hay identidad de Cavos guardada en este navegador.')
+    if (!auth.getAuthToken()) throw new ErrorBilletera('sin-token', 'La sesión de Cavos no tiene token en esta pestaña (se abrió en otra pestaña o se cerró).')
     const { Cavos } = await import('@cavos/kit')
-    const s = await Cavos.connect({ ...CAVOS_BILLETERA, chains: [...CAVOS_BILLETERA.chains], identity, appId: APP_ID, vault: true })
+    // `auth` (no solo `identity`): el kit lee el token del login con auth.getAuthToken() para el registro y el vault.
+    const s = await Cavos.connect({ ...CAVOS_BILLETERA, chains: [...CAVOS_BILLETERA.chains], auth, appId: APP_ID, vault: true })
     const w = s.wallet('stellar')
     return { direccion: w.address, estado: w.status as EstadoBilletera }
   })().catch(e => { conexion = null; throw e })

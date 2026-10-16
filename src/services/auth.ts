@@ -118,3 +118,11 @@ export async function identidadCavos() {
   await real()
   return cavosAuth?.restoreIdentity() ?? null
 }
+/** La instancia de CavosAuth (AuthProvider) con la identidad restaurada, para `Cavos.connect({ auth })`.
+ *  Hay que pasar `auth` y no solo `identity`: el registro de billeteras y el vault toman el token del login
+ *  con `auth.getAuthToken()`; con `identity` sola no hay token y falla ("registry lookup skipped: no login token"). */
+export async function authCavos() {
+  if (!modoReal) return null
+  await real()
+  return cavosAuth?.restoreIdentity() ? cavosAuth : null
+}
