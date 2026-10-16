@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fechaValida, sumarMeses, validarFechas, validarMonto, validarAlquiler } from '../../validacion'
+import { fechaValida, sumarMeses, validarFechas, validarMonto, validarAlquiler, hoyISO } from '../../validacion'
 const HOY = '2026-10-16'
 describe('fechas imposibles', () => {
   it('rechaza 31/02, 30/02, 29/02 no bisiesto, mes 13, día 0', () => {
@@ -13,9 +13,20 @@ describe('entrada', () => {
     expect(validarFechas('', '2027-01-01', HOY).inicio).toMatch(/Escribe/)
     expect(validarFechas('2026-02-30', '2027-01-01', HOY).inicio).toMatch(/no existe/)
   })
-  it('acepta hasta 7 días atrás y rechaza 8', () => {
-    expect(validarFechas('2026-10-09', '2026-12-09', HOY).inicio).toBeUndefined()
-    expect(validarFechas('2026-10-08', '2026-12-08', HOY).inicio).toMatch(/7 días/)
+  it('rechaza ayer y cualquier fecha pasada', () => {
+    expect(validarFechas('2026-10-15', '2026-12-15', HOY).inicio).toBe('La fecha de entrada no puede ser anterior a hoy. Elige hoy o una fecha futura.')
+    expect(validarFechas('2026-10-09', '2026-12-09', HOY).inicio).toMatch(/anterior a hoy/)
+    expect(validarFechas('2025-10-16', '2026-12-09', HOY).inicio).toMatch(/anterior a hoy/)
+  })
+  it('acepta mañana y el último día del año siguiente permitido', () => {
+    expect(validarFechas('2026-10-17', '2026-11-17', HOY)).toEqual({})
+    expect(validarFechas('2027-10-16', '2027-11-16', HOY)).toEqual({})
+  })
+  it('hoy se calcula en la zona local, no en UTC', () => {
+    // 16/10 a las 23:30 y a las 00:05 locales siguen siendo 16/10 en cualquier zona (en UTC-6 las 23:30 ya son 17/10 en UTC)
+    expect(hoyISO(new Date(2026, 9, 16, 23, 30))).toBe('2026-10-16')
+    expect(hoyISO(new Date(2026, 9, 16, 0, 5))).toBe('2026-10-16')
+    if (new Date(2026, 9, 16, 23, 30).getTimezoneOffset() > 0) expect(new Date(2026, 9, 16, 23, 30).toISOString().slice(0, 10)).toBe('2026-10-17')
   })
   it('acepta hoy y rechaza más de un año adelante', () => {
     expect(validarFechas(HOY, '2027-01-16', HOY)).toEqual({})

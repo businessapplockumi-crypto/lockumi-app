@@ -1,11 +1,10 @@
 // Validación del formulario de nuevo alquiler (pura, sin DOM, con pruebas en __tests__/validacion.test.ts).
 // Reglas elegidas:
-//  - Entrada: desde 7 días atrás hasta 1 año adelante. Los 7 días permiten registrar un alquiler que empezó esta
-//    semana (es común firmar unos días después de entregar llaves); más atrás ya no tiene sentido proteger el depósito.
+//  - Entrada: desde hoy (fecha local del usuario, no UTC) hasta 1 año adelante. Nunca en el pasado: el alquiler
+//    se registra cuando se paga el depósito.
 //  - Salida: posterior a la entrada; duración mínima 1 mes (el mismo día del mes siguiente) y máxima 5 años.
 //  - Depósito: mayor que 0, hasta 2 decimales y como máximo USD 50 000 (holgado para un alquiler residencial,
 //    evita errores de tipeo como un cero de más).
-export const MARGEN_PASADO_DIAS = 7
 export const MAX_ANTICIPO_DIAS = 365
 export const MIN_MESES = 1
 export const MAX_ANIOS = 5
@@ -29,14 +28,14 @@ export function sumarMeses(iso: string, meses: number): string {
   const base = new Date(Date.UTC(a, m - 1 + meses, 1)); const ult = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0)).getUTCDate()
   base.setUTCDate(Math.min(d, ult)); return base.toISOString().slice(0, 10)
 }
-/** Fecha local de hoy en "aaaa-mm-dd". */
+/** Fecha de hoy en la zona local del usuario (no UTC) en "aaaa-mm-dd". */
 export const hoyISO = (ahora = new Date()) => new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 
 export function validarFechas(inicio: string, fin: string, hoy: string): Pick<Errores, 'inicio' | 'fin'> {
   const e: Pick<Errores, 'inicio' | 'fin'> = {}
   if (!inicio) e.inicio = 'Escribe la fecha de entrada (dd/mm/aaaa).'
   else if (!fechaValida(inicio)) e.inicio = 'Esa fecha no existe. Revisa el día y el mes.'
-  else if (aUTC(inicio) < aUTC(hoy) - MARGEN_PASADO_DIAS * DIA) e.inicio = `La entrada no puede ser de hace más de ${MARGEN_PASADO_DIAS} días.`
+  else if (inicio < hoy) e.inicio = 'La fecha de entrada no puede ser anterior a hoy. Elige hoy o una fecha futura.'
   else if (aUTC(inicio) > aUTC(hoy) + MAX_ANTICIPO_DIAS * DIA) e.inicio = 'La entrada debe ser dentro del próximo año.'
   if (!fin) e.fin = 'Escribe la fecha de salida (dd/mm/aaaa).'
   else if (!fechaValida(fin)) e.fin = 'Esa fecha no existe. Revisa el día y el mes.'

@@ -28,7 +28,7 @@ export const fechaHora = (s: string | number) => d(s).toLocaleString('es-CR', { 
 
 /** Campo de fecha en formato dd/mm/aaaa (consistente en cualquier navegador). Valor: ISO aaaa-mm-dd (aunque sea un día
  *  imposible, para que la validación lo explique) o '' si está incompleta. */
-export function CampoFecha({ etiqueta, valor, onCambio, onSalir, id, error, ayuda }: { etiqueta: string; valor: string; onCambio: (iso: string) => void; onSalir?: () => void; id: string; error?: string; ayuda?: string }) {
+export function CampoFecha({ etiqueta, valor, onCambio, onSalir, id, error, ayuda, min, max }: { min?: string; max?: string; etiqueta: string; valor: string; onCambio: (iso: string) => void; onSalir?: () => void; id: string; error?: string; ayuda?: string }) {
   const aTexto = (iso: string) => iso ? iso.split('-').reverse().join('/') : ''
   const [t, setT] = useState(aTexto(valor))
   useEffect(() => { if (!valor) return; setT(aTexto(valor)) }, [valor])
@@ -41,9 +41,9 @@ export function CampoFecha({ etiqueta, valor, onCambio, onSalir, id, error, ayud
   }
   const ok = !error && /^\d{4}-\d{2}-\d{2}$/.test(valor)
   return <div className={'campo' + (error ? ' campo--error' : '')}><label htmlFor={id} className="campo__et">{etiqueta}</label>
-    <input id={id} inputMode="numeric" autoComplete="off" placeholder="dd/mm/aaaa" value={t} onChange={e => cambiar(e.target.value)} onBlur={onSalir}
+    <input id={id} inputMode="numeric" autoComplete="off" placeholder="dd/mm/aaaa" value={t} onChange={e => cambiar(e.target.value)} onBlur={onSalir} min={min} max={max} data-min={min}
       aria-invalid={!!error} aria-describedby={id + '-ayuda'} />
-    <small id={id + '-ayuda'} className={error ? 'campo__error' : 'ayuda'} role={error ? 'alert' : undefined}>{error ?? (ok ? fecha(valor) : ayuda ?? 'Formato dd/mm/aaaa')}</small>
+    <small id={id + '-ayuda'} className={error ? 'campo__error' : 'ayuda'} role={error ? 'alert' : undefined}>{error ?? (ok ? fecha(valor) + (ayuda ? ' · ' + ayuda : '') : ayuda ?? 'Formato dd/mm/aaaa')}</small>
   </div>
 }
 

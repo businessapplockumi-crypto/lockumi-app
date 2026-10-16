@@ -4,7 +4,7 @@ import { escrow } from '../services/escrow'
 import { ir } from '../router'
 import type { Usuario } from '../types'
 import { CampoFecha, Deco } from '../ui'
-import { validarAlquiler, hoyISO, montoNumero, MARGEN_PASADO_DIAS, MIN_MESES, MAX_ANIOS, type Campo, type Errores } from '../validacion'
+import { validarAlquiler, hoyISO, montoNumero, sumarMeses, MIN_MESES, MAX_ANIOS, type Campo, type Errores } from '../validacion'
 
 export function Crear({ u }: { u: Usuario }) {
   const [f, setF] = useState({ direccion: '', monto: '', email: '', inicio: '', fin: '' })
@@ -35,10 +35,10 @@ export function Crear({ u }: { u: Usuario }) {
       {campoUI({ k: 'direccion', et: 'Dirección o nombre del lugar', children: <input {...prop('direccion')} placeholder="Ej.: Apartamento 3B, Escazú" autoComplete="off" maxLength={140} /> })}
       {campoUI({ k: 'monto', et: 'Depósito (USD)', children: <input {...prop('monto')} inputMode="decimal" placeholder="Ej.: 800" autoComplete="off" /> })}
       <div className="fila">
-        <CampoFecha id="f-inicio" etiqueta="Entrada" valor={f.inicio} onCambio={v => poner('inicio', v)} onSalir={tocar('inicio')} error={ver('inicio')} ayuda={`Desde hace ${MARGEN_PASADO_DIAS} días`} />
+        <CampoFecha id="f-inicio" etiqueta="Entrada" valor={f.inicio} onCambio={v => poner('inicio', v)} onSalir={tocar('inicio')} error={ver('inicio')} ayuda="Desde hoy en adelante" min={hoyISO()} max={sumarMeses(hoyISO(), 12)} />
         <CampoFecha id="f-fin" etiqueta="Salida" valor={f.fin} onCambio={v => poner('fin', v)} onSalir={tocar('fin')} error={ver('fin')} ayuda={`De ${MIN_MESES} mes a ${MAX_ANIOS} años`} />
       </div>
-      <p className="nota">La entrada puede ser de hasta {MARGEN_PASADO_DIAS} días atrás, por si ya entregaste las llaves esta semana. El alquiler dura entre {MIN_MESES} mes y {MAX_ANIOS} años.</p>
+      <p className="nota">La entrada es desde hoy en adelante (hasta 1 año), porque el alquiler empieza cuando se paga el depósito. El alquiler dura entre {MIN_MESES} mes y {MAX_ANIOS} años.</p>
       <fieldset className="campo"><legend>Reglas del alquiler</legend>
         <ul className="lista">{reglas.map((r, i) => <li key={i}>{r}<button type="button" className="x" aria-label={'Quitar regla: ' + r} onClick={() => setReglas(reglas.filter((_, j) => j !== i))}>×</button></li>)}</ul>
         <div className="agregar"><input aria-label="Nueva regla" value={regla} onChange={e => setRegla(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }} placeholder="Agregar una regla" />
