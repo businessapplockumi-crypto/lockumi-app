@@ -13,9 +13,11 @@ export function PaginaLegal({ slug }: { slug: string }) {
       <a href="/" className="legal__volver">Volver a la app</a>
     </header>
     <article className="legal__doc">
-      <p className="legal__meta"><span>Versión: <strong>{d.version}</strong></span>{f && <span>Fecha: <strong>{f}</strong></span>}</p>
+      {/* Decisión de Katherine: la marca de revisión por abogado se ve siempre; si el texto no la trae, va como aviso discreto. */}
+      {!d.revisionAbogado && <p className="legal__revision" role="note">Pendiente de revisión por abogado</p>}
+      {/* Versión y fecha una sola vez: si el texto ya las trae, no se repiten. */}
+      {!d.metaEnTexto && <p className="legal__meta"><span>Versión: <strong>{d.version}</strong></span>{f && <span>Fecha: <strong>{f}</strong></span>}</p>}
       <div className="legal__texto" dangerouslySetInnerHTML={{ __html: d.html }} />
-      <p className="legal__meta legal__meta--pie"><span>Versión: <strong>{d.version}</strong></span>{f && <span>Fecha: <strong>{f}</strong></span>}</p>
     </article>
   </main>
 }

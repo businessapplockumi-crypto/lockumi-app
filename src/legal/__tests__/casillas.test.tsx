@@ -6,7 +6,8 @@ const mem = new Map<string, string>()
 vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, String(v)), removeItem: (k: string) => void mem.delete(k), clear: () => mem.clear() })
 
 const { erroresTrasCambio, ERRORES_INICIALES, validarAceptaciones, guardarAceptacion, leerAceptacion, aceptoVersion, conAceptacion, K_ACEPTACION, MSJ_SIN_TERMINOS, MSJ_SIN_PRIVACIDAD } = await import('../aceptacion')
-const { TERMINOS, PRIVACIDAD, DOCS, rutaLegal, consentimientoPrivacidad, leerDoc } = await import('../documentos')
+const { TERMINOS, PRIVACIDAD, DOCS, rutaLegal, CONSENTIMIENTO_PRIVACIDAD, leerDoc } = await import('../documentos')
+const { PaginaLegal } = await import('../PaginaLegal')
 const { Login } = await import('../../screens/Login')
 const { aHtml } = await import('../markdown')
 
@@ -64,17 +65,28 @@ describe('casillas obligatorias de Términos y Privacidad', () => {
 })
 
 describe('textos legales', () => {
-  it('carga Términos y Privacidad con versión y fecha', () => {
-    expect(TERMINOS.version).toBe('1.0-demo'); expect(TERMINOS.fecha).toBe('17 de octubre de 2026')
-    expect(PRIVACIDAD?.version).toBe('1.0-demo'); expect(PRIVACIDAD?.fecha).toBe('17 de octubre de 2026')
+  it('carga Términos y Privacidad 1.1-demo con su fecha, tomadas del texto', () => {
+    for (const d of [TERMINOS, PRIVACIDAD!]) { expect(d.version).toBe('1.1-demo'); expect(d.fecha).toBe('17 de octubre de 2026'); expect(d.metaEnTexto).toBe(true) }
     expect(Object.keys(DOCS).sort()).toEqual(['privacidad', 'terminos'])
   })
-  it('la nota interna no se publica', () => { expect(PRIVACIDAD!.html).not.toMatch(/Nota interna/) })
-  it('mantiene la marca de revisión por abogado', () => { expect(TERMINOS.html).toMatch(/PENDIENTE DE REVISIÓN POR ABOGADO/); expect(PRIVACIDAD!.html).toMatch(/PENDIENTE DE REVISIÓN POR ABOGADO/) })
-  it('el consentimiento se toma de privacidad.md', () => {
-    const c = consentimientoPrivacidad()!
-    expect(c.antes).toBe('Acepto el '); expect(c.enlace).toBe('Aviso de privacidad de la app')
-    expect(c.despues).toMatch(/^ y autorizo que Lockumi trate mis datos y los transfiera a Supabase, Vercel, Cavos y Trustless Work, dentro y fuera de Costa Rica/)
+  it('la página muestra la versión y la fecha una sola vez, y el aviso de una línea de arriba', () => {
+    for (const slug of ['terminos', 'privacidad']) {
+      const html = renderToStaticMarkup(<PaginaLegal slug={slug} />)
+      expect(html.split('1.1-demo').length - 1).toBe(1)
+      expect(html.split('17 de octubre de 2026').length - 1).toBe(1)
+      expect(html).toContain('<blockquote><p>Versión demo en red de prueba. Este texto puede actualizarse; te avisaremos de los cambios importantes.</p></blockquote>')
+      expect(html).toContain('Pendiente de revisión por abogado')
+    }
+  })
+  it('la nota interna no se publica', () => { expect(PRIVACIDAD!.html).not.toMatch(/nota interna/i) })
+  it('el consentimiento de privacidad es un texto fijo de la app', () => {
+    const c = CONSENTIMIENTO_PRIVACIDAD
+    expect(c.antes + c.enlace + c.despues).toBe('Acepto el Aviso de privacidad de la app y autorizo que Lockumi trate mis datos y los transfiera a Supabase, Vercel, Cavos y Trustless Work, dentro y fuera de Costa Rica, para usar la demo. Entiendo que la dirección de mi billetera y las transacciones quedan en una red pública que no se puede borrar.')
+  })
+  it('una aceptación de la versión anterior (1.0-demo) no cuenta: las casillas salen sin marcar', () => {
+    guardarAceptacion('terminos', '1.0-demo'); guardarAceptacion('privacidad', '1.0-demo')
+    const html = renderToStaticMarkup(<Login onOk={() => {}} />)
+    expect(html).not.toMatch(/id="acepto-terminos"[^>]*checked/); expect(html).not.toMatch(/id="acepto-privacidad"[^>]*checked/)
   })
   it('rutas', () => { expect(rutaLegal('/terminos')).toBe('terminos'); expect(rutaLegal('/terminos/')).toBe('terminos'); expect(rutaLegal('/privacidad')).toBe('privacidad'); expect(rutaLegal('/')).toBe(null); expect(rutaLegal('/crear')).toBe(null) })
   it('metadatos y Markdown', () => {

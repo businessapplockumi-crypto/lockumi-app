@@ -364,7 +364,7 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 @media (min-width:720px){.legal__doc{padding:40px 48px}}
 .legal__meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;line-height:20px;color:var(--cafe-suave);margin-bottom:var(--s4)}
 .legal__meta strong{color:var(--cafe);font-weight:600}
-.legal__meta--pie{margin:var(--s6) 0 0;padding-top:var(--s4);border-top:1px solid var(--linea)}
+.legal__revision{display:inline-block;margin:0 0 var(--s4);padding:4px 12px;border-radius:var(--r-pildora);background:var(--fondo);border:1px solid var(--linea);font-size:13px;line-height:18px;font-weight:600;color:var(--cafe-suave)}
 .legal__texto{font-size:16px;line-height:26px;color:var(--cafe)}
 .legal__texto h2{font-size:clamp(26px,7vw,34px);line-height:1.2;font-weight:800;margin-bottom:var(--s4)}
 .legal__texto h3{font-size:19px;line-height:26px;margin:var(--s6) 0 var(--s2);scroll-margin-top:16px}

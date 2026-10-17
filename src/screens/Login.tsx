@@ -5,7 +5,7 @@ import { Demo, Icono } from '../ui'
 import { LogoAnimado } from '../LogoAnimado'
 import { WORDMARK_SVG } from '../wordmark'
 import { CasillaLegal } from '../legal/CasillaLegal'
-import { PRIVACIDAD, TERMINOS, consentimientoPrivacidad } from '../legal/documentos'
+import { CONSENTIMIENTO_PRIVACIDAD as cons, PRIVACIDAD, TERMINOS } from '../legal/documentos'
 import { aceptoVersion, borrarAceptacion, guardarAceptacion, validarAceptaciones, erroresTrasCambio, ERRORES_INICIALES, type ClaveLegal } from '../legal/aceptacion'
 
 type Paso = 'opciones' | 'correo' | 'codigo'
@@ -78,7 +78,7 @@ function Hoja({ onCerrar, onOk }: { onCerrar: () => void; onOk: (u: Usuario) => 
 export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
   const [abierta, setAbierta] = useState(false)
   // Dos casillas obligatorias y separadas: Términos, y Aviso de privacidad con transferencia de datos.
-  const cons = consentimientoPrivacidad(); const pidePrivacidad = !!PRIVACIDAD && !!cons
+  const pidePrivacidad = !!PRIVACIDAD
   const VERSION: Record<ClaveLegal, string> = { terminos: TERMINOS.version, privacidad: PRIVACIDAD?.version ?? '' }
   const [marcas, setMarcas] = useState(() => ({ terminos: aceptoVersion('terminos', VERSION.terminos), privacidad: !pidePrivacidad || aceptoVersion('privacidad', VERSION.privacidad) }))
   const [errores, setErrores] = useState<Partial<Record<ClaveLegal, string>>>(ERRORES_INICIALES)
@@ -108,8 +108,8 @@ export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
     <div className="casillas-legales">
       <CasillaLegal id="acepto-terminos" ref={refT} marcada={marcas.terminos} onCambio={cambiar('terminos')} error={errores.terminos}>
         Acepto los <a href="/terminos" target="_blank" rel="noopener">Términos y condiciones</a></CasillaLegal>
-      {pidePrivacidad && cons && <CasillaLegal id="acepto-privacidad" ref={refP} marcada={marcas.privacidad} onCambio={cambiar('privacidad')} error={errores.privacidad}>
-        {cons.antes}{cons.enlace && <a href="/privacidad" target="_blank" rel="noopener">{cons.enlace}</a>}{cons.despues}</CasillaLegal>}
+      {pidePrivacidad && <CasillaLegal id="acepto-privacidad" ref={refP} marcada={marcas.privacidad} onCambio={cambiar('privacidad')} error={errores.privacidad}>
+        {cons.antes}<a href="/privacidad" target="_blank" rel="noopener">{cons.enlace}</a>{cons.despues}</CasillaLegal>}
     </div>
     <button type="button" className="boton boton--primario boton--ancho" onClick={entrar} aria-haspopup="dialog">Entrar</button>
     <p className="nota centro">Con Google, Apple o tu correo. Sin contraseñas.</p>

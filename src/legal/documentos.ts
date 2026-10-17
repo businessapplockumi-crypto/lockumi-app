@@ -4,7 +4,8 @@ import { aHtml } from './markdown'
  *  Para cambiar un texto basta con reemplazar su archivo (ver LEEME.md). */
 const archivos = import.meta.glob('./*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 
-export interface DocLegal { slug: string; titulo: string; version: string; fecha: string | null; html: string; borrador: boolean }
+/** `metaEnTexto`: el propio texto ya muestra la versión y la fecha (la página no las repite). */
+export interface DocLegal { slug: string; titulo: string; version: string; fecha: string | null; html: string; borrador: boolean; metaEnTexto: boolean; revisionAbogado: boolean }
 
 const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) } return (h >>> 0).toString(16).padStart(8, '0') }
 
@@ -12,12 +13,18 @@ export function leerDoc(slug: string, crudo: string): DocLegal {
   let cuerpo = crudo.replace(/^\uFEFF/, ''); const meta: Record<string, string> = {}
   const fm = cuerpo.match(/^---\n([\s\S]*?)\n---\n?/)
   if (fm) { for (const l of fm[1].split('\n')) { const m = l.match(/^\s*([\w-]+)\s*:\s*(.*?)\s*$/); if (m) meta[m[1].toLowerCase()] = m[2].replace(/^["']|["']$/g, '') } cuerpo = cuerpo.slice(fm[0].length) }
-  // Sin metadatos: busca "**Versión:** 1.0 · **Fecha:** …" (o "Última actualización:") en el propio texto.
-  const enTexto = (re: RegExp) => cuerpo.match(re)?.[1]?.replace(/[*_]/g, '').trim() || undefined
-  const version = meta.version || meta['versión'] || enTexto(/versi[oó]n\s*\**\s*:\s*\**\s*([^·\n]+)/i) || 'texto-' + hash(cuerpo)
-  const fecha = meta.fecha || enTexto(/(?:fecha|[uú]ltima actualizaci[oó]n|vigente desde)\s*\**\s*:\s*\**\s*([^·\n]+)/i) || null
+  // Sin metadatos: busca la línea de versión del propio texto, p. ej. "**Versión 1.1-demo · 17 de octubre de 2026**"
+  // o "**Versión:** 1.0-demo · **Fecha:** 17 de octubre de 2026" (también "Última actualización:").
+  const limpio = (x?: string) => x?.replace(/[*_]/g, '').trim() || undefined
+  const lineaV = cuerpo.match(/^.*versi[oó]n\s*\**\s*:?\s*\**\s*\d[^\n]*$/im)?.[0] ?? ''
+  const vTexto = limpio(lineaV.match(/versi[oó]n\s*\**\s*:?\s*\**\s*(\d[^·\n*]*)/i)?.[1])
+  const fTexto = limpio(cuerpo.match(/(?:fecha|[uú]ltima actualizaci[oó]n|vigente desde)\s*\**\s*:\s*\**\s*([^·\n]+)/i)?.[1])
+    ?? limpio(lineaV.match(/·\s*\**\s*(\d{1,2}\s+de\s+[a-záéíóúñ]+\s+de\s+\d{4})/i)?.[1])
+  const version = meta.version || meta['versión'] || vTexto || 'texto-' + hash(cuerpo)
+  const fecha = meta.fecha || fTexto || null
+  const metaEnTexto = !!vTexto && (meta.version || meta['versión'] || vTexto) === vTexto
   const titulo = cuerpo.match(/^#\s+(.+)$/m)?.[1].trim() || slug
-  return { slug, titulo, version, fecha, html: aHtml(cuerpo), borrador: /borrador/i.test(version) || /borrador provisional/i.test(cuerpo) }
+  return { slug, titulo, version, fecha, html: aHtml(cuerpo), borrador: /borrador/i.test(version) || /borrador provisional/i.test(cuerpo), metaEnTexto, revisionAbogado: /revisi[oó]n por abogado/i.test(cuerpo) }
 }
 
 export const DOCS: Record<string, DocLegal> = Object.fromEntries(
@@ -30,13 +37,13 @@ export const TERMINOS = DOCS.terminos
 export const PRIVACIDAD = DOCS.privacidad as DocLegal | undefined
 export const hayPrivacidad = !!PRIVACIDAD
 
-/** Texto de la casilla de consentimiento: se toma tal cual de la línea "☐ …" de `privacidad.md`.
- *  Devuelve el texto en partes para enlazar "[Aviso de privacidad de la app]" a /privacidad. */
-export function consentimientoPrivacidad(crudo = archivos['./privacidad.md'] ?? ''): { antes: string; enlace: string; despues: string } | null {
-  const l = crudo.match(/^\s*>?\s*☐\s*(.+)$/m)?.[1]?.trim(); if (!l) return null
-  const m = l.match(/^(.*?)\[([^\]]+)\](?:\([^)]*\))?(.*)$/)
-  return m ? { antes: m[1], enlace: m[2], despues: m[3] } : { antes: l, enlace: '', despues: '' }
-}
+/** Texto fijo de la casilla de consentimiento de privacidad (ya no viene en privacidad.md; sale solo de la app).
+ *  "Aviso de privacidad de la app" se enlaza a /privacidad. La casilla es obligatoria y empieza sin marcar. */
+export const CONSENTIMIENTO_PRIVACIDAD = {
+  antes: 'Acepto el ',
+  enlace: 'Aviso de privacidad de la app',
+  despues: ' y autorizo que Lockumi trate mis datos y los transfiera a Supabase, Vercel, Cavos y Trustless Work, dentro y fuera de Costa Rica, para usar la demo. Entiendo que la dirección de mi billetera y las transacciones quedan en una red pública que no se puede borrar.',
+} as const
 
 /** Fecha legible: acepta ISO aaaa-mm-dd; si viene en otro formato se muestra tal cual. */
 export const fechaLegible = (f: string | null) => !f ? null : /^\d{4}-\d{2}-\d{2}$/.test(f)
