@@ -117,10 +117,13 @@ fieldset.campo legend{font-weight:600;font-size:14px;margin-bottom:6px;padding:0
 .hero{position:relative;padding:var(--s5);margin:8px 0 var(--s5);display:flex;flex-direction:column;gap:14px;align-items:flex-start;overflow:hidden}
 .hero>div:first-child{max-width:46ch;position:relative;z-index:1}
 .hero .boton{position:relative;z-index:1}
-.hero__deco{position:absolute;right:14px;top:14px;width:110px;height:90px;opacity:.95}
-.hero__deco .deco{position:absolute}
-.hero__deco .deco:nth-child(1){right:0;top:0}.hero__deco .deco:nth-child(2){right:62px;top:46px}.hero__deco .deco:nth-child(3){right:4px;top:62px}
-@media (max-width:480px){.hero__deco{transform:scale(.75);transform-origin:top right;opacity:.8}.hero h1{padding-right:60px}}
+/* Logo de la landing en las pantallas internas: SIEMPRE el componente LogoAnimado completo (casa, llave y los tres
+   adornos con la composición del hero de lockumi.com), escalado como un solo bloque con --logo-escala (lienzo 420px). */
+.logo-escala.logo-pieza{pointer-events:none}
+.logo-escala.logo-pieza--hero{position:absolute;right:14px;top:10px;--logo-escala:.2619}
+.logo-escala.logo-pieza--esquina{position:absolute;right:12px;top:12px;--logo-escala:.1667}
+.logo-escala.logo-pieza--titulo{--logo-escala:.1429;align-self:center}
+@media (max-width:480px){.logo-escala.logo-pieza--hero{--logo-escala:.1667;right:10px;top:8px}.hero>div:first-child{padding-right:62px}}
 @media (min-width:760px){.hero{flex-direction:row;align-items:flex-end;justify-content:space-between;padding:var(--s6)}.hero .boton{margin-right:130px}}
 .pie{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-top:24px}
 /* Decoraciones */

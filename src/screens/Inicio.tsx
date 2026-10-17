@@ -1,7 +1,8 @@
 import { useAlquileres, store, rolDe } from '../store'
+import { LogoAnimado } from '../LogoAnimado'
 import { NOMBRE_ROL } from '../types'
 import { ETIQUETA_ESTADO, type Usuario } from '../types'
-import { Demo, Deco, usd, fecha } from '../ui'
+import { Demo, usd, fecha } from '../ui'
 import { modoReal } from '../services/auth'
 import { Billetera } from './Billetera'
 export function Inicio({ u }: { u: Usuario }) {
@@ -12,7 +13,7 @@ export function Inicio({ u }: { u: Usuario }) {
       <div><p className="etiqueta">Hola, {u.nombre}</p><h1>Tus alquileres</h1>
         <p className="nota">Crea un alquiler e invita a tu inquilino, o entra a los que te invitaron. El depósito queda protegido para ambos.</p></div>
       <a className="boton boton--primario" href="#/crear">+ Nuevo alquiler</a>
-      <div className="hero__deco" aria-hidden="true"><Deco id="d-casita" size={64} className="deco--flota" /><Deco id="d-hoja" size={34} className="deco--flota deco--b" /><Deco id="d-llave" size={42} className="deco--flota deco--c" /></div>
+      <LogoAnimado className="logo-pieza logo-pieza--hero" />
     </div>
     {(modoReal || (import.meta.env.DEV && localStorage.getItem('lockumi.billetera.prueba'))) && <Billetera />}
     {todos.length === 0 && <div className="glass tarjeta"><p>Todavía no hay alquileres.</p></div>}

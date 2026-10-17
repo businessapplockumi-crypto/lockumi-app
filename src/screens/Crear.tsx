@@ -3,7 +3,8 @@ import { store } from '../store'
 import { escrow } from '../services/escrow'
 import { ir } from '../router'
 import type { Usuario } from '../types'
-import { CampoFecha, Deco } from '../ui'
+import { CampoFecha } from '../ui'
+import { LogoAnimado } from '../LogoAnimado'
 import { validarAlquiler, hoyISO, montoNumero, sumarMeses, MIN_MESES, MAX_ANIOS, type Campo, type Errores } from '../validacion'
 
 export function Crear({ u }: { u: Usuario }) {
@@ -30,7 +31,7 @@ export function Crear({ u }: { u: Usuario }) {
   const cuantos = Object.keys(errores).length
   return <main id="contenido" tabIndex={-1} className="cont cont--form" style={{ paddingBottom: 48 }}>
     <a href="#/" className="volver">← Tus alquileres</a>
-    <div className="cab titulo"><h1>Nuevo alquiler</h1><Deco id="d-casita" size={52} className="deco--flota" /></div>
+    <div className="cab titulo"><h1>Nuevo alquiler</h1><LogoAnimado className="logo-pieza logo-pieza--titulo" /></div>
     <form className="glass glass--fuerte tarjeta pila" noValidate onSubmit={e => { e.preventDefault(); crear() }}>
       {campoUI({ k: 'direccion', et: 'Dirección o nombre del lugar', children: <input {...prop('direccion')} placeholder="Ej.: Apartamento 3B, Escazú" autoComplete="off" maxLength={140} /> })}
       {campoUI({ k: 'monto', et: 'Depósito (USD)', children: <input {...prop('monto')} inputMode="decimal" placeholder="Ej.: 800" autoComplete="off" /> })}

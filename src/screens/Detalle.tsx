@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import { LogoAnimado } from '../LogoAnimado'
 import { store, useAlquileres, ahoraDe, actaVacia, DIA, vistaDe, rolDe, fijarVista } from '../store'
 import { escrow } from '../services/escrow'
 import { modoReal } from '../services/auth'
 import { NOMBRE_ROL, type Alquiler, type Rol, type Foto, type Usuario } from '../types'
 import { fotoEjemplo } from '../demoFotos'
-import { Demo, Deco, Icono, LineaTiempo, usd, fecha, fechaHora } from '../ui'
+import { Demo, Icono, LineaTiempo, usd, fecha, fechaHora } from '../ui'
 import { CuartoEditor, Firma, FotoLista, cuartoListo } from './Acta'
 import { TomarFoto } from '../Camara'
 import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE } from '../flujo'
@@ -189,7 +190,7 @@ function Mediacion({ a }: P) {
 function Cerrado({ a }: P) {
   const r = a.resultado!
   const via = { automatico: 'No hubo reclamos en 7 días.', acuerdo: 'Se pusieron de acuerdo en la app.', mediacion: 'Lo decidió una persona mediadora.' }[r.via]
-  return <section className="pila cerrado"><Deco id="d-llave" size={56} className="deco--flota deco--esquina" />
+  return <section className="pila cerrado"><LogoAnimado className="logo-pieza logo-pieza--esquina" />
     <span className="chip chip--exito"><Icono id="i-check" /> Terminado</span>
     <h2>Depósito devuelto</h2><p>{via}</p>
     <ul className="lista"><li><span>Inquilino</span><strong>{usd(r.inquilino)}</strong></li><li><span>Dueño</span><strong>{usd(r.dueno)}</strong></li></ul>
