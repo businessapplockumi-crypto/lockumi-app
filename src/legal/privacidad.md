@@ -2,7 +2,7 @@
 
 > Versión demo. Este texto puede actualizarse; te avisaremos de los cambios importantes.
 
-**Versión 1.2-demo · 17 de octubre de 2026**
+**Versión 1.3-demo · 17 de octubre de 2026**
 
 ## Responsable
 Katherine María Moreira Solano, persona física, con domicilio en Torres de Heredia, Barreal de Heredia, Costa Rica. Lockumi es un proyecto de Quantz, una iniciativa que todavía no está constituida como sociedad. Contacto: business.applockumi@gmail.com.

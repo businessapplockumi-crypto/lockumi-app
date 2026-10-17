@@ -2,7 +2,7 @@
 
 > Versión demo. Este texto puede actualizarse; te avisaremos de los cambios importantes.
 
-**Versión 1.2-demo · 17 de octubre de 2026**
+**Versión 1.3-demo · 17 de octubre de 2026**
 
 Estos términos aplican a la app app.lockumi.com y están publicados en https://app.lockumi.com/terminos.
 
@@ -26,14 +26,14 @@ d) Algunas funciones están simuladas y se marcan en pantalla como "Demo".
 3.1 Para entrar, usas el servicio de inicio de sesión de **Cavos** (cláusula 5) con Google, Apple o tu correo y un código. Debes ser mayor de 18 años.
 3.2 Eres responsable de lo que hagas con tu cuenta y de proteger el acceso a ella. Si sospechas que alguien entró sin autorización, escríbenos.
 
-## 4. Lockumi no custodia fondos
-4.1 Lockumi **no recibe, no guarda y no custodia** fondos ni tokens de los usuarios. En esta versión no se mueve ningún fondo ni token: el depósito es simulado. En las versiones de prueba que usen la red, los tokens de prueba quedarían apartados en un **escrow (contrato digital de garantía)** creado con la infraestructura de Trustless Work (cláusula 5).
+## 4. Cómo se manejan los fondos
+4.1 Lockumi **no recibe, no guarda y no custodia** fondos ni tokens de los usuarios. En esta versión no se mueve ningún fondo ni token: el depósito es simulado. En las versiones de prueba que usen la red, los tokens de prueba quedarían apartados en un **escrow (contrato digital de garantía)** creado con la infraestructura de Trustless Work (cláusula 5), con los permisos de Lockumi que se indican en la cláusula 4.2.
 4.2 **Qué puede hacer cada parte en esas versiones de prueba.** Según los roles de Trustless Work (https://docs.trustlesswork.com/trustless-work/introduction/technology-overview/roles-in-trustless-work):
 a) **El dueño** aprueba que el depósito se libere y puede abrir una disputa.
-b) **El inquilino** es quien recibe el depósito cuando se libera.
-c) **Lockumi** puede: cambiar el estado del contrato digital, agregar evidencia y abrir una disputa; liberar los fondos solo cuando todo está aprobado; cobrar una comisión de plataforma, que hoy es 0; y modificar el contrato digital solo antes de que tenga fondos.
-d) **Desacuerdos:** por defecto, la cuenta de Lockumi tiene también el rol de resolver disputas. Con ese rol, puede **repartir de forma definitiva** el saldo en disputa entre las cuentas del dueño y del inquilino. En la demo, ese reparto es simulado y no tiene efecto legal. Nuestro objetivo es que ese rol lo tenga una persona mediadora neutral, con su propia llave, distinta de la cuenta de Lockumi.
-e) Con estos roles, Lockumi no puede enviar los fondos a una cuenta propia ni a cuentas distintas de las definidas en el contrato digital, salvo la comisión de plataforma.
+b) **El inquilino** es quien recibe el depósito cuando se libera. La persona o cuenta que libera los fondos no puede cambiar a quién se entregan.
+c) **Lockumi** puede: cambiar el estado del contrato digital y agregar evidencia; liberar los fondos al inquilino, solo cuando todo está aprobado; cobrar una comisión de plataforma, que hoy es 0; y cambiar las condiciones o los roles del contrato digital solo antes de que tenga fondos. Después de que tiene fondos, solo puede agregar etapas. Mientras Lockumi tenga el rol de resolver disputas, su cuenta no puede abrir una disputa en el contrato digital.
+d) **Desacuerdos:** por defecto, la cuenta de Lockumi tiene también el rol de resolver disputas. Con ese rol puede **repartir de forma definitiva** el saldo en disputa. En la demo, ese reparto es simulado y no tiene efecto legal. Nuestro objetivo es que ese rol lo tenga una persona mediadora neutral, con su propia llave, distinta de la cuenta de Lockumi.
+e) **Importante:** mientras Lockumi tenga el rol de resolver disputas, técnicamente puede repartir el saldo en disputa a cualquier cuenta. Nos comprometemos a repartirlo solo entre las cuentas del dueño y del inquilino, según las reglas de la cláusula 6, y a dejar constancia de cada reparto.
 
 ## 5. Servicios de terceros
 5.1 **Trustless Work**, operado por Permissionless Escrows Inc. (Delaware, Estados Unidos), da la infraestructura del contrato digital de garantía en las versiones de prueba que usen la red. No es parte de tu relación con Lockumi, y sus servicios se rigen por sus propios términos (https://www.trustlesswork.com/privacy-policy).

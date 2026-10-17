@@ -13,7 +13,7 @@ export function leerDoc(slug: string, crudo: string): DocLegal {
   let cuerpo = crudo.replace(/^\uFEFF/, ''); const meta: Record<string, string> = {}
   const fm = cuerpo.match(/^---\n([\s\S]*?)\n---\n?/)
   if (fm) { for (const l of fm[1].split('\n')) { const m = l.match(/^\s*([\w-]+)\s*:\s*(.*?)\s*$/); if (m) meta[m[1].toLowerCase()] = m[2].replace(/^["']|["']$/g, '') } cuerpo = cuerpo.slice(fm[0].length) }
-  // Sin metadatos: busca la línea de versión del propio texto, p. ej. "**Versión 1.2-demo · 17 de octubre de 2026**"
+  // Sin metadatos: busca la línea de versión del propio texto, p. ej. "**Versión 1.3-demo · 17 de octubre de 2026**"
   // o "**Versión:** 1.0-demo · **Fecha:** 17 de octubre de 2026" (también "Última actualización:").
   const limpio = (x?: string) => x?.replace(/[*_]/g, '').trim() || undefined
   const lineaV = cuerpo.match(/^.*versi[oó]n\s*\**\s*:?\s*\**\s*\d[^\n]*$/im)?.[0] ?? ''
@@ -42,7 +42,7 @@ export const hayPrivacidad = !!PRIVACIDAD
 export const CONSENTIMIENTO_PRIVACIDAD = {
   antes: 'Acepto el ',
   enlace: 'Aviso de privacidad de la app',
-  despues: ' y autorizo que Lockumi trate mis datos y los transfiera a Supabase, Vercel, Cavos y Trustless Work, dentro y fuera de Costa Rica, para usar la demo. Entiendo que la dirección de mi billetera y las transacciones quedan en una red pública que no se puede borrar.',
+  despues: ' y autorizo que Lockumi trate mis datos y los transfiera a Supabase, Vercel y Cavos y, en las versiones de prueba que usen la red, a Trustless Work, dentro y fuera de Costa Rica, para usar la demo. Entiendo que en esta versión no se registra nada en ninguna red y que, en las versiones de prueba que usen la red, la dirección de mi billetera, el monto y las fechas quedarían en una red pública que no se puede borrar.',
 } as const
 
 /** Fecha legible: acepta ISO aaaa-mm-dd; si viene en otro formato se muestra tal cual. */
