@@ -81,12 +81,38 @@ Las claves de la plataforma solo viven en el servidor.
 2. "Habilitar USDC de prueba" (trustline; el vault de Cavos pide confirmar). **Los dos lo necesitan**, porque TW lo valida.
 3. Solo el inquilino: abrir https://faucet.circle.com → Stellar Testnet → pegar su dirección G… (20 USDC cada 2 h).
 
-## 6. Bloqueos
+## 6. Corrida completa del camino feliz (API real de testnet, cuentas desechables)
+
+`node scripts/e2e-testnet-tw.mjs` (16/10/2026, 11:56 p. m. hora de Costa Rica). Participantes:
+- Dueño: GD57OCAF…UIEX (Cavos desechable).
+- Inquilino: GBMFMIUF…AQBY (Cavos desechable).
+- Plataforma: GCTLNUBV…TJ4G.
+- Escrow: `CCUVP4XKQCWCQTBUHZGA3PZAIYUGGKE2TNH4CZIXXGEMW6GOQY4RGCUS`.
+
+| # | Paso | Tx |
+|---|---|---|
+| 1 | Trustline USDC del dueño (Cavos `addTrustline`) | https://stellar.expert/explorer/testnet/tx/1bfd4257920d16ee0d916145c93fa240af28ce11ad6e06f883ef7a30671d1bae |
+| 2 | Trustline USDC del inquilino (Cavos `addTrustline`) | https://stellar.expert/explorer/testnet/tx/3f400bb241ae437435f38f3c47b25233eb5d63cdd0f4e354a800d69290517563 |
+| 3 | 2 USDC para el inquilino (DEX de testnet, XLM → USDC de Circle) | https://stellar.expert/explorer/testnet/tx/314a636d180599c4b41cfe15fb15a7f949b8f89d7da566cb61d08f3c9876ddef |
+| 4 | Deploy del escrow single-release (plataforma) | https://stellar.expert/explorer/testnet/tx/74bf9594875ff40349c8cf1ec69258d6c6bb2a5299cf25ff186e23c786a93228 |
+| 5 | Depósito de 2 USDC (inquilino, Cavos `signXdr`) | https://stellar.expert/explorer/testnet/tx/51db520b8df6b1f287f4545fc5b62d62b847b222d85dfab54300151c834da059 |
+| 6 | Evidencia: hito "Completed" (plataforma) | https://stellar.expert/explorer/testnet/tx/4a212fea4861cd67da31ffd887cc392fb418c0af755fb82273a1f0957aa9c766 |
+| 7 | Aprobación (dueño, Cavos `signXdr`) | https://stellar.expert/explorer/testnet/tx/d98d3d3979faae4079023d7f2fad6801bf71d8c10be40f372ee3d5830ca09c9d |
+| 8 | Liberación (plataforma): 1,994 USDC al inquilino y 0,006 a GA6KH5VW…CK7G | https://stellar.expert/explorer/testnet/tx/49fb34d0b510cd0a7b62ca5f9a66a82297ff0a240a1563498934c0b3ff51635c |
+
+Estado final según TW: saldo 0, `released: true`, hito Completed y aprobado.
+
+Hallazgos:
+- **Trustless Work cobra 0,3 % también en testnet**, aunque `platformFee` sea 0. El inquilino recibe el 99,7 %.
+- **Faucet de Circle**: la API (`api.circle.com/v1/faucet/drips`) exige credenciales de Circle (401). Para scripts se usa el DEX de testnet, que vende USDC real de Circle a ~9,26 XLM por USDC. Para las personas, faucet.circle.com en el navegador.
+- **`get-escrow-by-contract-ids`** exige `contractIds[]=` (arreglo); con `contractIds=` responde 400.
+
+## 7. Bloqueos
 
 1. **Supabase**: `SUPABASE_ACCESS_TOKEN` es inválido (401 en la Management API), así que no se pueden crear las tablas ni activar el acceso anónimo. Salidas:
    - Un token nuevo y correr `node scripts/aplicar-supabase-e2e.mjs`.
    - O pegar el SQL de la migración en el SQL Editor y activar Authentication → Sign In / Providers → "Allow anonymous sign-ins".
    - Falta además la clave publishable/anon para `VITE_SUPABASE_ANON_KEY`.
-2. **Variables de Vercel (Preview)** que faltan: `LOCKUMI_TW_PLATAFORMA_SECRET`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_TRUSTLESS=1` y `VITE_VENTANA_SEGUNDOS` (p. ej. 300).
+2. **Variables de Vercel (Preview)**: ya están `TRUSTLESS_WORK_API_KEY`, `LOCKUMI_TW_PLATAFORMA_SECRET` (sensibles), `VITE_TRUSTLESS=1` y `VITE_VENTANA_SEGUNDOS=300`. Faltan `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
 3. **Panel de Cavos**: Approvals → "Over the limit" = Ask the user, y el origen de la vista previa en allowed web origins.
-4. Sin probar todavía: el envío real de deploy, fund, approve y release con la llave (falta Supabase para el flujo completo), y la firma con el vault en dos aparatos reales.
+4. Sin probar todavía: el flujo por la app (proxy + Supabase) y la firma con el vault de Cavos en dos aparatos reales. El camino feliz contra TW ya está probado por script (sección 6).
