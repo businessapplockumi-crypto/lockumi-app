@@ -86,6 +86,28 @@ const cuenta = (k: Contrato, rol: Part['rol']) => {
 }
 const exigir = (ok: boolean, estado: number, m: string) => { if (!ok) throw new ErrorTw(estado, m) }
 
+// ── Privacidad on-chain (Ley 8968) ──
+// Todo lo que va en el deploy queda público y permanente en Stellar. Solo textos fijos y un ID opaco:
+// nunca la dirección del inmueble, nombres, correos ni teléfonos.
+export const TEXTO_ONCHAIN = 'Depósito de alquiler Lockumi'
+export const EVIDENCIA_ONCHAIN = 'Acta de salida firmada por ambas partes'
+export const HITO_ONCHAIN = 'Entrega del inmueble sin daños: acta de salida firmada por ambas partes'
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+/** engagementId = id del contrato (uuid aleatorio de gen_random_uuid() en la base; no se deriva de datos personales). */
+export function datosOnChain(k: Pick<Contrato, 'id'>) {
+  if (!UUID.test(k.id)) throw new ErrorTw(400, 'Contrato inválido.')
+  return { engagementId: k.id.toLowerCase(), title: TEXTO_ONCHAIN, description: TEXTO_ONCHAIN, milestones: [{ description: HITO_ONCHAIN }] }
+}
+const CORREO = /[^\s@]+@[^\s@]+\.[^\s@]+/, TELEFONO = /(\+?\d[\d\s().-]{6,}\d)/
+/** Última barrera: si algún texto que va a la cadena trae datos del alquiler o de las personas, no se despliega. */
+export function sinDatosPersonales(textos: string[], k: Pick<Contrato, 'direccion'>) {
+  const dir = (k.direccion ?? '').trim().toLowerCase()
+  for (const t of textos) {
+    const x = t.toLowerCase()
+    if ((dir && x.includes(dir)) || CORREO.test(t) || TELEFONO.test(t)) throw new ErrorTw(500, 'Un texto para la cadena contiene datos personales; no se despliega.')
+  }
+}
+
 export const APROBADO = 'El dueño aprobó en la cadena devolver el depósito completo'
 
 // ── Acciones (permitidas y nada más) ──
@@ -109,12 +131,12 @@ export async function atender(e: Entorno, p: Pedido, bearer: string | null, f: t
       const inquilino = cuenta(k, 'inquilino'), dueno = cuenta(k, 'dueno')
       exigir(new Set([inquilino, dueno, P]).size === 3, 409, 'Las cuentas del dueño, el inquilino y la plataforma tienen que ser distintas.')
       // TW valida que approver, receiver y platformAddress existan y tengan trustline de USDC; si no, responde 400 con el motivo.
+      const pub = datosOnChain(k)
+      sinDatosPersonales([pub.title, pub.description, ...pub.milestones.map(m => m.description)], k)
       const j = await tw(c, '/deployer/single-release', {
-        signer: P, engagementId: 'lockumi-' + k.id, title: 'Depósito de garantía Lockumi',
-        description: `Depósito de garantía del alquiler en ${k.direccion}. Vuelve al inquilino salvo reclamo aprobado.`.slice(0, 300),
+        signer: P, ...pub,
         roles: { approver: dueno, serviceProvider: P, platformAddress: P, releaseSigner: P, disputeResolver: c.mediador, receiver: inquilino },
         amount: Number(k.monto), platformFee: 0,
-        milestones: [{ description: 'Entrega del inmueble sin daños: acta de salida firmada por ambas partes' }],
         trustline: { address: c.trustline, symbol: 'USDC' },
       }, f)
       const firmada = firmarComoPlataforma(c, sinFirmar(j))
@@ -135,7 +157,7 @@ export async function atender(e: Entorno, p: Pedido, bearer: string | null, f: t
       exigir(rol === 'dueno', 403, 'Solo el dueño aprueba la devolución.')
       exigir(k.estado === 'ventana_reclamo' && !!k.escrow_contract_id, 409, 'La devolución se aprueba durante el plazo de reclamo, después del acta de salida.')
       const cambio = await tw(c, '/escrow/single-release/change-milestone-status', { contractId: k.escrow_contract_id, milestoneIndex: '0',
-        newStatus: 'Completed', newEvidence: `Acta de salida firmada por ambas partes · contrato ${k.id}`, serviceProvider: P }, f)
+        newStatus: 'Completed', newEvidence: EVIDENCIA_ONCHAIN, serviceProvider: P }, f)
       const tx = firmarComoPlataforma(c, sinFirmar(cambio)); await enviar(c, tx, f)
       const j = await tw(c, '/escrow/single-release/approve-milestone', { contractId: k.escrow_contract_id, milestoneIndex: '0', approver: cuenta(k, 'dueno') }, f)
       return { unsignedXdr: sinFirmar(j), evidenciaTx: hashTx(tx) }

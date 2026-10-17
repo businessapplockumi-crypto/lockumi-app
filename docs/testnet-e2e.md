@@ -36,6 +36,15 @@ Rama `testnet-e2e` (sale de 76b66e8). No se publicó nada: sin push, sin deploy,
   - TW valida en la cadena que **approver, receiver y platformAddress existan y tengan trustline de USDC**. La de la plataforma GCTLNUBV…TJ4G ya está abierta: tx `ce818acce78f7d3545c87ace184cceb4b3456ed76ce1bb65de6f8dda512af60b`.
   - Usar la **misma cuenta** como platformAddress, serviceProvider, releaseSigner y disputeResolver es aceptado: 201, XDR con origen = plataforma.
 
+## 2b. Privacidad on-chain (Ley 8968) · rama `privacidad-onchain`
+
+Lo que se envía en el deploy queda público y permanente en Stellar. Desde esta rama, `api/_lib/tw.ts` solo manda:
+- `title` y `description`: "Depósito de alquiler Lockumi" (texto fijo).
+- `engagementId`: el `id` del contrato (uuid aleatorio de `gen_random_uuid()`, no derivado de datos personales).
+- hito y evidencia: textos fijos, sin la dirección, nombres, correos ni teléfonos.
+`sinDatosPersonales` bloquea el deploy si algún texto trae la dirección, un correo o un teléfono. Prueba: `src/services/__tests__/privacidad-onchain.test.ts`.
+Siguen en la cadena, por cómo funciona el escrow: las cuentas G… de dueño e inquilino, el monto y las fechas de las transacciones.
+
 ## 3. Roles en Lockumi (single-release, v1)
 
 | Rol de TW | Quién | Por qué |
