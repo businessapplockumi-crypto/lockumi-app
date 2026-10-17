@@ -1,6 +1,8 @@
 export type Rol = 'dueno' | 'inquilino'
 export type Estado = 'firmas'|'pendiente_pago'|'fotos_entrada'|'en_curso'|'salida'|'ventana_reclamo'|'reclamo'|'mediacion'|'cerrado'
-export interface Usuario { email: string; nombre: string; metodo: 'correo'|'google'|'apple' }
+/** Aceptación de un texto legal: versión aceptada y fecha (ISO 8601). */
+export interface AceptacionLegal { version: string; fecha: string }
+export interface Usuario { email: string; nombre: string; metodo: 'correo'|'google'|'apple'; terminos?: AceptacionLegal; privacidad?: AceptacionLegal }
 export interface Evento { fecha: string; texto: string }
 /** Foto con su origen. `tomadaEn`: hora en que se tomó o eligió en la app. `fechaArchivo`: la que trae la imagen (si trae).
  *  `huella`: SHA-256 del archivo original, para detectar cambios. `origen`: cámara dentro de la app o archivo. */

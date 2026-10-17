@@ -57,6 +57,8 @@ const proveedor = (): Promise<CavosLike> => modoReal ? real() : Promise.resolve(
 const K = 'lockumi.usuario'
 const K_METODO = 'lockumi.oauth.metodo'
 const guardar = (u: Usuario) => { localStorage.setItem(K, JSON.stringify(u)); return u }
+/** Guarda cambios del usuario actual (por ejemplo, la aceptación de los Términos). */
+export const guardarUsuario = guardar
 const aUsuario = (email: string, metodo: Usuario['metodo'], nombre?: string): Usuario => ({ email, metodo, nombre: nombre ?? email.split('@')[0] })
 
 export interface AuthService {

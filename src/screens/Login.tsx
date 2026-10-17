@@ -4,6 +4,9 @@ import type { Usuario } from '../types'
 import { Demo, Icono } from '../ui'
 import { LogoAnimado } from '../LogoAnimado'
 import { WORDMARK_SVG } from '../wordmark'
+import { CasillaLegal } from '../legal/CasillaLegal'
+import { PRIVACIDAD, TERMINOS, consentimientoPrivacidad } from '../legal/documentos'
+import { aceptoVersion, borrarAceptacion, guardarAceptacion, validarAceptaciones, type ClaveLegal } from '../legal/aceptacion'
 
 type Paso = 'opciones' | 'correo' | 'codigo'
 const G = () => <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
@@ -74,6 +77,23 @@ function Hoja({ onCerrar, onOk }: { onCerrar: () => void; onOk: (u: Usuario) => 
 
 export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
   const [abierta, setAbierta] = useState(false)
+  // Dos casillas obligatorias y separadas: Términos, y Aviso de privacidad con transferencia de datos.
+  const cons = consentimientoPrivacidad(); const pidePrivacidad = !!PRIVACIDAD && !!cons
+  const VERSION: Record<ClaveLegal, string> = { terminos: TERMINOS.version, privacidad: PRIVACIDAD?.version ?? '' }
+  const [marcas, setMarcas] = useState(() => ({ terminos: aceptoVersion('terminos', VERSION.terminos), privacidad: !pidePrivacidad || aceptoVersion('privacidad', VERSION.privacidad) }))
+  const [errores, setErrores] = useState<Partial<Record<ClaveLegal, string>>>({})
+  const refT = useRef<HTMLInputElement>(null), refP = useRef<HTMLInputElement>(null)
+  const entrar = () => {
+    const e = validarAceptaciones(marcas); setErrores(e)
+    if (e.terminos) return refT.current?.focus()
+    if (e.privacidad) return refP.current?.focus()
+    for (const c of ['terminos', 'privacidad'] as const) if (VERSION[c] && (c === 'terminos' || pidePrivacidad) && !aceptoVersion(c, VERSION[c])) guardarAceptacion(c, VERSION[c])
+    setAbierta(true)
+  }
+  const cambiar = (c: ClaveLegal) => (v: boolean) => {
+    setMarcas(m => ({ ...m, [c]: v })); setErrores(e => ({ ...e, [c]: undefined }))
+    if (v) guardarAceptacion(c, VERSION[c]); else borrarAceptacion(c)
+  }
   const beneficios = [
     { ico: 'i-candado', t: 'Tu depósito queda guardado', d: 'Nadie puede liberarlo solo.' },
     { ico: 'i-camara', t: 'Actas con fotos', d: 'Entrada y salida, firmadas por ambos.' },
@@ -85,7 +105,13 @@ export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
     <h2 className="entrada-app__titulo">El depósito de tu alquiler, protegido</h2>
     <ul className="beneficios">{beneficios.map(b => <li key={b.t} className="glass">
       <span className="beneficios__ico"><Icono id={b.ico} /></span><span><strong>{b.t}</strong><br /><span className="nota">{b.d}</span></span></li>)}</ul>
-    <button type="button" className="boton boton--primario boton--ancho" onClick={() => setAbierta(true)} aria-haspopup="dialog">Entrar</button>
+    <div className="casillas-legales">
+      <CasillaLegal id="acepto-terminos" ref={refT} marcada={marcas.terminos} onCambio={cambiar('terminos')} error={errores.terminos}>
+        Acepto los <a href="/terminos" target="_blank" rel="noopener">Términos y condiciones</a></CasillaLegal>
+      {pidePrivacidad && cons && <CasillaLegal id="acepto-privacidad" ref={refP} marcada={marcas.privacidad} onCambio={cambiar('privacidad')} error={errores.privacidad}>
+        {cons.antes}{cons.enlace && <a href="/privacidad" target="_blank" rel="noopener">{cons.enlace}</a>}{cons.despues}</CasillaLegal>}
+    </div>
+    <button type="button" className="boton boton--primario boton--ancho" onClick={entrar} aria-haspopup="dialog">Entrar</button>
     <p className="nota centro">Con Google, Apple o tu correo. Sin contraseñas.</p>
     <p className="centro"><Demo /></p>
     {abierta && <Hoja onCerrar={() => setAbierta(false)} onOk={onOk} />}

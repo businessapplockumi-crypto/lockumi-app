@@ -355,3 +355,40 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .pie-paso{display:flex;gap:10px;align-items:stretch}.pie-paso__principal{flex:1}
 .detalles summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
 .resumen li strong{text-align:right}
+
+/* Textos legales (/terminos, /privacidad) y casilla de aceptación — Terracota viva */
+.legal{max-width:720px;padding-bottom:var(--s6)}
+.legal__cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}
+.legal__volver{font-weight:600;font-size:14px;min-height:44px;display:inline-flex;align-items:center}
+.legal__doc{background:#fff;border:1px solid var(--linea);border-radius:var(--r-tarjeta);padding:24px 20px;box-shadow:var(--sombra-2);overflow-wrap:anywhere}
+@media (min-width:720px){.legal__doc{padding:40px 48px}}
+.legal__meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;line-height:20px;color:var(--cafe-suave);margin-bottom:var(--s4)}
+.legal__meta strong{color:var(--cafe);font-weight:600}
+.legal__meta--pie{margin:var(--s6) 0 0;padding-top:var(--s4);border-top:1px solid var(--linea)}
+.legal__texto{font-size:16px;line-height:26px;color:var(--cafe)}
+.legal__texto h2{font-size:clamp(26px,7vw,34px);line-height:1.2;font-weight:800;margin-bottom:var(--s4)}
+.legal__texto h3{font-size:19px;line-height:26px;margin:var(--s6) 0 var(--s2);scroll-margin-top:16px}
+.legal__texto h4,.legal__texto h5,.legal__texto h6{font-family:var(--f-texto);font-size:16px;font-weight:600;margin:var(--s5) 0 var(--s2)}
+.legal__texto p,.legal__texto ul,.legal__texto ol{margin:0 0 var(--s3)}
+.legal__texto ul,.legal__texto ol{padding-left:22px}
+.legal__texto li+li{margin-top:6px}
+.legal__texto a{color:var(--enlace);font-weight:600;text-underline-offset:3px}
+.legal__texto blockquote{margin:0 0 var(--s4);padding:14px 16px;background:var(--fondo);border-left:4px solid var(--accion);border-radius:12px;color:var(--cafe)}
+.legal__texto blockquote p:last-child{margin-bottom:0}
+.legal__texto hr{border:0;border-top:1px solid var(--linea);margin:var(--s5) 0}
+.legal__tabla{overflow-x:auto;margin:0 0 var(--s4)}
+.legal__tabla table{border-collapse:collapse;width:100%;font-size:14px;line-height:20px}
+.legal__tabla th,.legal__tabla td{border:1px solid var(--linea);padding:8px 10px;text-align:left;vertical-align:top}
+.legal__tabla th{background:var(--fondo)}
+.pie-legal{padding:var(--s5) var(--margen) calc(var(--s5) + env(safe-area-inset-bottom));text-align:center;font-size:14px;line-height:20px;color:var(--cafe-suave)}
+.pie-legal nav{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 20px}
+.pie-legal a{color:var(--cafe-suave);font-weight:600;text-underline-offset:3px;min-height:44px;display:inline-flex;align-items:center}
+.pie-legal a:hover{color:var(--accion)}
+.casillas-legales{margin:var(--s4) 0 var(--s3)}
+.casilla-legal+.casilla-legal{margin-top:var(--s3)}
+.casilla-legal{padding:12px 14px;border:1.5px solid var(--linea);border-radius:var(--r-campo);background:rgba(255,255,255,.75)}
+.casilla-legal--error{border-color:var(--error);background:#fff}
+.casilla-legal__fila{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:22px;cursor:pointer}
+.casilla-legal__fila input{flex:none;width:22px;height:22px;margin:0;accent-color:var(--accion);cursor:pointer}
+.casilla-legal__fila a{font-weight:600}
+.casilla-legal__error{margin-top:8px;padding-left:34px;line-height:20px}
