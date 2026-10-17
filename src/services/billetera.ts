@@ -23,6 +23,15 @@ export async function consultarSaldo(g: string, f: Fetch = fetch): Promise<strin
   return d.balances?.find(b => b.asset_type === 'native')?.balance ?? '0'
 }
 
+/** Saldo de USDC de testnet (emisor de Circle), null si no hay trustline, undefined si la cuenta no existe. */
+export async function consultarUsdc(g: string, f: Fetch = fetch): Promise<string | null | undefined> {
+  const r = await f(`${HORIZON_TESTNET}/accounts/${g}`)
+  if (r.status === 404) return undefined
+  if (!r.ok) throw new Error('horizon ' + r.status)
+  const d = await r.json() as { balances?: { asset_code?: string; asset_issuer?: string; balance: string }[] }
+  return d.balances?.find(b => b.asset_code === 'USDC' && b.asset_issuer === 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5')?.balance ?? null
+}
+
 /** Pide a Friendbot que cree y fondee la cuenta en testnet (10 000 XLM de prueba). */
 export async function fondear(g: string, f: Fetch = fetch): Promise<void> {
   const r = await f(`${FRIENDBOT}/?addr=${encodeURIComponent(g)}`)
@@ -63,7 +72,39 @@ export function conectarBilletera(): Promise<Billetera> {
     // `auth` (no solo `identity`): el kit lee el token del login con auth.getAuthToken() para el registro y el vault.
     const s = await Cavos.connect({ ...CAVOS_BILLETERA, chains: [...CAVOS_BILLETERA.chains], auth, appId: APP_ID, vault: true })
     const w = s.wallet('stellar')
+    cartera = w as unknown as CarteraStellar
     return { direccion: w.address, estado: w.status as EstadoBilletera }
   })().catch(e => { conexion = null; throw e })
 }
-export const olvidarBilletera = () => { conexion = null }
+export const olvidarBilletera = () => { conexion = null; cartera = null }
+
+// ── Firmas y USDC (Stellar testnet) ──
+// signXdr: firma una XDR armada por otro (p. ej. la API de Trustless Work) sin enviarla. Con el vault, contratos y
+// trustlines quedan "fuera del límite": el vault muestra su propio aviso y la persona aprueba.
+// Fuentes: https://docs.cavos.xyz/docs/stellar · https://docs.cavos.xyz/docs/vault
+interface CarteraStellar {
+  address: string; status: string
+  signXdr(unsignedXdr: string): Promise<string>
+  addTrustline(asset: { code: string; issuer: string }, opts?: { sponsored?: boolean }): Promise<string>
+  tokenBalance(asset: { code: string; issuer: string }): Promise<string>
+}
+let cartera: CarteraStellar | null = null
+export const USDC_TESTNET = { code: 'USDC', issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5' }
+async function miCartera() { await conectarBilletera(); if (!cartera) throw new ErrorBilletera('sin-cartera', 'La billetera no está conectada.'); return cartera }
+export async function firmarXdr(xdr: string): Promise<string> { return (await miCartera()).signXdr(xdr) }
+/** Abre la trustline de USDC (la cuenta tiene que existir: Friendbot primero). Paga la comisión en XLM de la propia cuenta. */
+export async function abrirTrustlineUsdc(): Promise<string> {
+  let w = await miCartera()
+  // El kit guarda el estado al conectar: si Friendbot creó la cuenta después, volvemos a conectar para que la vea "ready".
+  if (w.status === 'undeployed') { olvidarBilletera(); w = await miCartera() }
+  return w.addTrustline(USDC_TESTNET, { sponsored: false })
+}
+export async function saldoUsdc(): Promise<string> { return (await miCartera()).tokenBalance(USDC_TESTNET) }
+/** Mensaje claro para los rechazos del vault (https://docs.cavos.xyz/docs/vault). */
+export function mensajeFirma(e: unknown): string {
+  const m = e instanceof Error ? e.message : String(e)
+  if (/user rejected/i.test(m)) return 'Rechazaste la firma en la billetera.'
+  if (/policy does not allow/i.test(m)) return 'La configuración de la billetera no permite esta firma (regla de aprobaciones en el panel de Cavos).'
+  if (/deployed account|execute\(\)/i.test(m)) return 'Tu cuenta Stellar todavía no existe en testnet. Cárgale XLM de prueba primero.'
+  return m
+}

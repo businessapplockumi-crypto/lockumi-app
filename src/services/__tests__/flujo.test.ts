@@ -38,3 +38,14 @@ describe('etapas y turnos', () => {
     expect(turno({ ...base, estado: 'firmas', contrato: { firmas: { dueno: T } } }, 'inquilino').otra).toBe('El dueño ya firmó.')
   })
 })
+
+describe('textoPlazo', async () => {
+  const { textoPlazo } = await import('../../acciones')
+  it('muestra el plazo real del contrato', () => {
+    expect(textoPlazo({})).toBe('7 días')
+    expect(textoPlazo({ ventanaSegundos: 86400 })).toBe('1 día')
+    expect(textoPlazo({ ventanaSegundos: 7200 })).toBe('2 horas')
+    expect(textoPlazo({ ventanaSegundos: 300 })).toBe('5 minutos')
+    expect(textoPlazo({ ventanaSegundos: 60 })).toBe('1 minuto')
+  })
+})

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { store, useAlquileres, ahoraDe, actaVacia, DIA, vistaDe, rolDe, fijarVista } from '../store'
-import { escrow } from '../services/escrow'
+import { store, useAlquileres, obtener, ahoraDe, DIA, vistaDe, rolDe, fijarVista } from '../store'
+import { acciones, plazoMs, textoPlazo } from '../acciones'
+import { modoServidor, modoTrustless } from '../servidor/config'
+import { servidor } from '../servidor/repositorio'
 import { modoReal } from '../services/auth'
 import { NOMBRE_ROL, type Alquiler, type Rol, type Foto, type Usuario } from '../types'
 import { fotoEjemplo } from '../demoFotos'
@@ -28,8 +30,7 @@ function Contrato({ a, rol }: P) {
       <p className="nota">El depósito queda guardado hasta el final. Nadie puede tomarlo solo: ni el dueño, ni el inquilino, ni Lockumi.</p>
     </section>
     <Firma key={'c-' + rol} a={a} que="contrato" rol={rol} titulo="Firmas del contrato"
-      texto="Lee el contrato. Si estás de acuerdo, fírmalo." casilla="Leí el contrato y estoy de acuerdo."
-      alCompletar={x => { x.estado = 'pendiente_pago'; x.historial.push({ fecha: ahoraISO(x), texto: 'Contrato firmado por los dos' }) }} />
+      texto="Lee el contrato. Si estás de acuerdo, fírmalo." casilla="Leí el contrato y estoy de acuerdo." />
   </div>
 }
 
@@ -38,9 +39,9 @@ function Pago({ a, rol }: P) {
   const pagar = async () => {
     setC(true); setErr('')
     try {
-      const r = await escrow.depositar(a.escrowId ?? 'sim-' + a.id, a.monto)
-      store.cambiar(a.id, x => { x.estado = 'fotos_entrada'; x.pago = r.fecha; x.escrowId ??= 'sim-' + a.id }, `Depósito de ${usd(a.monto)} pagado y guardado`)
-    } catch { setC(false); setErr('No pudimos procesar el pago. Revisa tu conexión e intenta de nuevo.') }
+      await acciones.pagar(a)
+
+    } catch (e) { setC(false); setErr(e instanceof Error && modoServidor ? e.message : 'No pudimos procesar el pago. Revisa tu conexión e intenta de nuevo.') }
   }
   return <section className="pila"><div className="cab"><h2>Depósito</h2><Demo t="Pago simulado" /></div>
     <div className="monto">{usd(a.monto)}</div>
@@ -82,10 +83,7 @@ function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
     </> : <>
       <Firma key={cual + '-' + rol} a={a} que={cual} rol={rol} titulo={'Confirmar ' + titulo.toLowerCase()}
         texto={cual === 'entrada' ? 'Revisa que las fotos muestren cómo está el lugar hoy.' : 'Revisa que las fotos muestren cómo quedó el lugar.'}
-        casilla={cual === 'entrada' ? 'Las fotos muestran cómo está el lugar al entrar.' : 'Las fotos muestran cómo quedó el lugar al salir.'}
-        alCompletar={x => cual === 'entrada'
-          ? (x.estado = 'en_curso', x.historial.push({ fecha: ahoraISO(x), texto: 'Fotos de entrada confirmadas por los dos' }))
-          : (x.estado = 'ventana_reclamo', x.ventanaInicio = ahoraISO(x), x.historial.push({ fecha: ahoraISO(x), texto: 'Fotos de salida confirmadas. Empiezan los 7 días para reclamos' }))} />
+        casilla={cual === 'entrada' ? 'Las fotos muestran cómo está el lugar al entrar.' : 'Las fotos muestran cómo quedó el lugar al salir.'} />
       <button type="button" className="enlace" onClick={() => setI(0)}>Ver o cambiar las fotos</button>
     </>}
   </div>
@@ -96,33 +94,30 @@ function EnCurso({ a }: P) {
     <h2>Alquiler en curso</h2><div className="monto">{usd(a.monto)}</div>
     <p>Del {fecha(a.inicio)} al {fecha(a.fin)}. El depósito sigue guardado y nadie puede tomarlo solo.</p>
     <p className="nota">Cuando el inquilino entregue el lugar, cualquiera de los dos puede empezar las fotos de salida.</p>
-    <button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={() => store.cambiar(a.id, x => { x.estado = 'salida'; x.salida = actaVacia() }, 'Empezaron las fotos de salida')}>Empezar fotos de salida</button>
+    <button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={() => void acciones.iniciarSalida(a)}>Empezar fotos de salida</button>
   </section>
 }
 
-function cerrarAutomatico(x: Alquiler) {
-  x.estado = 'cerrado'; x.resultado = { inquilino: x.monto, dueno: 0, via: 'automatico', fecha: ahoraISO(x) }
-  x.historial.push({ fecha: ahoraISO(x), texto: `Sin reclamos en 7 días: ${usd(x.monto)} devueltos al inquilino` })
-}
-
 function Ventana({ a, rol }: P) {
-  const fin = +new Date(a.ventanaInicio!) + 7 * DIA; const [, tick] = useState(0); const [form, setForm] = useState(false)
+  const fin = +new Date(a.ventanaInicio!) + plazoMs(a); const [, tick] = useState(0); const [form, setForm] = useState(false)
   useEffect(() => { const t = setInterval(() => tick(k => k + 1), 30_000); return () => clearInterval(t) }, [])
   const resta = Math.max(0, fin - ahoraDe(a)); const dias = Math.floor(resta / DIA); const horas = Math.floor(resta % DIA / 3_600_000)
-  useEffect(() => { if (resta === 0 && !a.reclamo) store.cambiar(a.id, cerrarAutomatico) }, [resta, a.id, a.reclamo])
-  return <section className="pila"><h2>7 días para reclamos</h2>
+  useEffect(() => { if (resta === 0 && !a.reclamo) void acciones.cerrarSinReclamo(a) }, [resta, a.id, a.reclamo]) // eslint-disable-line
+  return <section className="pila"><h2>{textoPlazo(a)} para reclamos</h2>
     <div className="cuenta" role="timer"><span className="cuenta__n">{dias}</span> días <span className="cuenta__n">{horas}</span> horas</div>
     <p className="nota">Termina el {fechaHora(fin)}. Si no hay reclamos, el depósito vuelve completo al inquilino, sin que nadie tenga que aprobarlo.</p>
     {rol === 'dueno'
       ? (form ? <FormReclamo a={a} onCancelar={() => setForm(false)} /> : <>
         <p>¿Encontraste un daño que no estaba en las fotos de entrada? Puedes reclamar. Si todo está bien, no hagas nada.</p>
         <button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={() => setForm(true)}>Reclamar un daño</button></>)
-      : <Espera texto="Esperando. Si el dueño no reclama en 7 días, recibes tu depósito completo." />}
-    {<button type="button" className="enlace" onClick={() => store.cambiar(a.id, x => { x.diasSimulados += 7; if (!x.reclamo && ahoraDe(x) >= fin) cerrarAutomatico(x) }, 'Demo: se adelantaron 7 días')}>Demo: adelantar 7 días</button>}
+      : <Espera texto={`Esperando. Si el dueño no reclama en ${textoPlazo(a)}, recibes tu depósito completo.`} />}
+    <EscrowReal a={a} rol={rol} />
+    {!modoServidor && <button type="button" className="enlace" onClick={() => { store.cambiar(a.id, x => { x.diasSimulados += 7 }, 'Demo: se adelantaron 7 días'); void acciones.cerrarSinReclamo({ ...a, diasSimulados: a.diasSimulados + 7 }) }}>Demo: adelantar 7 días</button>}
   </section>
 }
 
 function FormReclamo({ a, onCancelar }: { a: Alquiler; onCancelar: () => void }) {
+  const [enviando, setEnviando] = useState(false); const [errSrv, setErrSrv] = useState('')
   const [monto, setMonto] = useState(''); const [motivo, setMotivo] = useState(''); const [fotos, setFotos] = useState<Foto[]>([]); const [env, setEnv] = useState(false)
   const m = Number(monto.replace(',', '.'))
   const e = {
@@ -132,7 +127,7 @@ function FormReclamo({ a, onCancelar }: { a: Alquiler; onCancelar: () => void })
   }
   const enviar = () => {
     setEnv(true); if (e.monto || e.motivo || e.fotos) return
-    store.cambiar(a.id, x => { x.estado = 'reclamo'; x.reclamo = { monto: m, motivo: motivo.trim(), fotos, fecha: ahoraISO(x) } }, `El dueño reclamó ${usd(m)}`)
+    setEnviando(true); acciones.reclamar(a, m, motivo.trim(), fotos).catch(x => { setEnviando(false); setErrSrv(x instanceof Error ? x.message : 'No pudimos enviar el reclamo. Intenta de nuevo.') })
   }
   return <div className="pila">
     <label className={'campo' + (env && e.monto ? ' campo--error' : '')}><span>¿Cuánto reclamas? (USD)</span><input inputMode="decimal" value={monto} onChange={x => setMonto(x.target.value)} />{env && e.monto && <small className="campo__error" role="alert">{e.monto}</small>}</label>
@@ -141,8 +136,9 @@ function FormReclamo({ a, onCancelar }: { a: Alquiler; onCancelar: () => void })
     <TomarFoto por="dueno" etiqueta="Tomar foto del daño" principal={false} onFoto={f => setFotos(v => [...v, f])} />
     {<button type="button" className="enlace" onClick={() => setFotos(v => [...v, { src: fotoEjemplo('Sala', 'salida', 0), por: 'dueno', fecha: ahoraISO(a), tomadaEn: ahoraDe(a), origen: 'ejemplo' }])}>Demo: usar una foto de ejemplo</button>}
     {env && e.fotos && <p className="error" role="alert">{e.fotos}</p>}
+    {errSrv && <p className="error" role="alert">{errSrv}</p>}
     <div className="pie-paso"><button type="button" className="boton boton--secundario" onClick={onCancelar}>Cancelar</button>
-      <button type="button" className="boton boton--primario boton--grande pie-paso__principal" onClick={enviar}>Enviar reclamo</button></div>
+      <button type="button" className="boton boton--primario boton--grande pie-paso__principal" disabled={enviando} onClick={enviar}>{enviando ? 'Enviando…' : 'Enviar reclamo'}</button></div>
   </div>
 }
 
@@ -155,50 +151,88 @@ function Evidencia({ a }: { a: Alquiler }) {
 function Reclamo({ a, rol }: P) {
   const r = a.reclamo!
   const aceptar = async () => {
-    await escrow.aprobarLiberacion(a.escrowId!, 'inquilino', a.monto - r.monto); await escrow.aprobarLiberacion(a.escrowId!, 'dueno', a.monto - r.monto)
-    store.cambiar(a.id, x => { x.reclamo!.respuesta = 'aceptado'; x.estado = 'cerrado'; x.resultado = { dueno: r.monto, inquilino: x.monto - r.monto, via: 'acuerdo', fecha: ahoraISO(x) } },
-      `El inquilino aceptó el reclamo: ${usd(r.monto)} al dueño y ${usd(a.monto - r.monto)} al inquilino`)
+    await acciones.responder(a, true)
+
+
   }
   return <section className="pila"><h2>Reclamo del dueño</h2><Evidencia a={a} />
     {rol === 'inquilino' ? <>
       <p>Si aceptas, recibes {usd(a.monto - r.monto)} y el dueño {usd(r.monto)}. Si no estás de acuerdo, una persona mediadora revisa las fotos y decide.</p>
       <button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={aceptar}>Aceptar reclamo</button>
-      <button type="button" className="boton boton--secundario boton--ancho" onClick={() => store.cambiar(a.id, x => { x.reclamo!.respuesta = 'rechazado'; x.estado = 'mediacion' }, 'El inquilino no aceptó el reclamo. Pasa a una persona mediadora')}>No estoy de acuerdo</button>
+      <button type="button" className="boton boton--secundario boton--ancho" onClick={() => void acciones.responder(a, false)}>No estoy de acuerdo</button>
     </> : <Espera texto="Esperando que el inquilino responda tu reclamo." />}
   </section>
 }
 
 function Mediacion({ a }: P) {
   const r = a.reclamo!; const [panel, setPanel] = useState(false); const [aDueno, setAD] = useState(Math.round(r.monto / 2))
+  const [mediador, setMediador] = useState(!modoServidor)
+  useEffect(() => { if (modoServidor) servidor.esMediador().then(setMediador).catch(() => {}) }, [])
   const decidir = async () => {
-    await escrow.aprobarLiberacion(a.escrowId!, 'mediador', a.monto - aDueno)
-    store.cambiar(a.id, x => { x.estado = 'cerrado'; x.resultado = { dueno: aDueno, inquilino: x.monto - aDueno, via: 'mediacion', fecha: ahoraISO(x) } },
-      `La persona mediadora decidió: ${usd(aDueno)} al dueño y ${usd(a.monto - aDueno)} al inquilino`)
+    await acciones.decidir(a, aDueno)
+
+
   }
   return <section className="pila"><h2>Con una persona mediadora</h2>
     <p>No hubo acuerdo. Una persona mediadora revisa las fotos de entrada y salida y decide cómo se reparte el depósito.</p>
     <Espera texto="No tienes que hacer nada. Te avisaremos cuando haya una decisión." />
     <Evidencia a={a} />
-    {(!panel ? <button type="button" className="enlace" onClick={() => setPanel(true)}>Demo: decidir como mediador</button>
+    {mediador && (!panel ? <button type="button" className="enlace" onClick={() => setPanel(true)}>{modoServidor ? 'Decidir como mediador' : 'Demo: decidir como mediador'}</button>
       : <div className="mediador pila"><label className="campo"><span>Para el dueño: {usd(aDueno)} · para el inquilino: {usd(a.monto - aDueno)}</span>
           <input type="range" min={0} max={r.monto} step={10} value={aDueno} onChange={e => setAD(Number(e.target.value))} aria-valuetext={`${usd(aDueno)} para el dueño`} /></label>
         <button type="button" className="boton boton--primario boton--ancho" onClick={decidir}>Decidir</button></div>)}
   </section>
 }
 
-function Cerrado({ a }: P) {
+/** Link para que el inquilino entre desde su propio aparato (solo con servidor compartido). */
+function Invitacion({ a }: { a: Alquiler }) {
+  const [link, setLink] = useState(a.invitacion ?? ''); const [copiado, setCopiado] = useState(false); const [err, setErr] = useState('')
+  const copiar = async () => { try { await navigator.clipboard.writeText(link); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { setErr('No pudimos copiar. Mantén presionado el link para copiarlo.') } }
+  const nuevo = async () => { try { setLink(await servidor.nuevaInvitacion(a.id)); setErr('') } catch (e) { setErr(e instanceof Error ? e.message : 'No pudimos crear el link.') } }
+  return <section className="glass tarjeta pila invitacion" aria-labelledby="inv-t">
+    <h2 id="inv-t">Invita al inquilino</h2>
+    <p className="nota">Envía este link a {a.inquilinoEmail}. Tiene que entrar con ese correo. El link sirve una sola vez y vence en 14 días.</p>
+    {link ? <><input readOnly value={link} aria-label="Link de invitación" onFocus={e => e.target.select()} />
+      <button type="button" className="boton boton--primario boton--ancho" onClick={copiar}>{copiado ? 'Copiado ✓' : 'Copiar link'}</button></>
+      : <p className="nota">Este aparato no tiene el link guardado.</p>}
+    <button type="button" className="enlace" onClick={nuevo}>Crear un link nuevo (el anterior deja de servir)</button>
+    {err && <p className="error" role="alert">{err}</p>}
+  </section>
+}
+
+/** Solo con Trustless Work real (testnet): aprobación del dueño en la cadena y liberación al inquilino. */
+const APROBADO = 'El dueño aprobó en la cadena devolver el depósito completo'
+const enlaceTx = (tx: string) => 'https://stellar.expert/explorer/testnet/tx/' + tx
+function EscrowReal({ a, rol }: P) {
+  const [ocupado, setOcupado] = useState(false); const [error, setError] = useState('')
+  if (!modoTrustless || !a.escrowId) return null
+  const aprobado = a.historial.some(e => e.texto === APROBADO)
+  const correr = async (f: () => Promise<unknown>) => { setOcupado(true); setError(''); try { await f() } catch (e) { setError(e instanceof Error ? e.message : String(e)) } finally { setOcupado(false) } }
+  const err = error && <p className="error" role="alert">{error}</p>
+  if (a.estado === 'ventana_reclamo') return rol === 'dueno' && !aprobado ? <div className="pila">
+    <p className="nota">Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar la firma.</p>
+    <button type="button" className="boton boton--ancho" disabled={ocupado} onClick={() => void correr(() => acciones.aprobarDevolucion!(a))}>{ocupado ? 'Firmando…' : 'Todo está bien: aprobar la devolución'}</button>{err}</div>
+    : aprobado ? <p className="nota">El dueño ya aprobó la devolución. Al terminar el plazo se libera el depósito.</p> : null
+  if (a.estado === 'cerrado' && a.resultado?.via === 'automatico') return a.liquidacionTx
+    ? <p className="nota">Transferencia en Stellar testnet: <a href={enlaceTx(a.liquidacionTx)} target="_blank" rel="noreferrer">ver la transacción</a></p>
+    : <div className="pila"><button type="button" className="boton boton--ancho" disabled={ocupado} onClick={() => void correr(() => acciones.cerrarSinReclamo(a))}>{ocupado ? 'Liberando…' : 'Liberar el depósito al inquilino'}</button>{err}</div>
+  return null
+}
+
+function Cerrado({ a, rol }: P) {
   const r = a.resultado!
-  const via = { automatico: 'No hubo reclamos en 7 días.', acuerdo: 'Se pusieron de acuerdo en la app.', mediacion: 'Lo decidió una persona mediadora.' }[r.via]
+  const via = { automatico: `No hubo reclamos en ${textoPlazo(a)}.`, acuerdo: 'Se pusieron de acuerdo en la app.', mediacion: 'Lo decidió una persona mediadora.' }[r.via]
   return <section className="pila cerrado"><Deco id="d-llave" size={56} className="deco--flota deco--esquina" />
     <span className="chip chip--exito"><Icono id="i-check" /> Terminado</span>
     <h2>Depósito devuelto</h2><p>{via}</p>
     <ul className="lista"><li><span>Inquilino</span><strong>{usd(r.inquilino)}</strong></li><li><span>Dueño</span><strong>{usd(r.dueno)}</strong></li></ul>
     <p className="nota">{fechaHora(r.fecha)}</p>
+    <EscrowReal a={a} rol={rol} />
   </section>
 }
 
 export function Detalle({ id, u }: { id: string; u: Usuario }) {
-  useAlquileres(); const a = store.obtener(id)
+  useAlquileres(); const a = obtener(id)
   const real: Rol = a ? rolDe(a, u.email) : 'dueno'
   const rol: Rol = a ? vistaDe(a, u.email) : 'dueno'
   useEffect(() => { window.scrollTo(0, 0) }, [a?.estado, rol])
@@ -212,10 +246,11 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
   return <main id="contenido" tabIndex={-1} className="cont" style={{ paddingBottom: 48 }}>
     <a href="#/" className="volver">← Tus alquileres</a>
     <h1 className="h-lugar">{a.direccion}</h1>
-    <div className="vista-demo" role="group" aria-label="Demo: cambiar de persona">
+    {!modoServidor && <div className="vista-demo" role="group" aria-label="Demo: cambiar de persona">
       <span>Estás viendo como <strong>{NOMBRE[rol]}</strong></span>
       <button type="button" className="boton boton--secundario boton--chico" onClick={() => fijarVista(id, otro(rol))}>Ver como {NOMBRE[otro(rol)]}</button>
-      <span className="demo">Demo en un solo aparato</span></div>
+      <span className="demo">Demo en un solo aparato</span></div>}
+    {modoServidor && rol === 'dueno' && a.inquilinoUnido === false && <Invitacion a={a} />}
     <div className="paso-cab"><p className="paso-cab__n">{a.estado === 'cerrado' ? 'Terminado' : pasoTexto(a)}</p><p className="paso-cab__t">{ETAPAS[etapa]}</p>
       <div className="barra-paso" aria-hidden="true"><span style={{ width: `${((etapa + (a.estado === 'cerrado' ? 1 : 0.5)) / ETAPAS.length) * 100}%` }} /></div></div>
     <div className="detalle">
