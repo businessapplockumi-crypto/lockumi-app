@@ -19,6 +19,14 @@ export function validarAceptaciones(m: { terminos: boolean; privacidad: boolean 
   return e
 }
 
+/** Los errores solo aparecen al intentar continuar (validarAceptaciones al tocar "Entrar"); nunca al cargar.
+ *  Al marcar una casilla desaparece su error; los de las demás se mantienen. */
+export const ERRORES_INICIALES: Partial<Record<ClaveLegal, string>> = {}
+export function erroresTrasCambio(e: Partial<Record<ClaveLegal, string>>, c: ClaveLegal, marcada: boolean): Partial<Record<ClaveLegal, string>> {
+  if (!marcada || !e[c]) return e
+  const { [c]: _quitado, ...resto } = e; void _quitado; return resto
+}
+
 export function leerAceptacion(c: ClaveLegal): AceptacionLegal | null {
   try { const s = localStorage.getItem(K_ACEPTACION[c]); const a = s ? JSON.parse(s) : null; return a && typeof a.version === 'string' && typeof a.fecha === 'string' ? a : null } catch { return null }
 }

@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 const mem = new Map<string, string>()
 vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, String(v)), removeItem: (k: string) => void mem.delete(k), clear: () => mem.clear() })
 
-const { validarAceptaciones, guardarAceptacion, leerAceptacion, aceptoVersion, conAceptacion, K_ACEPTACION, MSJ_SIN_TERMINOS, MSJ_SIN_PRIVACIDAD } = await import('../aceptacion')
+const { erroresTrasCambio, ERRORES_INICIALES, validarAceptaciones, guardarAceptacion, leerAceptacion, aceptoVersion, conAceptacion, K_ACEPTACION, MSJ_SIN_TERMINOS, MSJ_SIN_PRIVACIDAD } = await import('../aceptacion')
 const { TERMINOS, PRIVACIDAD, DOCS, rutaLegal, consentimientoPrivacidad, leerDoc } = await import('../documentos')
 const { Login } = await import('../../screens/Login')
 const { aHtml } = await import('../markdown')
@@ -24,6 +24,20 @@ describe('casillas obligatorias de Términos y Privacidad', () => {
   })
   it('con las dos marcadas se puede continuar', () => { expect(validarAceptaciones({ terminos: true, privacidad: true })).toEqual({}) })
 
+  it('al cargar la pantalla no hay errores visibles', () => {
+    const html = renderToStaticMarkup(<Login onOk={() => {}} />)
+    expect(ERRORES_INICIALES).toEqual({})
+    expect(html).not.toContain('casilla-legal__error'); expect(html).not.toContain('casilla-legal--error')
+    expect(html).not.toContain('role="alert"'); expect(html).not.toContain('aria-invalid="true"')
+    expect(html).not.toContain(MSJ_SIN_TERMINOS); expect(html).not.toContain(MSJ_SIN_PRIVACIDAD)
+  })
+  it('tras tocar Entrar sin marcar, al marcar una casilla desaparece solo su error', () => {
+    const e = validarAceptaciones({ terminos: false, privacidad: false })
+    const e2 = erroresTrasCambio(e, 'terminos', true)
+    expect(e2).toEqual({ privacidad: MSJ_SIN_PRIVACIDAD })
+    expect(erroresTrasCambio(e2, 'privacidad', true)).toEqual({})
+    expect(erroresTrasCambio({}, 'terminos', false)).toEqual({}) // desmarcar no muestra errores; solo "Entrar" los muestra
+  })
   it('la pantalla de entrada muestra las dos casillas sin marcar, obligatorias y con sus enlaces', () => {
     const html = renderToStaticMarkup(<Login onOk={() => {}} />)
     expect(html).toMatch(/<input[^>]*type="checkbox"[^>]*id="acepto-terminos"[^>]*required=""/)
