@@ -1,35 +1,41 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Aviso } from '../Aviso'
 import { abreviar, conectarBilletera, detalleError, consultarSaldo, enlaceExplorer, fondear, formatoXlm, type Billetera as B } from '../services/billetera'
 
 type Saldo = { t: 'cargando' } | { t: 'ok'; xlm: string } | { t: 'sin-cuenta' } | { t: 'error' }
 
 /** Tarjeta breve de la billetera Stellar testnet (solo con login real de Cavos). */
 export function Billetera() {
-  const [b, setB] = useState<B | null>(null); const [err, setErr] = useState<{ codigo: string; mensaje: string } | null>(null); const [avisoErr, setAvisoErr] = useState(false)
+  const [b, setB] = useState<B | null>(null)
+  // 'oculta': no hay sesión real de Cavos en esta pestaña (p. ej. sesión de demo); 'reintentando': falló y se reintenta sola.
+  const [fase, setFase] = useState<'cargando' | 'reintentando' | 'lenta' | 'oculta'>('cargando')
   const [saldo, setSaldo] = useState<Saldo>({ t: 'cargando' })
   const [copiado, setCopiado] = useState(false); const [fondeando, setFondeando] = useState(false)
 
-  useEffect(() => { conectarBilletera().then(setB).catch(e => {
-    const d = detalleError(e); console.error('[Lockumi] Cavos.connect falló:', d.codigo, e)
-    setErr(d); if (!sessionStorage.getItem('lockumi.aviso.billetera')) { sessionStorage.setItem('lockumi.aviso.billetera', '1'); setAvisoErr(true) }
-  }) }, [])
+  // Nunca mostramos un error aquí: sin sesión real no hay tarjeta; si falla, se reintenta sola en segundo plano.
+  useEffect(() => {
+    let vivo = true; let t = 0
+    const intentar = (n: number) => conectarBilletera().then(x => { if (vivo) setB(x) }).catch(e => {
+      const d = detalleError(e); console.warn('[Lockumi] Cavos.connect falló:', d.codigo, e)
+      if (!vivo) return
+      if (d.codigo === 'sin-identidad' || d.codigo === 'sin-token' || d.codigo === 'simulado') { setFase('oculta'); return }
+      setFase(n >= 3 ? 'lenta' : 'reintentando')
+      t = window.setTimeout(() => void intentar(n + 1), Math.min(60_000, 5_000 * 2 ** n))
+    })
+    void intentar(0)
+    return () => { vivo = false; clearTimeout(t) }
+  }, [])
   const leer = useCallback(async (g: string) => {
     setSaldo({ t: 'cargando' })
     try { const x = await consultarSaldo(g); setSaldo(x === null ? { t: 'sin-cuenta' } : { t: 'ok', xlm: x }) } catch { setSaldo({ t: 'error' }) }
   }, [])
   useEffect(() => { if (b) void leer(b.direccion) }, [b, leer])
 
-  if (err) return <section className="glass tarjeta billetera" aria-label="Tu cuenta para el depósito">
+  if (fase === 'oculta') return null
+  if (!b) return <section className="glass tarjeta billetera" aria-label="Tu cuenta para el depósito" aria-busy="true">
     <p className="etiqueta">Tu cuenta para el depósito</p>
-    <p className="nota">No pudimos preparar tu cuenta. Tu sesión sigue activa: cierra sesión y vuelve a entrar en esta misma pestaña para intentarlo de nuevo.</p>
-    <details className="billetera__detalle"><summary>Detalles</summary><code>{err.codigo}: {err.mensaje}</code></details>
-    {avisoErr && <Aviso tipo="error" titulo="Tu cuenta no está lista" boton="Entendido" onCerrar={() => setAvisoErr(false)}>
-      <p>Entraste bien, pero no pudimos preparar tu cuenta para el depósito.</p>
-      <p>Cierra sesión y vuelve a entrar en esta misma pestaña. Si se repite, abre «Detalles» en la tarjeta de tu cuenta y compártelo con el equipo.</p>
-    </Aviso>}
+    <p className="nota" role="status">Preparando tu cuenta…</p>
+    {fase === 'lenta' && <p className="nota">Esto está tardando más de lo normal. Puedes seguir usando la app; si en unos minutos sigue igual, cierra sesión y vuelve a entrar.</p>}
   </section>
-  if (!b) return <section className="glass tarjeta billetera" aria-label="Tu cuenta para el depósito" aria-busy="true"><p className="nota">Preparando tu cuenta…</p></section>
 
   const copiar = async () => { try { await navigator.clipboard.writeText(b.direccion); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { /* sin permiso de portapapeles */ } }
   const pedirFondos = async () => {
