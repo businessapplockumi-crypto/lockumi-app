@@ -42,7 +42,7 @@ export const hayPrivacidad = !!PRIVACIDAD
 export const CONSENTIMIENTO_PRIVACIDAD = {
   antes: 'Acepto el ',
   enlace: 'Aviso de privacidad de la app',
-  despues: ' y autorizo que Lockumi trate mis datos y los transfiera a Supabase, Vercel y Cavos y, en las versiones de prueba que usen la red, a Trustless Work, dentro y fuera de Costa Rica, para usar la demo. Entiendo que en esta versión no se registra nada en ninguna red y que, en las versiones de prueba que usen la red, la dirección de mi billetera, el monto y las fechas quedarían en una red pública que no se puede borrar.',
+  despues: ' y autorizo que Lockumi trate mis datos y los transfiera a Supabase, Vercel, Cavos y Trustless Work, dentro y fuera de Costa Rica, para usar la demo. Entiendo que la demo funciona en la red de prueba de Stellar, con tokens sin valor y sin dinero real, y que la dirección de mi billetera, los montos y las fechas quedan registrados en esa red, que es pública y no se puede borrar.',
 } as const
 
 /** Fecha legible: acepta ISO aaaa-mm-dd; si viene en otro formato se muestra tal cual. */
