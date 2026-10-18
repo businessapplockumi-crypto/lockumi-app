@@ -149,7 +149,7 @@ async function prepararCuenta(c: ConfigSolo, k: Keypair, f: typeof fetch) {
 // ── Acciones permitidas ──
 export type PedidoSolo =
   | { accion: 'dueno'; contrato: string }
-  | { accion: 'cuenta-prueba'; token: string }
+  | { accion: 'cuenta-prueba'; token: string; monto?: number }
   | { accion: 'desplegar'; contrato: string; inquilino: string; monto: number }
   | { accion: 'fondear'; escrow: string; inquilino: string }
   | { accion: 'enviar-deposito'; escrow: string; signedXdr: string }
@@ -176,18 +176,25 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       const k = duenoDe(c, p.contrato); const { trustline } = await prepararCuenta(c, k, f)
       return { dueno: k.publicKey(), trustlineTx: trustline }
     }
-    case 'cuenta-prueba': {   // respaldo rotulado: inquilino de prueba custodiado por el servidor, con USDC de prueba hasta el tope
+    case 'cuenta-prueba': {   // inquilino de prueba custodiado por el servidor: Friendbot + trustline + USDC desde la tesorería (plataforma)
       exigir(TOKEN.test(p.token), 400, 'Falta el identificador de la cuenta de prueba.')
+      const objetivo = p.monto === undefined ? TOPE_USDC : p.monto
+      exigir(montoValido(objetivo), 400, `Puedes pedir hasta ${TOPE_USDC} USDC de prueba.`)
       const k = inquilinoPruebaDe(c, p.token); const { trustline } = await prepararCuenta(c, k, f)
       const a = (await cuenta(c, k.publicKey(), f))!
-      const saldo = Number(usdcDe(a) ?? 0); let compra: string | null = null
-      if (saldo < TOPE_USDC) {
-        const falta = Math.round((TOPE_USDC - saldo) * 1e7) / 1e7
-        const t = tb(a).addOperation(Operation.pathPaymentStrictReceive({ sendAsset: Asset.native(), sendMax: String(MAX_XLM_COMPRA), destination: k.publicKey(),
-          destAsset: new Asset(USDC.code, USDC.issuer), destAmount: falta.toFixed(7), path: [] })).setTimeout(60).build(); t.sign(k)
-        compra = await enviarHorizon(c, t, f)
+      const falta = Math.round((objetivo - Number(usdcDe(a) ?? 0)) * 1e7) / 1e7; let compra: string | null = null, via: 'tesoreria' | 'dex' | null = null
+      if (falta > 0) {
+        const tes = await cuenta(c, c.P, f)
+        if (Number(usdcDe(tes) ?? 0) >= falta) {   // tesorería: la plataforma envía el USDC de prueba que falta (nunca más del tope)
+          const t = tb(tes!).addOperation(Operation.payment({ destination: k.publicKey(), asset: new Asset(USDC.code, USDC.issuer), amount: falta.toFixed(7) })).setTimeout(60).build(); t.sign(c.plataforma)
+          compra = await enviarHorizon(c, t, f); via = 'tesoreria'
+        } else {                                    // respaldo: la cuenta de prueba compra en el DEX de testnet con su XLM de Friendbot
+          const t = tb(a).addOperation(Operation.pathPaymentStrictReceive({ sendAsset: Asset.native(), sendMax: String(MAX_XLM_COMPRA), destination: k.publicKey(),
+            destAsset: new Asset(USDC.code, USDC.issuer), destAmount: falta.toFixed(7), path: [] })).setTimeout(60).build(); t.sign(k)
+          compra = await enviarHorizon(c, t, f); via = 'dex'
+        }
       }
-      return { inquilino: k.publicKey(), trustlineTx: trustline, compraTx: compra, usdc: usdcDe(await cuenta(c, k.publicKey(), f)) }
+      return { inquilino: k.publicKey(), trustlineTx: trustline, compraTx: compra, via, usdc: usdcDe(await cuenta(c, k.publicKey(), f)) }
     }
     case 'desplegar': {   // la plataforma crea el escrow; textos fijos y el uuid del contrato (sin datos personales)
       exigir(UUID.test(p.contrato), 400, 'Contrato inválido.')

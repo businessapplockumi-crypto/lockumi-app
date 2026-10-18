@@ -27,7 +27,9 @@ async function api0(cuerpo) {
 const usdcDe = async g => (await HZ.loadAccount(g)).balances.find(b => b.asset_code === 'USDC' && b.asset_issuer === USDC.issuer)?.balance ?? null
 
 console.log(`E2E fase 1 · ${BASE} · ${MONTO} USDC · ${new Date().toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })} (hora de Costa Rica)`)
-const control = await WebCryptoControlKey.create(), G = control.publicAddress()
+let escrowId, G, libTx
+if (process.argv.includes('--cavos')) {
+const control = await WebCryptoControlKey.create(); G = control.publicAddress()
 const inq = Object.assign(Object.create(CavosStellar.prototype), { address: G, control, adapter: new StellarAdapter({ network: 'stellar-testnet' }), statusValue: 'ready' })
 inq.requireControl = inq.requireReadyControl = () => control
 console.log('· inquilino desechable:', G)
@@ -49,22 +51,27 @@ const fondeo = await api({ accion: 'enviar-deposito', escrow: dep.escrow, signed
 const ap = await api({ accion: 'aprobar', escrow: dep.escrow, huella: 'a'.repeat(64) })
 if (ap.evidenciaTx) anotar('Evidencia del acta (plataforma)', ap.evidenciaTx); anotar('Aprobación (dueño de prueba, servidor)', ap.aprobacionTx)
 const antes = await usdcDe(G)
-const lib = await api({ accion: 'liberar', escrow: dep.escrow }); anotar('Liberación al inquilino (plataforma)', lib.tx)
-const tx = await HZ.transactions().transaction(lib.tx).call()
-console.log(`· Horizon: liberación successful=${tx.successful} · ledger ${tx.ledger_attr} · USDC del inquilino ${antes} → ${await usdcDe(G)}`)
-// validaciones negativas por los endpoints reales
-for (const [nombre, cuerpo] of [['monto sobre el tope', { accion: 'desplegar', contrato: randomUUID(), inquilino: G, monto: 20.5 }], ['liberar dos veces', { accion: 'liberar', escrow: dep.escrow }], ['acción no permitida', { accion: 'transferir' }]])
-  try { await api(cuerpo); console.log('✘ NO se rechazó:', nombre); process.exitCode = 1 } catch (e) { console.log(`✔ rechazado (${nombre}): ${String(e.message).slice(0, 120)}`) }
-if (process.argv.includes('--respaldo')) { // inquilino de respaldo custodiado por el servidor
-  const token = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join(''), c2 = randomUUID()
-  const cp = await api({ accion: 'cuenta-prueba', token }); console.log('· inquilino de prueba (servidor):', cp.inquilino, 'USDC', cp.usdc)
-  if (cp.trustlineTx) anotar('Trustline del inquilino de prueba (servidor)', cp.trustlineTx); if (cp.compraTx) anotar('Compra de USDC del inquilino de prueba (servidor)', cp.compraTx)
-  await api({ accion: 'dueno', contrato: c2 })
-  const e2 = await api({ accion: 'desplegar', contrato: c2, inquilino: cp.inquilino, monto: 1 }); anotar('Respaldo · creación del escrow ' + e2.escrow, e2.tx)
-  anotar('Respaldo · depósito (inquilino de prueba, servidor)', (await api({ accion: 'fondear-prueba', escrow: e2.escrow, token })).tx)
-  const a2 = await api({ accion: 'aprobar', escrow: e2.escrow }); anotar('Respaldo · aprobación', a2.aprobacionTx)
-  const l2 = await api({ accion: 'liberar', escrow: e2.escrow }); anotar('Respaldo · liberación', l2.tx)
-  console.log('· Horizon respaldo: successful=' + (await HZ.transactions().transaction(l2.tx).call()).successful)
+libTx = (await api({ accion: 'liberar', escrow: dep.escrow })).tx; anotar('Liberación al inquilino (plataforma)', libTx)
+escrowId = dep.escrow
+const tx0 = await HZ.transactions().transaction(lib.tx).call()
+console.log(`· Horizon: liberación successful=${tx0.successful} · ledger ${tx0.ledger_attr} · USDC del inquilino ${antes} → ${await usdcDe(G)}`)
+} else { // flujo de la app ahora: inquilino y dueño de prueba custodiados por el servidor, USDC desde la tesorería
+  const token = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join(''), contrato = randomUUID()
+  const cp = await api({ accion: 'cuenta-prueba', token, monto: MONTO }); G = cp.inquilino
+  console.log(`· inquilino de prueba (servidor): ${G} · USDC ${cp.usdc} · vía ${cp.via}`)
+  if (cp.trustlineTx) anotar('Trustline de USDC del inquilino de prueba (servidor)', cp.trustlineTx); if (cp.compraTx) anotar(`USDC de prueba al inquilino (${cp.via})`, cp.compraTx)
+  const d = await api({ accion: 'dueno', contrato }); console.log('· dueño de prueba (servidor):', d.dueno); if (d.trustlineTx) anotar('Trustline de USDC del dueño de prueba (servidor)', d.trustlineTx)
+  const dep = await api({ accion: 'desplegar', contrato, inquilino: G, monto: MONTO }); escrowId = dep.escrow; anotar('Creación del escrow (plataforma) · ' + dep.escrow, dep.tx)
+  anotar(`Depósito de ${MONTO} USDC (inquilino de prueba, servidor)`, (await api({ accion: 'fondear-prueba', escrow: dep.escrow, token })).tx)
+  const ap = await api({ accion: 'aprobar', escrow: dep.escrow }); if (ap.evidenciaTx) anotar('Evidencia (plataforma)', ap.evidenciaTx); anotar('Aprobación (dueño de prueba, servidor)', ap.aprobacionTx)
+  const antes = await usdcDe(G)
+  libTx = (await api({ accion: 'liberar', escrow: dep.escrow })).tx; anotar('Liberación al inquilino (plataforma)', libTx)
+  console.log(`· USDC del inquilino de prueba ${antes} → ${await usdcDe(G)}`)
 }
-console.log('\nRESUMEN · escrow ' + dep.escrow); pasos.forEach(([p, h], i) => console.log(`${i + 1}. ${p}: ${enlace(h)}`))
+const tx = await HZ.transactions().transaction(libTx).call()
+console.log(`· Horizon: liberación successful=${tx.successful} · ledger ${tx.ledger_attr} · ${tx.created_at} (UTC)`)
+// validaciones negativas por los endpoints reales
+for (const [nombre, cuerpo] of [['monto sobre el tope', { accion: 'desplegar', contrato: randomUUID(), inquilino: G, monto: 20.5 }], ['liberar dos veces', { accion: 'liberar', escrow: escrowId }], ['acción no permitida', { accion: 'transferir' }]])
+  try { await api(cuerpo); console.log('✘ NO se rechazó:', nombre); process.exitCode = 1 } catch (e) { console.log(`✔ rechazado (${nombre}): ${String(e.message).slice(0, 120)}`) }
+console.log('\nRESUMEN · escrow ' + escrowId); pasos.forEach(([p, h], i) => console.log(`${i + 1}. ${p}: ${enlace(h)}`))
 if (!tx.successful) process.exitCode = 1

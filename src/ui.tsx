@@ -21,11 +21,13 @@ export function Barra({ u, onSalir }: { u: Usuario; onSalir: () => void }) {
     </div>
   </header>
 }
-export const Fondo = ({ children }: { children: ReactNode }) => <><div className="aurora" aria-hidden="true"><div className="blob blob--1"/><div className="blob blob--2"/><div className="blob blob--3"/></div>{children}</>
+export const AVISO_RED = 'Red de prueba: depósitos reales en testnet, sin valor'
+export const Fondo = ({ children }: { children: ReactNode }) => <><div className="aurora" aria-hidden="true"><div className="blob blob--1"/><div className="blob blob--2"/><div className="blob blob--3"/></div>
+  {modoSolo && <div className="aviso-red" role="note">{AVISO_RED}</div>}{children}</>
 export const usd = (n: number) => modoSolo ? new Intl.NumberFormat('es-CR', { maximumFractionDigits: 7 }).format(n) + ' USDC'
   : new Intl.NumberFormat('es-CR', { style:'currency', currency:'USD', currencyDisplay:'code' }).format(n)
 /** Rótulo siempre visible para lo que sigue simulado en la fase 1 (reglas, reclamos y mediador). */
-export const Simulado = () => <span className="demo demo--simulado">Simulado en esta demo</span>
+export const Simulado = () => <span className="demo demo--simulado">Simulado</span>
 const d = (s: string | number) => typeof s === 'string' && s.length === 10 ? new Date(s + 'T12:00:00') : new Date(s)
 export const fecha = (s: string | number) => d(s).toLocaleDateString('es-CR', { day:'numeric', month:'short', year:'numeric' })
 export const fechaHora = (s: string | number) => d(s).toLocaleString('es-CR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })

@@ -3,7 +3,7 @@ import { LogoAnimado } from '../LogoAnimado'
 import { store, useAlquileres, obtener, ahoraDe, DIA, vistaDe, rolDe, fijarVista } from '../store'
 import { acciones, plazoMs, textoPlazo } from '../acciones'
 import { modoServidor, modoTrustless, modoSolo } from '../servidor/config'
-import { PagoReal, CierreReal, Comprobantes, Cuentas, UltimoComprobante } from './Real'
+import { PagoReal, CierreReal, Comprobantes, Cuentas, UltimoComprobante, DetalleSolo } from './Real'
 import { servidor } from '../servidor/repositorio'
 import { modoReal } from '../services/auth'
 import { NOMBRE_ROL, type Alquiler, type Rol, type Foto, type Usuario } from '../types'
@@ -250,6 +250,7 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
   const rol: Rol = a ? vistaDe(a, u.email) : 'dueno'
   useEffect(() => { window.scrollTo(0, 0) }, [a?.estado, rol])
   if (!a) return <main id="contenido" tabIndex={-1} className="cont"><div className="glass tarjeta">No encontramos ese alquiler. <a href="#/">Volver a tus alquileres</a></div></main>
+  if (modoSolo) return <DetalleSolo a={a} />
   const p = { a, rol }; const t = turno(a, rol); const etapa = etapaDe(a)
   const panel = {
     firmas: <Contrato {...p} />, pendiente_pago: <Pago {...p} />, fotos_entrada: <Fotos key={'e' + rol} {...p} cual="entrada" />,

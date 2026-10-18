@@ -39,7 +39,7 @@ const local: Acciones = {
   async crear(d, email) {
     const a = store.crear({ ...d, duenoEmail: email })
     // Fase 1 (testnet real): la cuenta segura se crea en la red al depositar (Real.tsx → /api/solo).
-    if (modoSolo) { store.cambiar(a.id, x => { x.red = { txs: {} } }); return { id: a.id } }
+    if (modoSolo) { store.cambiar(a.id, x => { x.red = { txs: {} }; x.estado = 'pendiente_pago' }); return { id: a.id } }
     const { escrowId } = await escrow.crear(a.id, d.monto); store.cambiar(a.id, x => { x.escrowId = escrowId }); return { id: a.id }
   },
   async firmar(a, etapa, rol) {

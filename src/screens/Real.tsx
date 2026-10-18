@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { store } from '../store'
 import type { Alquiler, PasoRed, Rol } from '../types'
-import { usd, fechaHora } from '../ui'
+import { usd, fechaHora, Simulado } from '../ui'
 import { enlaceTx, enlaceCuenta, enlaceContrato, TOPE_USDC, MAX_XLM_COMPRA } from '../../api/_lib/red'
 import { consultarUsdc, conectarBilletera, abreviar } from '../services/billetera'
 import { obtenerUsdc, depositar, reintentarDeposito, aprobar, liberar, huellaActa, usarPrueba, fijarUsarPrueba, cuentaInquilino, cotizar, maximoAGastar, type Txs } from '../services/solo'
@@ -53,7 +53,7 @@ export function ObtenerUsdc({ objetivo, onListo }: { objetivo: number; onListo?:
   const [max, setMax] = useState<number | null>(null); const [prueba, setPrueba] = useState(usarPrueba())
   useEffect(() => { const f = () => setPrueba(usarPrueba()); addEventListener('lockumi-cuenta', f); return () => removeEventListener('lockumi-cuenta', f) }, [])
   const leer = useCallback(async () => {
-    try { const c = await cuentaInquilino(); setG(c.g); setSaldo(await consultarUsdc(c.g)); setErr('') }
+    try { const c = await cuentaInquilino(); setG(c.g); setSaldo(c.g ? await consultarUsdc(c.g) : null); setErr('') }
     catch { setErr(prueba ? 'No pudimos preparar la cuenta de prueba. Vuelve a intentarlo en un minuto.' : 'No pudimos abrir tu billetera. Cierra sesión y vuelve a entrar en esta pestaña, o activa «Usar cuenta de prueba».') }
   }, [prueba])
   useEffect(() => { void leer() }, [leer])
@@ -67,12 +67,12 @@ export function ObtenerUsdc({ objetivo, onListo }: { objetivo: number; onListo?:
   return <div className="pila obtener-usdc">
     <p className="saldo-usdc" role="status">{saldo === undefined && !g ? 'Consultando tu saldo…' : <>Tienes <strong>{usd(tiene)}</strong> de prueba{g && <> en {prueba ? 'la cuenta de prueba' : 'tu billetera'} ({abreviar(g)})</>}.</>}</p>
     {tiene < objetivo ? <>
-      <p className="nota">Necesitas {usd(objetivo)} de prueba. Al tocar el botón: {prueba ? 'Lockumi prepara la cuenta de prueba y compra los USDC de prueba por ella.' : <>
+      <p className="nota">Necesitas {usd(objetivo)} de prueba. Al tocar el botón: {prueba ? <>Lockumi crea el <strong>{INQUILINO_PRUEBA.toLowerCase()}</strong>, le da XLM de prueba gratis, habilita USDC y le envía {usd(Math.round((objetivo - tiene) * 1e7) / 1e7)} de prueba desde su tesorería de prueba. Tarda unos 15 segundos.</> : <>
         1) activamos tu cuenta con XLM de prueba gratis si hace falta, 2) habilitamos USDC en tu cuenta y 3) compramos {usd(Math.round((objetivo - tiene) * 1e7) / 1e7)} de prueba
         con <strong>como máximo {max ?? MAX_XLM_COMPRA} XLM de prueba</strong>. Tu billetera te mostrará una ventana para confirmar: revisa y acepta. Nada de esto es dinero real.</>}</p>
       <button type="button" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado} onClick={() => void pedir()}>{ocupado ? (avance || 'Un momento…') : 'Obtener USDC de prueba'}</button>
-      <p className="nota">¿Prefieres otra vía? En <a className="enlace" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">faucet.circle.com</a> eliges Stellar Testnet y pegas tu dirección (20 USDC cada 2 horas). Después vuelve aquí.</p>
-    </> : <p className="nota">Ya tienes los USDC de prueba que necesitas.</p>}
+      {!prueba && <p className="nota">¿Prefieres otra vía? En <a className="enlace" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">faucet.circle.com</a> eliges Stellar Testnet y pegas tu dirección (20 USDC cada 2 horas). Después vuelve aquí.</p>}
+    </> : <p className="nota">Ya están los USDC de prueba que hacen falta.</p>}
     {(txs.trustline || txs.compra) && <ul className="lista comprobantes">
       {txs.trustline && <li><span>{NOMBRE_PASO.trustline}</span><VerTx h={txs.trustline} /></li>}
       {txs.compra && <li><span>{NOMBRE_PASO.compra}</span><VerTx h={txs.compra} /></li>}</ul>}
@@ -167,5 +167,60 @@ export function Comprobantes({ a }: { a: Alquiler }) {
 export function UltimoComprobante({ a }: { a: Alquiler }) {
   const e = [...a.historial].reverse().find(h => h.tx && h.tx !== 'ya-aprobado'); if (!e) return null
   return <p className="ultimo-comprobante nota" role="status">✓ {e.texto} · {fechaHora(e.fecha)} · <VerTx h={e.tx!} /></p>
+}
+
+/** Fase 1 mínima: un paso por pantalla. 1 crear (hecho) → 2 obtener USDC → 3 depositar → 4 el dueño de prueba aprueba → 5 devolver. */
+const PASOS_SOLO = ['Crear el alquiler', 'Obtener USDC de prueba', 'Depositar en la cuenta segura', 'El dueño de prueba aprueba', 'Devolver el depósito'] as const
+export function DetalleSolo({ a }: { a: Alquiler }) {
+  const t = a.red?.txs ?? {}
+  const paso = t.liberacion ? 5 : t.aprobacion ? 4 : t.deposito ? 3 : a.red?.usdcListo ? 2 : 1   // índice del paso actual (0 = crear, ya hecho)
+  const [ocupado, setOcupado] = useState(false); const [avance, setAvance] = useState(''); const [err, setErr] = useState('')
+  useEffect(() => { window.scrollTo(0, 0); setErr('') }, [paso])
+  const correr = async (f: () => Promise<void>) => { setOcupado(true); setErr(''); try { await f() } catch (e) { setErr(textoError(e)) } finally { setOcupado(false); setAvance('') } }
+  const boton = (texto: string, f: () => Promise<void>) => <button type="button" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado} onClick={() => void correr(f)}>{ocupado ? (avance || 'Un momento…') : texto}</button>
+  const depositarYa = () => correr(async () => {
+    if (a.red?.escrow) { setAvance('Depositando…'); const h = await reintentarDeposito(a.red.escrow); anotar(a.id, { deposito: h }, x => { x.estado = 'en_curso'; x.pago = new Date().toISOString() }); return }
+    try {
+      const r = await depositar(a.id, a.monto, setAvance)
+      anotar(a.id, r.pasos, x => { Object.assign(x.red!, { escrow: r.escrow, dueno: r.dueno, inquilino: r.inquilino, inquilinoPrueba: r.prueba }); x.escrowId = r.escrow; x.estado = 'en_curso'; x.pago = new Date().toISOString() })
+    } catch (e) { const x = e as { escrow?: string; pasos?: Partial<Record<PasoRed, string>> }; if (x.escrow) anotar(a.id, x.pasos ?? {}, y => { y.red!.escrow = x.escrow }); throw e }
+  })
+  const aprobarYa = () => correr(async () => {
+    setAvance('El dueño de prueba está aprobando…'); const r = await aprobar(a.red!.escrow!)
+    anotar(a.id, { ...(r.evidenciaTx && { evidencia: r.evidenciaTx }), ...(r.aprobacionTx && { aprobacion: r.aprobacionTx }) }, x => { x.estado = 'ventana_reclamo'; if (r.yaAprobado) x.red!.txs.aprobacion ??= 'ya-aprobado' })
+  })
+  const liberarYa = () => correr(async () => {
+    setAvance('Devolviendo el depósito…'); const r = await liberar(a.red!.escrow!)
+    anotar(a.id, { liberacion: r.tx }, x => { x.estado = 'cerrado'; x.resultado = { inquilino: Math.round(x.monto * 0.997 * 1e7) / 1e7, dueno: 0, via: 'automatico', fecha: new Date().toISOString() } })
+  })
+  const recibe = usd(Math.round(a.monto * 0.997 * 1e7) / 1e7)
+  const ultimo = (k: PasoRed) => t[k] && t[k] !== 'ya-aprobado' ? <p className="ultimo-comprobante nota" role="status">✓ {NOMBRE_PASO[k]} · <VerTx h={t[k]!} /></p> : null
+  const pantalla = [
+    null,
+    <><h2>Obtener USDC de prueba</h2><ObtenerUsdc objetivo={a.monto} onListo={r => anotar(a.id, r.txs, x => { x.red!.inquilino = r.g; x.red!.inquilinoPrueba = true; if (Number(r.saldo) >= a.monto) x.red!.usdcListo = true })} /></>,
+    <>{ultimo('compra')}<h2>Depositar en la cuenta segura</h2>
+      <p>{usd(a.monto)} de prueba quedan bloqueados en una cuenta segura (escrow) de Trustless Work en la red de prueba de Stellar. Lockumi firma el depósito por el {INQUILINO_PRUEBA.toLowerCase()}.</p>
+      {boton(`Depositar ${usd(a.monto)}`, depositarYa)}<p className="nota">Tarda entre 20 y 60 segundos.</p></>,
+    <>{ultimo('deposito')}<h2>El dueño de prueba aprueba</h2>
+      <p>Al terminar el alquiler, si todo está bien, el dueño aprueba devolver el depósito. Como es un {DUENO_PRUEBA.toLowerCase()}, Lockumi firma esa aprobación por él.</p>
+      {boton('Aprobar la devolución', aprobarYa)}
+      <div className="simulado-caja"><p className="nota"><Simulado /> ¿Y si hubiera un daño? El reclamo y la persona mediadora son simulados en esta demo: no se registran en la red de prueba.</p></div></>,
+    <>{ultimo('aprobacion')}<h2>Devolver el depósito</h2>
+      <p>El dueño de prueba ya aprobó. Lockumi libera el depósito de la cuenta segura al inquilino. Trustless Work descuenta 0,3 %: llegan {recibe} de prueba.</p>
+      {boton('Devolver el depósito', liberarYa)}</>,
+    <>{ultimo('liberacion')}<span className="chip chip--exito">✓ Terminado</span><h2>Depósito devuelto</h2>
+      <p>El inquilino de prueba recibió {recibe} de prueba en la red de prueba de Stellar. Todos los pasos quedaron registrados:</p></>,
+  ][paso]
+  return <main id="contenido" tabIndex={-1} className="cont" style={{ paddingBottom: 48 }}>
+    <a href="#/" className="volver">← Tus alquileres</a>
+    <h1 className="h-lugar">{a.direccion}</h1>
+    <div className="paso-cab"><p className="paso-cab__n">{paso >= 5 ? 'Terminado' : `Paso ${paso + 1} de 5`}</p><p className="paso-cab__t">{PASOS_SOLO[Math.min(paso, 4)]}</p>
+      <div className="pasos-solo" aria-hidden="true">{PASOS_SOLO.map((_, i) => <span key={i} className={i < paso ? 'hecho' : i === paso ? 'actual' : ''} />)}</div></div>
+    <div className="detalle"><div className="detalle__principal pila">
+      <div className="glass glass--fuerte tarjeta pila">{pantalla}<Error m={err} /></div>
+      <Cuentas a={a} />
+    </div>
+    <aside className="detalle__lado pila"><Comprobantes a={a} /></aside></div>
+  </main>
 }
 export { TOPE_USDC, conectarBilletera }

@@ -18,9 +18,11 @@ async function api<T>(cuerpo: Record<string, unknown>): Promise<T> {
 
 // ── Cuenta de prueba de respaldo (inquilino custodiado por Lockumi) ──
 // El navegador guarda solo un identificador aleatorio; la llave se deriva y se usa en el servidor.
-const K_TOKEN = 'lockumi.testnet.cuenta-prueba', K_USAR = 'lockumi.testnet.usar-prueba'
-export const usarPrueba = () => localStorage.getItem(K_USAR) === '1'
-export const fijarUsarPrueba = (v: boolean) => { localStorage.setItem(K_USAR, v ? '1' : '0'); dispatchEvent(new Event('lockumi-cuenta')) }
+// Ahora el servidor firma por el inquilino de prueba (Cavos solo se usa para entrar). La firma con Cavos queda lista para después:
+// se activa solo con localStorage 'lockumi.testnet.usar-cavos' = '1'.
+const K_TOKEN = 'lockumi.testnet.cuenta-prueba', K_USAR = 'lockumi.testnet.usar-cavos'
+export const usarPrueba = () => localStorage.getItem(K_USAR) !== '1'
+export const fijarUsarPrueba = (v: boolean) => { localStorage.setItem(K_USAR, v ? '0' : '1'); dispatchEvent(new Event('lockumi-cuenta')) }
 export function tokenPrueba() {
   let t = localStorage.getItem(K_TOKEN)
   if (!t || !/^[0-9a-f]{64}$/.test(t)) { t = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem(K_TOKEN, t) }
@@ -32,11 +34,11 @@ export const cuentaPruebaGuardada = () => localStorage.getItem(K_G_PRUEBA)
 export type Txs = { trustline?: string; compra?: string }
 /** Cuenta del inquilino: la billetera Cavos, o la cuenta de prueba de respaldo si está activado el interruptor. */
 export async function cuentaInquilino(): Promise<{ g: string; prueba: boolean }> {
-  if (usarPrueba()) { const g = cuentaPruebaGuardada(); if (g) return { g, prueba: true }; const r = await prepararCuentaPrueba(); return { g: r.g, prueba: true } }
+  if (usarPrueba()) return { g: cuentaPruebaGuardada() ?? '', prueba: true }   // '' = todavía no se creó (paso "Obtener USDC de prueba")
   return { g: (await conectarBilletera()).direccion, prueba: false }
 }
-export async function prepararCuentaPrueba(): Promise<{ g: string; txs: Txs }> {
-  const r = await api<{ inquilino: string; trustlineTx: string | null; compraTx: string | null }>({ accion: 'cuenta-prueba', token: tokenPrueba() })
+export async function prepararCuentaPrueba(monto?: number): Promise<{ g: string; txs: Txs }> {
+  const r = await api<{ inquilino: string; trustlineTx: string | null; compraTx: string | null }>({ accion: 'cuenta-prueba', token: tokenPrueba(), ...(monto !== undefined && { monto }) })
   localStorage.setItem(K_G_PRUEBA, r.inquilino)
   return { g: r.inquilino, txs: { ...(r.trustlineTx && { trustline: r.trustlineTx }), ...(r.compraTx && { compra: r.compraTx }) } }
 }
@@ -61,7 +63,7 @@ export function maximoAGastar(precio: number) {
 /** "Obtener USDC de prueba" con la billetera Cavos: Friendbot si hace falta → trustline (addTrustline) → path payment XLM→USDC (signXdr). */
 export async function obtenerUsdc(objetivo: number, avance: (t: string) => void = () => {}): Promise<{ g: string; txs: Txs; saldo: string }> {
   if (!montoValido(objetivo)) throw new ErrorSolo(`Puedes pedir hasta ${TOPE_USDC} USDC de prueba.`)
-  if (usarPrueba()) { avance('Preparando la cuenta de prueba…'); const r = await prepararCuentaPrueba(); return { ...r, saldo: (await consultarUsdc(r.g)) ?? '0' } }
+  if (usarPrueba()) { avance('Preparando el inquilino de prueba y enviando USDC de prueba…'); const r = await prepararCuentaPrueba(objetivo); return { ...r, saldo: (await consultarUsdc(r.g)) ?? '0' } }
   const g = (await conectarBilletera()).direccion; const txs: Txs = {}
   if (await consultarSaldo(g) === null) { avance('Activando tu cuenta con XLM de prueba gratis…'); await fondear(g); olvidarBilletera() }
   if (await consultarUsdc(g) === null) {
@@ -99,6 +101,7 @@ export type Pasos = Partial<Record<'escrow' | 'trustline' | 'compra' | 'deposito
 export async function depositar(contrato: string, monto: number, avance: (t: string) => void = () => {}) {
   if (!montoValido(monto)) throw new ErrorSolo(`El depósito de prueba es de máximo ${TOPE_USDC} USDC.`)
   const { g, prueba } = await cuentaInquilino()
+  if (!g) throw new ErrorSolo('Primero toca "Obtener USDC de prueba".')
   avance('Preparando la cuenta del dueño de prueba…')
   const d = await api<{ dueno: string; trustlineTx: string | null }>({ accion: 'dueno', contrato })
   avance('Creando la cuenta segura del depósito…')

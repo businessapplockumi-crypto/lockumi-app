@@ -26,7 +26,7 @@ export interface Alquiler {
   red?: RedPrueba
 }
 export type PasoRed = 'trustline' | 'compra' | 'escrow' | 'deposito' | 'evidencia' | 'aprobacion' | 'liberacion' | 'duenoTrustline'
-export interface RedPrueba { escrow?: string; dueno?: string; inquilino?: string; inquilinoPrueba?: boolean; txs: Partial<Record<PasoRed, string>> }
+export interface RedPrueba { escrow?: string; dueno?: string; inquilino?: string; inquilinoPrueba?: boolean; usdcListo?: boolean; txs: Partial<Record<PasoRed, string>> }
 export const ETIQUETA_ESTADO: Record<Estado,string> = {
   firmas:'Firmas', pendiente_pago:'Esperando depósito', fotos_entrada:'Fotos de entrada',
   en_curso:'Alquiler en curso', salida:'Fotos de salida', ventana_reclamo:'7 días para reclamos',

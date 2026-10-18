@@ -72,6 +72,17 @@ describe('fase 1 · tope de 20 USDC (condición 3)', () => {
   it('un escrow por encima del tope no se puede fondear', async () => {
     await expect(ir({ accion: 'fondear', escrow: ESC, inquilino: INQ.publicKey() }, simular(escrow({ amount: 50 })))).rejects.toThrow(/tope/)
   })
+  it('la tesorería envía al inquilino de prueba solo lo que falta, sin pasar del tope', async () => {
+    const s = simular(escrow(), '500'); const llam = s.llamadas
+    const f = (async (url: string, init?: RequestInit) => url.includes('/accounts/') && !url.includes(P.publicKey())
+      ? new Response(JSON.stringify({ id: url.split('/').pop(), sequence: '1', balances: [{ asset_type: 'credit_alphanum4', asset_code: 'USDC', asset_issuer: USDC.issuer, balance: '3' }] }))
+      : s.f(url, init)) as typeof fetch
+    const r = await atenderSolo(ENV, { accion: 'cuenta-prueba', token: 'c'.repeat(64), monto: 20 }, 'ip', f)
+    expect(r.via).toBe('tesoreria')
+    const env = llam.filter(l => l.url.endsWith('/transactions'))
+    expect(env).toHaveLength(1)
+    await expect(ir({ accion: 'cuenta-prueba', token: 'c'.repeat(64), monto: 25 })).rejects.toThrow(/hasta 20/)
+  })
   it('la compra de USDC del cliente tiene un máximo a gastar', async () => {
     const { maximoAGastar } = await import('../solo')
     expect(maximoAGastar(22.6)).toBeCloseTo(24.86, 2); expect(maximoAGastar(59)).toBe(MAX_XLM_COMPRA); expect(() => maximoAGastar(61)).toThrow(/no gastamos más/)
