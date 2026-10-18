@@ -1,0 +1,266 @@
+// Fase 1 · modo de una sola persona, REAL en Stellar testnet y SIN base de datos.
+// - Inquilino: la billetera Cavos de quien prueba (firma el depósito con signXdr), o, como respaldo rotulado,
+//   una cuenta de prueba que custodia el servidor (derivada de LOCKUMI_DEMO_SEED + un token aleatorio del navegador).
+// - Dueño: cuenta de prueba que custodia el servidor, derivada de LOCKUMI_DEMO_SEED + id del contrato + rol.
+// - Plataforma (GCTL…): crea el escrow, deja la evidencia y libera.
+// Las llaves solo existen aquí (se derivan en memoria de variables del servidor); el navegador solo recibe claves públicas y hashes.
+// Sin estado propio: cada acción se valida contra el escrow que reporta Trustless Work con validateOnChain=true.
+import { createHmac } from 'node:crypto'
+import { Keypair, Networks, TransactionBuilder, Operation, Asset, Address, Account, xdr, type Transaction } from '@stellar/stellar-sdk'
+import { ErrorTw, leerTx, hashTx, datosOnChain, sinDatosPersonales, EVIDENCIA_ONCHAIN } from './tw.js'
+import { PASSPHRASE_TESTNET, HORIZON_TESTNET, RPC_TESTNET, FRIENDBOT, TW_TESTNET, USDC, TOPE_USDC, MAX_XLM_COMPRA, montoValido, exigirTestnet } from './red.js'
+
+export type Entorno = Record<string, string | undefined>
+const G = /^G[A-Z2-7]{55}$/, C = /^C[A-Z2-7]{55}$/, UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, TOKEN = /^[0-9a-f]{64}$/, HUELLA = /^[0-9a-f]{64}$/
+const exigir = (ok: unknown, estado: number, m: string): void => { if (!ok) throw new ErrorTw(estado, m) }
+
+export function configSolo(e: Entorno) {
+  const base = (e.TRUSTLESS_WORK_BASE_URL || TW_TESTNET).replace(/\/$/, '')
+  const passphrase = e.STELLAR_NETWORK_PASSPHRASE || PASSPHRASE_TESTNET
+  const horizon = (e.HORIZON_URL || HORIZON_TESTNET).replace(/\/$/, '')
+  try { exigirTestnet(passphrase, base, horizon) } catch (x) { throw new ErrorTw(500, (x as Error).message) }
+  if (base !== TW_TESTNET) throw new ErrorTw(500, 'Este proxy solo trabaja con la API de testnet de Trustless Work.')
+  if (Networks.TESTNET !== PASSPHRASE_TESTNET) throw new ErrorTw(500, 'Passphrase de testnet inesperado.')
+  const falta = ['TRUSTLESS_WORK_API_KEY', 'LOCKUMI_TW_PLATAFORMA_SECRET', 'LOCKUMI_DEMO_SEED'].filter(k => !e[k]?.trim())
+  if (falta.length) throw new ErrorTw(503, 'Falta configurar en el servidor: ' + falta.join(', '))
+  const seed = e.LOCKUMI_DEMO_SEED!.trim()
+  if (seed.length < 32) throw new ErrorTw(500, 'LOCKUMI_DEMO_SEED es demasiado corta.')
+  const plataforma = Keypair.fromSecret(e.LOCKUMI_TW_PLATAFORMA_SECRET!.trim())
+  return { base, horizon, llave: e.TRUSTLESS_WORK_API_KEY!.trim(), seed, plataforma, P: plataforma.publicKey() }
+}
+export type ConfigSolo = ReturnType<typeof configSolo>
+
+/** Llave de una cuenta de prueba: HMAC-SHA256(LOCKUMI_DEMO_SEED, contexto) como semilla ed25519. Nunca sale del servidor. */
+export const derivar = (c: Pick<ConfigSolo, 'seed'>, contexto: string) =>
+  Keypair.fromRawEd25519Seed(createHmac('sha256', c.seed).update('lockumi-testnet-v1|' + contexto).digest())
+export const duenoDe = (c: Pick<ConfigSolo, 'seed'>, contrato: string) => derivar(c, 'dueno|' + contrato)
+export const inquilinoPruebaDe = (c: Pick<ConfigSolo, 'seed'>, token: string) => derivar(c, 'inquilino|' + token)
+
+// ── Límite de frecuencia por IP (en memoria) ──
+// Límite conocido: vive en la memoria de cada instancia de la función de Vercel; se reinicia en cada arranque en frío y no se
+// comparte entre instancias. Frena el abuso casual, no un ataque distribuido (para eso haría falta un almacén compartido).
+const LIMITES = { general: { n: 60, ventanaMs: 10 * 60_000 }, costosa: { n: 8, ventanaMs: 60 * 60_000 } } as const
+const COSTOSAS = new Set(['desplegar', 'cuenta-prueba', 'fondear-prueba'])
+const visitas = new Map<string, number[]>()
+export function limitar(ip: string, accion: string, ahora = Date.now()) {
+  for (const [tipo, l] of Object.entries(LIMITES) as [keyof typeof LIMITES, { n: number; ventanaMs: number }][]) {
+    if (tipo === 'costosa' && !COSTOSAS.has(accion)) continue
+    const k = tipo + '|' + ip, v = (visitas.get(k) ?? []).filter(t => ahora - t < l.ventanaMs)
+    if (v.length >= l.n) throw new ErrorTw(429, `Hiciste muchas solicitudes seguidas. Espera ${Math.ceil(l.ventanaMs / 60_000)} minutos y vuelve a intentarlo.`)
+    v.push(ahora); visitas.set(k, v)
+  }
+  if (visitas.size > 5000) visitas.clear()
+}
+export const reiniciarLimites = () => visitas.clear()
+
+// ── Trustless Work ──
+async function tw<T = Record<string, unknown>>(c: ConfigSolo, ruta: string, cuerpo: unknown, f: typeof fetch, metodo = 'POST'): Promise<T> {
+  const r = await f(c.base + ruta, { method: metodo, headers: { 'content-type': 'application/json', 'x-api-key': c.llave }, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) })
+  const t = await r.text(); let j: Record<string, unknown> = {}; try { j = JSON.parse(t) } catch { /* texto */ }
+  if (!r.ok) throw new ErrorTw(r.status === 429 ? 429 : 502, `Trustless Work ${ruta.split('?')[0]} respondió ${r.status}: ${String(j.message ?? t).split(c.llave).join('[llave]').slice(0, 300)}`)
+  return (Array.isArray(j) ? j : j) as T
+}
+const sinFirmar = (j: Record<string, unknown>) => {
+  const x = j.unsignedTransaction ?? j.unsignedXdr
+  if (typeof x !== 'string') throw new ErrorTw(502, 'Trustless Work no devolvió la transacción sin firmar.'); return x
+}
+async function enviarTw(c: ConfigSolo, signedXdr: string, f: typeof fetch) {
+  const r = await tw(c, '/helper/send-transaction', { signedXdr }, f)
+  if (r.status && r.status !== 'SUCCESS') throw new ErrorTw(502, 'La red de prueba no aceptó la transacción: ' + JSON.stringify(r).slice(0, 200))
+  return { r, tx: hashTx(signedXdr) }
+}
+
+export interface Escrow {
+  contractId: string; signer: string; engagementId: string; title: string; amount: number; balance: number
+  roles: Record<'approver' | 'serviceProvider' | 'platformAddress' | 'releaseSigner' | 'disputeResolver' | 'receiver', string>
+  trustline: { address: string }; milestones: { status: string; approved: boolean; evidence?: string }[]
+  flags: { disputed: boolean; released: boolean; resolved: boolean }; inconsistencies?: { inconsistencyFound: boolean }
+}
+export async function leerEscrow(c: ConfigSolo, id: string, f: typeof fetch): Promise<Escrow> {
+  exigir(C.test(id), 400, 'La cuenta segura del depósito no es válida.')
+  const j = await tw<unknown>(c, `/helper/get-escrow-by-contract-ids?contractIds[]=${id}&validateOnChain=true`, undefined, f, 'GET')
+  const e = (Array.isArray(j) ? j[0] : j) as Escrow | undefined
+  exigir(e && e.contractId === id, 404, 'No encontramos la cuenta segura del depósito en la red de prueba.')
+  return e!
+}
+/** El escrow lo creó Lockumi para este modo: plataforma GCTL…, dueño derivado del id del contrato, tope y USDC de prueba. */
+export function validarEscrow(c: ConfigSolo, e: Escrow, receiver?: string) {
+  exigir(UUID.test(e.engagementId), 403, 'Esta cuenta segura no es de Lockumi.')
+  exigir(e.signer === c.P && e.roles.platformAddress === c.P && e.roles.releaseSigner === c.P && e.roles.serviceProvider === c.P, 403, 'Esta cuenta segura no es de Lockumi.')
+  exigir(e.roles.approver === duenoDe(c, e.engagementId).publicKey(), 403, 'El dueño de esta cuenta segura no es el dueño de prueba de Lockumi.')
+  exigir(e.trustline?.address === USDC.issuer, 403, 'Esta cuenta segura no usa USDC de prueba.')
+  exigir(montoValido(Number(e.amount)), 403, `El monto supera el tope de ${TOPE_USDC} USDC de prueba.`)
+  exigir(!e.inconsistencies?.inconsistencyFound, 409, 'Los datos de la cuenta segura no coinciden con la red. Espera unos segundos y vuelve a intentarlo.')
+  if (receiver !== undefined) exigir(e.roles.receiver === receiver, 403, 'El depósito tiene que salir de la cuenta que lo recibe de vuelta.')
+}
+/** Única llamada a contrato permitida en una transacción: contrato y método esperados. */
+export function exigirLlamada(t: Transaction, contrato: string | null, metodos: string[]) {
+  exigir(t.operations.length === 1 && t.operations[0].type === 'invokeHostFunction', 400, 'Transacción inesperada.')
+  const fn = (t.operations[0] as unknown as { func: xdr.HostFunction }).func
+  exigir(fn.switch() === xdr.HostFunctionType.hostFunctionTypeInvokeContract(), 400, 'Transacción inesperada.')
+  const ic = fn.invokeContract()
+  if (contrato) exigir(Address.fromScAddress(ic.contractAddress()).toString() === contrato, 400, 'La transacción no es de esta cuenta segura.')
+  exigir(metodos.includes(ic.functionName().toString()), 400, 'Transacción inesperada: ' + ic.functionName().toString())
+}
+function firmarComo(k: Keypair, x: string, contrato: string | null, metodos: string[]) {
+  const t = leerTx(x)
+  exigir(t.networkPassphrase === PASSPHRASE_TESTNET, 400, 'Solo red de prueba.')
+  exigir(t.source === k.publicKey(), 502, 'La transacción no sale de la cuenta esperada.')
+  exigirLlamada(t, contrato, metodos)
+  t.sign(k); return t.toXDR()
+}
+
+// ── Horizon / Friendbot (cuentas de prueba del servidor) ──
+type Cuenta = { id: string; sequence: string; balances: { asset_type: string; asset_code?: string; asset_issuer?: string; balance: string }[] }
+async function cuenta(c: ConfigSolo, g: string, f: typeof fetch): Promise<Cuenta | null> {
+  const r = await f(`${c.horizon}/accounts/${g}`); if (r.status === 404) return null
+  if (!r.ok) throw new ErrorTw(502, 'La red de prueba no respondió (Horizon ' + r.status + '). Intenta de nuevo en un minuto.')
+  return r.json() as Promise<Cuenta>
+}
+const usdcDe = (a: Cuenta | null) => a?.balances.find(b => b.asset_code === USDC.code && b.asset_issuer === USDC.issuer)?.balance ?? null
+async function friendbot(g: string, f: typeof fetch) {
+  const r = await f(`${FRIENDBOT}/?addr=${g}`)
+  if (!r.ok && !(r.status === 400 && /already|exist/i.test(await r.text()))) throw new ErrorTw(502, 'Friendbot (XLM de prueba gratis) no respondió. Intenta de nuevo en un minuto.')
+}
+async function enviarHorizon(c: ConfigSolo, t: Transaction, f: typeof fetch) {
+  const r = await f(`${c.horizon}/transactions`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'tx=' + encodeURIComponent(t.toXDR()) })
+  const j = await r.json().catch(() => ({})) as { hash?: string; extras?: { result_codes?: unknown } }
+  if (!r.ok || !j.hash) throw new ErrorTw(502, 'La red de prueba rechazó la operación: ' + JSON.stringify(j.extras?.result_codes ?? r.status).slice(0, 160))
+  return j.hash
+}
+const tb = (a: Cuenta) => new TransactionBuilder(new Account(a.id, a.sequence), { fee: '1000', networkPassphrase: PASSPHRASE_TESTNET })
+/** Crea la cuenta (Friendbot) y abre la trustline de USDC si faltan. Devuelve el hash de la trustline si la abrió. */
+async function prepararCuenta(c: ConfigSolo, k: Keypair, f: typeof fetch) {
+  let a = await cuenta(c, k.publicKey(), f)
+  if (!a) { await friendbot(k.publicKey(), f); a = await cuenta(c, k.publicKey(), f) }
+  exigir(a, 502, 'No pudimos activar la cuenta de prueba. Intenta de nuevo en un minuto.')
+  if (usdcDe(a) !== null) return { a: a!, trustline: null as string | null }
+  const t = tb(a!).addOperation(Operation.changeTrust({ asset: new Asset(USDC.code, USDC.issuer) })).setTimeout(60).build(); t.sign(k)
+  return { a: a!, trustline: await enviarHorizon(c, t, f) }
+}
+
+// ── Acciones permitidas ──
+export type PedidoSolo =
+  | { accion: 'dueno'; contrato: string }
+  | { accion: 'cuenta-prueba'; token: string }
+  | { accion: 'desplegar'; contrato: string; inquilino: string; monto: number }
+  | { accion: 'fondear'; escrow: string; inquilino: string }
+  | { accion: 'enviar-deposito'; escrow: string; signedXdr: string }
+  | { accion: 'fondear-prueba'; escrow: string; token: string }
+  | { accion: 'aprobar'; escrow: string; huella?: string }
+  | { accion: 'liberar'; escrow: string }
+export const ACCIONES = ['dueno', 'cuenta-prueba', 'desplegar', 'fondear', 'enviar-deposito', 'fondear-prueba', 'aprobar', 'liberar'] as const
+
+const espera = (ms: number) => new Promise(r => setTimeout(r, ms))
+async function leerHasta(c: ConfigSolo, id: string, ok: (e: Escrow) => boolean, f: typeof fetch, intentos = 6, ms = 1500) {
+  let e = await leerEscrow(c, id, f)
+  for (let i = 1; i < intentos && !ok(e); i++) { await espera(ms); e = await leerEscrow(c, id, f) }
+  return e
+}
+const fondeado = (e: Escrow) => Number(e.balance) >= Number(e.amount)
+
+export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: typeof fetch = fetch, opciones = { espera: 1500 }): Promise<Record<string, unknown>> {
+  exigir(p && typeof p === 'object' && (ACCIONES as readonly string[]).includes((p as { accion: string }).accion), 400, 'Acción no permitida.')
+  const c = configSolo(env)
+  limitar(ip, p.accion)
+  switch (p.accion) {
+    case 'dueno': {   // cuenta del dueño de prueba: Friendbot + trustline de USDC (TW exige que el approver tenga trustline)
+      exigir(UUID.test(p.contrato), 400, 'Contrato inválido.')
+      const k = duenoDe(c, p.contrato); const { trustline } = await prepararCuenta(c, k, f)
+      return { dueno: k.publicKey(), trustlineTx: trustline }
+    }
+    case 'cuenta-prueba': {   // respaldo rotulado: inquilino de prueba custodiado por el servidor, con USDC de prueba hasta el tope
+      exigir(TOKEN.test(p.token), 400, 'Falta el identificador de la cuenta de prueba.')
+      const k = inquilinoPruebaDe(c, p.token); const { trustline } = await prepararCuenta(c, k, f)
+      const a = (await cuenta(c, k.publicKey(), f))!
+      const saldo = Number(usdcDe(a) ?? 0); let compra: string | null = null
+      if (saldo < TOPE_USDC) {
+        const falta = Math.round((TOPE_USDC - saldo) * 1e7) / 1e7
+        const t = tb(a).addOperation(Operation.pathPaymentStrictReceive({ sendAsset: Asset.native(), sendMax: String(MAX_XLM_COMPRA), destination: k.publicKey(),
+          destAsset: new Asset(USDC.code, USDC.issuer), destAmount: falta.toFixed(7), path: [] })).setTimeout(60).build(); t.sign(k)
+        compra = await enviarHorizon(c, t, f)
+      }
+      return { inquilino: k.publicKey(), trustlineTx: trustline, compraTx: compra, usdc: usdcDe(await cuenta(c, k.publicKey(), f)) }
+    }
+    case 'desplegar': {   // la plataforma crea el escrow; textos fijos y el uuid del contrato (sin datos personales)
+      exigir(UUID.test(p.contrato), 400, 'Contrato inválido.')
+      exigir(G.test(p.inquilino), 400, 'La cuenta del inquilino no es válida.')
+      exigir(montoValido(p.monto), 400, `El depósito de prueba tiene que ser mayor que 0 y como máximo ${TOPE_USDC} USDC.`)
+      const dueno = duenoDe(c, p.contrato).publicKey()
+      exigir(new Set([p.inquilino, dueno, c.P]).size === 3, 400, 'La cuenta del inquilino no puede ser la del dueño ni la de Lockumi.')
+      const inq = await cuenta(c, p.inquilino, f)
+      exigir(inq, 409, 'Tu cuenta todavía no existe en la red de prueba. Toca "Obtener USDC de prueba" primero.')
+      exigir(usdcDe(inq) !== null, 409, 'Tu cuenta todavía no tiene USDC habilitado. Toca "Obtener USDC de prueba" primero.')
+      exigir(Number(usdcDe(inq)) >= p.monto, 409, `Te faltan USDC de prueba: tienes ${Number(usdcDe(inq))} y el depósito es de ${p.monto}. Toca "Obtener USDC de prueba".`)
+      await prepararCuenta(c, duenoDe(c, p.contrato), f)
+      const pub = datosOnChain({ id: p.contrato })
+      sinDatosPersonales([pub.title, pub.description, ...pub.milestones.map(m => m.description)], { direccion: '' })
+      const j = await tw(c, '/deployer/single-release', {
+        signer: c.P, ...pub,
+        roles: { approver: dueno, serviceProvider: c.P, platformAddress: c.P, releaseSigner: c.P, disputeResolver: c.P, receiver: p.inquilino },
+        amount: p.monto, platformFee: 0, trustline: { address: USDC.issuer, symbol: USDC.code },
+      }, f)
+      const t = leerTx(sinFirmar(j)); exigir(t.source === c.P, 502, 'La transacción no es de la cuenta de la plataforma.')
+      exigir(t.operations.length === 1 && t.operations[0].type === 'invokeHostFunction', 502, 'Transacción inesperada.')
+      t.sign(c.plataforma)
+      const { r, tx } = await enviarTw(c, t.toXDR(), f)
+      const id = String(r.contractId ?? (r.escrow as { contractId?: string } | undefined)?.contractId ?? '')
+      exigir(C.test(id), 502, 'Trustless Work no devolvió la cuenta segura del depósito.')
+      return { escrow: id, tx, dueno }
+    }
+    case 'fondear': {     // XDR del depósito para que el inquilino la firme con su billetera
+      exigir(G.test(p.inquilino), 400, 'La cuenta del inquilino no es válida.')
+      const e = await leerHasta(c, p.escrow, x => x.contractId === p.escrow, f, 1); validarEscrow(c, e, p.inquilino)
+      exigir(!fondeado(e) && !e.flags.released && !e.flags.disputed, 409, 'Este depósito ya se pagó.')
+      const j = await tw(c, '/escrow/single-release/fund-escrow', { contractId: p.escrow, signer: p.inquilino, amount: Number(e.amount) }, f)
+      const x = sinFirmar(j), t = leerTx(x)
+      exigir(t.source === p.inquilino, 502, 'La transacción del depósito no sale de tu cuenta.'); exigirLlamada(t, p.escrow, ['fund_escrow'])
+      return { unsignedXdr: x }
+    }
+    case 'enviar-deposito': {   // solo reenvía el depósito firmado por el receiver de ESTE escrow
+      exigir(typeof p.signedXdr === 'string' && p.signedXdr.length < 20000, 400, 'Transacción inválida.')
+      const t = leerTx(p.signedXdr)
+      const e = await leerEscrow(c, p.escrow, f); validarEscrow(c, e, t.source)
+      exigir(t.signatures.length > 0, 400, 'Falta la firma de tu billetera.')
+      exigirLlamada(t, p.escrow, ['fund_escrow'])
+      exigir(!fondeado(e), 409, 'Este depósito ya se pagó.')
+      return { tx: (await enviarTw(c, p.signedXdr, f)).tx }
+    }
+    case 'fondear-prueba': {    // respaldo: el servidor firma el depósito con la cuenta de inquilino de prueba
+      exigir(TOKEN.test(p.token), 400, 'Falta el identificador de la cuenta de prueba.')
+      const k = inquilinoPruebaDe(c, p.token)
+      const e = await leerEscrow(c, p.escrow, f); validarEscrow(c, e, k.publicKey())
+      exigir(!fondeado(e) && !e.flags.released, 409, 'Este depósito ya se pagó.')
+      const j = await tw(c, '/escrow/single-release/fund-escrow', { contractId: p.escrow, signer: k.publicKey(), amount: Number(e.amount) }, f)
+      return { tx: (await enviarTw(c, firmarComo(k, sinFirmar(j), p.escrow, ['fund_escrow']), f)).tx }
+    }
+    case 'aprobar': {     // evidencia (plataforma) + aprobación (dueño de prueba). Solo con el depósito completo en el escrow.
+      exigir(p.huella === undefined || HUELLA.test(p.huella), 400, 'La huella del acta no es válida.')
+      const e = await leerHasta(c, p.escrow, fondeado, f, 6, opciones.espera); validarEscrow(c, e)
+      exigir(fondeado(e), 409, 'La cuenta segura todavía no tiene el depósito completo. Espera unos segundos y vuelve a intentarlo.')
+      exigir(!e.flags.released && !e.flags.disputed, 409, 'Este depósito ya se cerró.')
+      const h = e.milestones[0]; exigir(h, 502, 'La cuenta segura no tiene el hito de entrega.')
+      if (h.approved) return { yaAprobado: true }
+      let evidenciaTx: string | null = null
+      if (h.status !== 'Completed') {
+        const evidencia = EVIDENCIA_ONCHAIN + (p.huella ? ` · sha256:${p.huella}` : '')
+        sinDatosPersonales([evidencia], { direccion: '' })
+        const j = await tw(c, '/escrow/single-release/change-milestone-status', { contractId: p.escrow, milestoneIndex: '0', newStatus: 'Completed', newEvidence: evidencia, serviceProvider: c.P }, f)
+        evidenciaTx = (await enviarTw(c, firmarComo(c.plataforma, sinFirmar(j), p.escrow, ['change_milestone_status']), f)).tx
+      }
+      const dueno = duenoDe(c, e.engagementId)
+      const j = await tw(c, '/escrow/single-release/approve-milestone', { contractId: p.escrow, milestoneIndex: '0', approver: dueno.publicKey() }, f)
+      const aprobacionTx = (await enviarTw(c, firmarComo(dueno, sinFirmar(j), p.escrow, ['approve_milestone']), f)).tx
+      return { evidenciaTx, aprobacionTx }
+    }
+    case 'liberar': {     // solo después de la aprobación del dueño en la cadena: la plataforma libera al receiver (inquilino)
+      const e = await leerHasta(c, p.escrow, x => !!x.milestones[0]?.approved, f, 6, opciones.espera); validarEscrow(c, e)
+      exigir(!e.flags.released, 409, 'Este depósito ya se devolvió.')
+      exigir(!e.flags.disputed, 409, 'Este depósito tiene un reclamo abierto.')
+      exigir(e.milestones[0]?.approved, 409, 'Primero el dueño tiene que aprobar la devolución.')
+      exigir(Number(e.balance) > 0, 409, 'La cuenta segura no tiene saldo.')
+      const j = await tw(c, '/escrow/single-release/release-funds', { contractId: p.escrow, releaseSigner: c.P }, f)
+      return { tx: (await enviarTw(c, firmarComo(c.plataforma, sinFirmar(j), p.escrow, ['release_funds']), f)).tx, receiver: e.roles.receiver }
+    }
+  }
+}
