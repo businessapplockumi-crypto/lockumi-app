@@ -53,7 +53,7 @@ if (ap.evidenciaTx) anotar('Evidencia del acta (plataforma)', ap.evidenciaTx); a
 const antes = await usdcDe(G)
 libTx = (await api({ accion: 'liberar', escrow: dep.escrow })).tx; anotar('Liberación al inquilino (plataforma)', libTx)
 escrowId = dep.escrow
-const tx0 = await HZ.transactions().transaction(lib.tx).call()
+const tx0 = await HZ.transactions().transaction(libTx).call()
 console.log(`· Horizon: liberación successful=${tx0.successful} · ledger ${tx0.ledger_attr} · USDC del inquilino ${antes} → ${await usdcDe(G)}`)
 } else { // flujo de la app ahora: inquilino y dueño de prueba custodiados por el servidor, USDC desde la tesorería
   const token = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join(''), contrato = randomUUID()
