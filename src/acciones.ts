@@ -5,7 +5,7 @@ import { escrow } from './services/escrow'
 import { firmar as firmarLocal, ambos, NOMBRE } from './flujo'
 import { usd } from './ui'
 import type { Alquiler, Foto, Rol } from './types'
-import { modoServidor, modoTrustless } from './servidor/config'
+import { modoServidor, modoTrustless, modoSolo } from './servidor/config'
 import { trustless } from './services/trustless'
 import { servidor } from './servidor/repositorio'
 
@@ -38,6 +38,8 @@ export interface Acciones {
 const local: Acciones = {
   async crear(d, email) {
     const a = store.crear({ ...d, duenoEmail: email })
+    // Fase 1 (testnet real): la cuenta segura se crea en la red al depositar (Real.tsx → /api/solo).
+    if (modoSolo) { store.cambiar(a.id, x => { x.red = { txs: {} } }); return { id: a.id } }
     const { escrowId } = await escrow.crear(a.id, d.monto); store.cambiar(a.id, x => { x.escrowId = escrowId }); return { id: a.id }
   },
   async firmar(a, etapa, rol) {
@@ -70,6 +72,7 @@ const local: Acciones = {
     } else store.cambiar(a.id, x => { x.reclamo!.respuesta = 'rechazado'; x.estado = 'mediacion' }, 'El inquilino no aceptó el reclamo. Pasa a una persona mediadora')
   },
   async cerrarSinReclamo(a) {
+    if (modoSolo) return   // fase 1: se cierra con la aprobación y la devolución reales (CierreReal)
     store.cambiar(a.id, x => {
       if (x.estado !== 'ventana_reclamo' || x.reclamo || ahoraDe(x) < +new Date(x.ventanaInicio!) + plazoMs(x)) return
       x.estado = 'cerrado'; x.resultado = { inquilino: x.monto, dueno: 0, via: 'automatico', fecha: iso(x) }

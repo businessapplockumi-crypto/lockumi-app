@@ -7,3 +7,5 @@ export const VENTANA_SEGUNDOS = Math.max(60, Math.min(604800, Number(import.meta
 export const BUCKET_FOTOS = 'lk-fotos'
 /** Trustless Work real (escrow en testnet) a través de /api/tw. Requiere modoServidor y las variables del servidor. */
 export const modoTrustless = modoServidor && import.meta.env.VITE_TRUSTLESS === '1'
+/** Fase 1: una sola persona, REAL en Stellar testnet y SIN base de datos (VITE_TRUSTLESS=1 sin Supabase). Proxy /api/solo. */
+export const modoSolo = !modoServidor && import.meta.env.VITE_TRUSTLESS === '1'

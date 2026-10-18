@@ -22,7 +22,11 @@ export interface Alquiler {
   escrowId?: string; contrato: { firmas: Partial<Record<Rol, string>> }; entrada: Acta; salida?: Acta; pago?: string
   ventanaInicio?: string; diasSimulados: number
   reclamo?: Reclamo; resultado?: Resultado
+  /** Fase 1 (testnet real, una sola persona): cuenta segura (C…), cuentas G… y hashes de cada paso en la red de prueba. */
+  red?: RedPrueba
 }
+export type PasoRed = 'trustline' | 'compra' | 'escrow' | 'deposito' | 'evidencia' | 'aprobacion' | 'liberacion' | 'duenoTrustline'
+export interface RedPrueba { escrow?: string; dueno?: string; inquilino?: string; inquilinoPrueba?: boolean; txs: Partial<Record<PasoRed, string>> }
 export const ETIQUETA_ESTADO: Record<Estado,string> = {
   firmas:'Firmas', pendiente_pago:'Esperando depósito', fotos_entrada:'Fotos de entrada',
   en_curso:'Alquiler en curso', salida:'Fotos de salida', ventana_reclamo:'7 días para reclamos',

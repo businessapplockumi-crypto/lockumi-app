@@ -392,3 +392,11 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .casilla-legal__fila input{flex:none;width:22px;height:22px;margin:0;accent-color:var(--accion);cursor:pointer}
 .casilla-legal__fila a{font-weight:600}
 .casilla-legal__error{margin-top:8px;padding-left:34px;line-height:20px}
+/* Fase 1 · red de prueba */
+.demo--simulado{text-transform:none;letter-spacing:0}
+.cuentas-prueba{display:flex;flex-direction:column;gap:4px;width:100%;font-size:.9rem}.cuentas-prueba p{margin:0}
+.interruptor-prueba{font-size:.9rem;align-items:flex-start}
+.comprobantes li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px}
+.ultimo-comprobante{margin:0 0 10px;padding:8px 12px;border-radius:12px;background:rgba(111,191,138,.16)}
+.saldo-usdc{margin:0}
+.interruptor-prueba{display:flex;gap:10px;padding:10px 12px;border:1.5px dashed rgba(61,42,34,.25);border-radius:14px}.interruptor-prueba input{margin-top:3px;width:20px;height:20px;flex:none}

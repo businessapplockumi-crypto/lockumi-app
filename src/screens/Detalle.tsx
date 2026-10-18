@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { LogoAnimado } from '../LogoAnimado'
 import { store, useAlquileres, obtener, ahoraDe, DIA, vistaDe, rolDe, fijarVista } from '../store'
 import { acciones, plazoMs, textoPlazo } from '../acciones'
-import { modoServidor, modoTrustless } from '../servidor/config'
+import { modoServidor, modoTrustless, modoSolo } from '../servidor/config'
+import { PagoReal, CierreReal, Comprobantes, Cuentas, UltimoComprobante } from './Real'
 import { servidor } from '../servidor/repositorio'
 import { modoReal } from '../services/auth'
 import { NOMBRE_ROL, type Alquiler, type Rol, type Foto, type Usuario } from '../types'
 import { fotoEjemplo } from '../demoFotos'
-import { Demo, Icono, LineaTiempo, usd, fecha, fechaHora } from '../ui'
+import { Demo, Simulado, Icono, LineaTiempo, usd, fecha, fechaHora } from '../ui'
 import { CuartoEditor, Firma, FotoLista, cuartoListo } from './Acta'
 import { TomarFoto } from '../Camara'
 import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE } from '../flujo'
@@ -36,6 +37,10 @@ function Contrato({ a, rol }: P) {
 }
 
 function Pago({ a, rol }: P) {
+  if (modoSolo) return <PagoReal a={a} rol={rol} />
+  return <PagoSimulado a={a} rol={rol} />
+}
+function PagoSimulado({ a, rol }: P) {
   const [cargando, setC] = useState(false); const [err, setErr] = useState('')
   const pagar = async () => {
     setC(true); setErr('')
@@ -103,17 +108,20 @@ function Ventana({ a, rol }: P) {
   const fin = +new Date(a.ventanaInicio!) + plazoMs(a); const [, tick] = useState(0); const [form, setForm] = useState(false)
   useEffect(() => { const t = setInterval(() => tick(k => k + 1), 30_000); return () => clearInterval(t) }, [])
   const resta = Math.max(0, fin - ahoraDe(a)); const dias = Math.floor(resta / DIA); const horas = Math.floor(resta % DIA / 3_600_000)
-  useEffect(() => { if (resta === 0 && !a.reclamo) void acciones.cerrarSinReclamo(a) }, [resta, a.id, a.reclamo]) // eslint-disable-line
+  useEffect(() => { if (!modoSolo && resta === 0 && !a.reclamo) void acciones.cerrarSinReclamo(a) }, [resta, a.id, a.reclamo]) // eslint-disable-line
   return <section className="pila"><h2>{textoPlazo(a)} para reclamos</h2>
     <div className="cuenta" role="timer"><span className="cuenta__n">{dias}</span> días <span className="cuenta__n">{horas}</span> horas</div>
-    <p className="nota">Termina el {fechaHora(fin)}. Si no hay reclamos, el depósito vuelve completo al inquilino, sin que nadie tenga que aprobarlo.</p>
+    {modoSolo ? <p className="nota">En esta prueba no hay que esperar el plazo: si todo está bien, el dueño de prueba aprueba y el depósito vuelve al inquilino en la red de prueba.</p>
+      : <p className="nota">Termina el {fechaHora(fin)}. Si no hay reclamos, el depósito vuelve completo al inquilino, sin que nadie tenga que aprobarlo.</p>}
+    {modoSolo && <CierreReal a={a} rol={rol} />}
     {rol === 'dueno'
       ? (form ? <FormReclamo a={a} onCancelar={() => setForm(false)} /> : <>
-        <p>¿Encontraste un daño que no estaba en las fotos de entrada? Puedes reclamar. Si todo está bien, no hagas nada.</p>
-        <button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={() => setForm(true)}>Reclamar un daño</button></>)
+        {modoSolo ? <p className="nota">¿Encontraste un daño? Puedes reclamar. <Simulado /> El reclamo y la mediación no se registran en la red de prueba.</p>
+          : <p>¿Encontraste un daño que no estaba en las fotos de entrada? Puedes reclamar. Si todo está bien, no hagas nada.</p>}
+        <button type="button" className={'boton boton--ancho ' + (modoSolo ? 'boton--secundario' : 'boton--primario boton--grande')} onClick={() => setForm(true)}>Reclamar un daño</button></>)
       : <Espera texto={`Esperando. Si el dueño no reclama en ${textoPlazo(a)}, recibes tu depósito completo.`} />}
     <EscrowReal a={a} rol={rol} />
-    {!modoServidor && <button type="button" className="enlace" onClick={() => { store.cambiar(a.id, x => { x.diasSimulados += 7 }, 'Demo: se adelantaron 7 días'); void acciones.cerrarSinReclamo({ ...a, diasSimulados: a.diasSimulados + 7 }) }}>Demo: adelantar 7 días</button>}
+    {!modoServidor && !modoSolo && <button type="button" className="enlace" onClick={() => { store.cambiar(a.id, x => { x.diasSimulados += 7 }, 'Demo: se adelantaron 7 días'); void acciones.cerrarSinReclamo({ ...a, diasSimulados: a.diasSimulados + 7 }) }}>Demo: adelantar 7 días</button>}
   </section>
 }
 
@@ -156,7 +164,8 @@ function Reclamo({ a, rol }: P) {
 
 
   }
-  return <section className="pila"><h2>Reclamo del dueño</h2><Evidencia a={a} />
+  return <section className="pila"><div className="cab"><h2>Reclamo del dueño</h2>{modoSolo && <Simulado />}</div><Evidencia a={a} />
+    {modoSolo && <p className="nota">El reclamo es simulado: no se registra en la red de prueba y el depósito de prueba sigue bloqueado en la cuenta segura.</p>}
     {rol === 'inquilino' ? <>
       <p>Si aceptas, recibes {usd(a.monto - r.monto)} y el dueño {usd(r.monto)}. Si no estás de acuerdo, una persona mediadora revisa las fotos y decide.</p>
       <button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={aceptar}>Aceptar reclamo</button>
@@ -174,7 +183,8 @@ function Mediacion({ a }: P) {
 
 
   }
-  return <section className="pila"><h2>Con una persona mediadora</h2>
+  return <section className="pila"><div className="cab"><h2>Con una persona mediadora</h2>{modoSolo && <Simulado />}</div>
+    {modoSolo && <p className="nota">La persona mediadora es simulada: su decisión no se registra en la red de prueba ni mueve el depósito de prueba.</p>}
     <p>No hubo acuerdo. Una persona mediadora revisa las fotos de entrada y salida y decide cómo se reparte el depósito.</p>
     <Espera texto="No tienes que hacer nada. Te avisaremos cuando haya una decisión." />
     <Evidencia a={a} />
@@ -222,12 +232,14 @@ function EscrowReal({ a, rol }: P) {
 
 function Cerrado({ a, rol }: P) {
   const r = a.resultado!
-  const via = { automatico: `No hubo reclamos en ${textoPlazo(a)}.`, acuerdo: 'Se pusieron de acuerdo en la app.', mediacion: 'Lo decidió una persona mediadora.' }[r.via]
+  const via = modoSolo && r.via === 'automatico' ? 'El dueño de prueba aprobó y Lockumi devolvió el depósito en la red de prueba (menos 0,3 % de Trustless Work).' : { automatico: `No hubo reclamos en ${textoPlazo(a)}.`, acuerdo: 'Se pusieron de acuerdo en la app.', mediacion: 'Lo decidió una persona mediadora.' }[r.via]
   return <section className="pila cerrado"><LogoAnimado className="logo-pieza logo-pieza--esquina" />
     <span className="chip chip--exito"><Icono id="i-check" /> Terminado</span>
     <h2>Depósito devuelto</h2><p>{via}</p>
     <ul className="lista"><li><span>Inquilino</span><strong>{usd(r.inquilino)}</strong></li><li><span>Dueño</span><strong>{usd(r.dueno)}</strong></li></ul>
     <p className="nota">{fechaHora(r.fecha)}</p>
+    {modoSolo && r.via !== 'automatico' && <p className="nota"><Simulado /> Este reparto no se hizo en la red de prueba: el depósito de prueba sigue en la cuenta segura.</p>}
+    {modoSolo && a.red?.txs.liberacion && <p className="nota">Devolución en la red de prueba: <a className="enlace" href={'https://stellar.expert/explorer/testnet/tx/' + a.red.txs.liberacion} target="_blank" rel="noopener noreferrer">Ver comprobante en la red de prueba</a></p>}
     <EscrowReal a={a} rol={rol} />
   </section>
 }
@@ -250,7 +262,8 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
     {!modoServidor && <div className="vista-demo" role="group" aria-label="Demo: cambiar de persona">
       <span>Estás viendo como <strong>{NOMBRE[rol]}</strong></span>
       <button type="button" className="boton boton--secundario boton--chico" onClick={() => fijarVista(id, otro(rol))}>Ver como {NOMBRE[otro(rol)]}</button>
-      <span className="demo">Demo en un solo aparato</span></div>}
+      <span className="demo">{modoSolo ? 'Una sola persona · red de prueba' : 'Demo en un solo aparato'}</span>
+      {modoSolo && <Cuentas a={a} />}</div>}
     {modoServidor && rol === 'dueno' && a.inquilinoUnido === false && <Invitacion a={a} />}
     <div className="paso-cab"><p className="paso-cab__n">{a.estado === 'cerrado' ? 'Terminado' : pasoTexto(a)}</p><p className="paso-cab__t">{ETAPAS[etapa]}</p>
       <div className="barra-paso" aria-hidden="true"><span style={{ width: `${((etapa + (a.estado === 'cerrado' ? 1 : 0.5)) / ETAPAS.length) * 100}%` }} /></div></div>
@@ -261,16 +274,18 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
           <p><span className="turno__et">Al {NOMBRE[otro(rol)]}</span>{t.otra}</p>
           <p><span className="turno__et">Qué sigue</span>{t.sigue}</p>
         </section>
+        {modoSolo && <UltimoComprobante a={a} />}
         <div className="glass glass--fuerte tarjeta">{panel}</div>
       </div>
       <aside className="detalle__lado pila">
+        {modoSolo && <Comprobantes a={a} />}
         <section className="glass tarjeta" aria-labelledby="t-estado"><h3 id="t-estado">Los pasos</h3><LineaTiempo a={a} /></section>
         <details className="glass tarjeta detalles"><summary>Detalles</summary>
           <ul className="lista"><li><span>Dueño</span><span className="cortar">{a.duenoEmail}</span></li><li><span>Inquilino</span><span className="cortar">{a.inquilinoEmail}</span></li>
             <li><span>Depósito</span><span>{usd(a.monto)}</span></li><li><span>Fechas</span><span>{fecha(a.inicio)} → {fecha(a.fin)}</span></li></ul>
           {real !== rol && <p className="nota">Tu papel real en este alquiler: {NOMBRE_ROL[real].toLowerCase()}.</p>}
           <p className="mini" style={{ marginTop: 12 }}>Historial</p>
-          <ol className="lista historial">{[...a.historial].reverse().map((h, i) => <li key={i}><span>{h.texto}</span><small className="nota">{fechaHora(h.fecha)}</small></li>)}</ol>
+          <ol className="lista historial">{[...a.historial].reverse().map((h, i) => <li key={i}><span>{h.texto}</span><small className="nota">{fechaHora(h.fecha)}{h.tx && h.tx !== 'ya-aprobado' && <> · <a className="enlace" href={'https://stellar.expert/explorer/testnet/tx/' + h.tx} target="_blank" rel="noopener noreferrer">Ver comprobante en la red de prueba</a></>}</small></li>)}</ol>
         </details>
       </aside>
     </div>

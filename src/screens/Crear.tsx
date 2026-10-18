@@ -5,13 +5,20 @@ import { ir } from '../router'
 import type { Usuario } from '../types'
 import { CampoFecha } from '../ui'
 import { LogoAnimado } from '../LogoAnimado'
+import { modoSolo } from '../servidor/config'
+import { DUENO_PRUEBA } from './Real'
+import { TOPE_USDC, montoValido } from '../services/solo'
 import { validarAlquiler, hoyISO, montoNumero, sumarMeses, MIN_MESES, MAX_ANIOS, type Campo, type Errores } from '../validacion'
 
 export function Crear({ u }: { u: Usuario }) {
   const [f, setF] = useState({ direccion: '', monto: '', email: '', inicio: '', fin: '' })
   const [tocado, setTocado] = useState<Partial<Record<Campo, boolean>>>({}); const [enviado, setEnviado] = useState(false)
   const [reglas, setReglas] = useState<string[]>(['No se permiten mascotas']); const [regla, setRegla] = useState(''); const [ocupado, setOcupado] = useState(false); const [errSrv, setErrSrv] = useState('')
-  const errores: Errores = validarAlquiler(f, hoyISO(), u.email)
+  // Fase 1: quien prueba es el inquilino (su billetera) y el dueño es una cuenta de prueba de Lockumi; tope de 20 USDC de prueba.
+  const errores: Errores = modoSolo ? (() => {
+    const e = validarAlquiler({ ...f, email: 'inquilino@ejemplo.com' }, hoyISO()); delete e.email
+    if (!e.monto && !montoValido(montoNumero(f.monto))) e.monto = `En la red de prueba el depósito es de máximo ${TOPE_USDC} USDC de prueba. Escribe un monto entre 1 y ${TOPE_USDC}.`
+    return e })() : validarAlquiler(f, hoyISO(), u.email)
   const ver = (k: Campo) => (enviado || tocado[k]) ? errores[k] : undefined
   const poner = (k: Campo, v: string) => setF(x => ({ ...x, [k]: v }))
   const tocar = (k: Campo) => () => setTocado(t => ({ ...t, [k]: true }))
@@ -23,7 +30,9 @@ export function Crear({ u }: { u: Usuario }) {
     setOcupado(true)
     const m = montoNumero(f.monto)
     try {
-      const r = await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: f.email.trim() }, u.email, await cuentaPropia())
+      const r = modoSolo
+        ? await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: u.email }, DUENO_PRUEBA)
+        : await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: f.email.trim() }, u.email, await cuentaPropia())
       ir('/alquiler/' + r.id)
     } catch (e) { setOcupado(false); setErrSrv(e instanceof Error ? e.message : 'No pudimos crear el alquiler. Intenta de nuevo.') }
   }
@@ -36,7 +45,7 @@ export function Crear({ u }: { u: Usuario }) {
     <div className="cab titulo"><h1>Nuevo alquiler</h1><LogoAnimado className="logo-pieza logo-pieza--titulo" /></div>
     <form className="glass glass--fuerte tarjeta pila" noValidate onSubmit={e => { e.preventDefault(); crear() }}>
       {campoUI({ k: 'direccion', et: 'Dirección o nombre del lugar', children: <input {...prop('direccion')} placeholder="Ej.: Apartamento 3B, Escazú" autoComplete="off" maxLength={140} /> })}
-      {campoUI({ k: 'monto', et: 'Depósito (USD)', children: <input {...prop('monto')} inputMode="decimal" placeholder="Ej.: 800" autoComplete="off" /> })}
+      {campoUI({ k: 'monto', et: modoSolo ? `Depósito (USDC de prueba, máximo ${TOPE_USDC})` : 'Depósito (USD)', children: <input {...prop('monto')} inputMode="decimal" placeholder={modoSolo ? 'Ej.: 2' : 'Ej.: 800'} autoComplete="off" /> })}
       <div className="fila">
         <CampoFecha id="f-inicio" etiqueta="Entrada" valor={f.inicio} onCambio={v => poner('inicio', v)} onSalir={tocar('inicio')} error={ver('inicio')} ayuda="Desde hoy en adelante" min={hoyISO()} max={sumarMeses(hoyISO(), 12)} />
         <CampoFecha id="f-fin" etiqueta="Salida" valor={f.fin} onCambio={v => poner('fin', v)} onSalir={tocar('fin')} error={ver('fin')} ayuda={`De ${MIN_MESES} mes a ${MAX_ANIOS} años`} />
@@ -47,11 +56,12 @@ export function Crear({ u }: { u: Usuario }) {
         <div className="agregar"><input aria-label="Nueva regla" value={regla} onChange={e => setRegla(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }} placeholder="Agregar una regla" />
           <button type="button" className="boton boton--secundario boton--chico" onClick={agregar}>Agregar</button></div>
       </fieldset>
-      {campoUI({ k: 'email', et: 'Correo del inquilino', children: <input {...prop('email')} type="email" placeholder="inquilino@correo.com" autoComplete="off" /> })}
+      {!modoSolo && campoUI({ k: 'email', et: 'Correo del inquilino', children: <input {...prop('email')} type="email" placeholder="inquilino@correo.com" autoComplete="off" /> })}
       {enviado && cuantos > 0 && <p className="error" role="alert">Revisa {cuantos === 1 ? 'el campo marcado' : `los ${cuantos} campos marcados`} y vuelve a intentarlo.</p>}
       {errSrv && <p className="error" role="alert">{errSrv}</p>}
-      <button type="submit" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado}>{ocupado ? 'Creando…' : 'Crear alquiler e invitar'}</button>
-      <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>
+      <button type="submit" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado}>{ocupado ? 'Creando…' : modoSolo ? 'Crear alquiler de prueba' : 'Crear alquiler e invitar'}</button>
+      {modoSolo ? <p className="nota">Prueba en la red de prueba de Stellar, sin dinero real. Tú haces los dos papeles: depositas como <strong>inquilino</strong> con tu billetera, y el dueño es un <strong>{DUENO_PRUEBA.toLowerCase()}</strong>. El nombre del lugar se queda en tu navegador: no va a la red.</p>
+        : <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>}
     </form>
   </main>
 }

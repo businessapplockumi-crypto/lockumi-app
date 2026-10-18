@@ -5,10 +5,9 @@
 // - Plataforma (GCTL…): crea el escrow, deja la evidencia y libera.
 // Las llaves solo existen aquí (se derivan en memoria de variables del servidor); el navegador solo recibe claves públicas y hashes.
 // Sin estado propio: cada acción se valida contra el escrow que reporta Trustless Work con validateOnChain=true.
-import { createHmac } from 'node:crypto'
-import { Keypair, Networks, TransactionBuilder, Operation, Asset, Address, Account, xdr, type Transaction } from '@stellar/stellar-sdk'
+import { Keypair, Networks, TransactionBuilder, Operation, Asset, Address, Account, xdr, hash, type Transaction } from '@stellar/stellar-sdk'
 import { ErrorTw, leerTx, hashTx, datosOnChain, sinDatosPersonales, EVIDENCIA_ONCHAIN } from './tw.js'
-import { PASSPHRASE_TESTNET, HORIZON_TESTNET, RPC_TESTNET, FRIENDBOT, TW_TESTNET, USDC, TOPE_USDC, MAX_XLM_COMPRA, montoValido, exigirTestnet } from './red.js'
+import { PASSPHRASE_TESTNET, HORIZON_TESTNET, FRIENDBOT, TW_TESTNET, USDC, TOPE_USDC, MAX_XLM_COMPRA, montoValido, exigirTestnet } from './red.js'
 
 export type Entorno = Record<string, string | undefined>
 const G = /^G[A-Z2-7]{55}$/, C = /^C[A-Z2-7]{55}$/, UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, TOKEN = /^[0-9a-f]{64}$/, HUELLA = /^[0-9a-f]{64}$/
@@ -30,9 +29,17 @@ export function configSolo(e: Entorno) {
 }
 export type ConfigSolo = ReturnType<typeof configSolo>
 
+/** HMAC-SHA256 (RFC 2104) con el sha256 de stellar-sdk: sin dependencias de Node, para que también lo prueben los tests del cliente. */
+export function hmacSha256(clave: Uint8Array, mensaje: Uint8Array): Uint8Array {
+  const B = 64, k = new Uint8Array(B); k.set(clave.length > B ? new Uint8Array(hash(clave as never)) : clave)
+  const ipad = k.map(b => b ^ 0x36), opad = k.map(b => b ^ 0x5c)
+  const interno = new Uint8Array(hash(new Uint8Array([...ipad, ...mensaje]) as never))
+  return new Uint8Array(hash(new Uint8Array([...opad, ...interno]) as never))
+}
+const utf8 = (s: string) => new TextEncoder().encode(s)
 /** Llave de una cuenta de prueba: HMAC-SHA256(LOCKUMI_DEMO_SEED, contexto) como semilla ed25519. Nunca sale del servidor. */
 export const derivar = (c: Pick<ConfigSolo, 'seed'>, contexto: string) =>
-  Keypair.fromRawEd25519Seed(createHmac('sha256', c.seed).update('lockumi-testnet-v1|' + contexto).digest())
+  Keypair.fromRawEd25519Seed(hmacSha256(utf8(c.seed), utf8('lockumi-testnet-v1|' + contexto)) as never)
 export const duenoDe = (c: Pick<ConfigSolo, 'seed'>, contrato: string) => derivar(c, 'dueno|' + contrato)
 export const inquilinoPruebaDe = (c: Pick<ConfigSolo, 'seed'>, token: string) => derivar(c, 'inquilino|' + token)
 

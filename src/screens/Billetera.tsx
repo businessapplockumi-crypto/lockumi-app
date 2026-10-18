@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { modoTrustless } from '../servidor/config'
+import { modoTrustless, modoSolo } from '../servidor/config'
+import { ObtenerUsdc, InterruptorPrueba } from './Real'
+import { TOPE_USDC } from '../services/solo'
 import { abrirTrustlineUsdc, consultarUsdc, mensajeFirma, olvidarBilletera, abreviar, conectarBilletera, detalleError, consultarSaldo, enlaceExplorer, fondear, formatoXlm, type Billetera as B } from '../services/billetera'
 
 type Saldo = { t: 'cargando' } | { t: 'ok'; xlm: string } | { t: 'sin-cuenta' } | { t: 'error' }
@@ -61,6 +63,7 @@ export function Billetera() {
         <button type="button" className="boton boton--secundario boton--chico" disabled={fondeando} onClick={pedirFondos}>{fondeando ? 'Activando…' : 'Activar cuenta de prueba'}</button>
       </div>}
       {modoTrustless && saldo.t === 'ok' && <Usdc g={b.direccion} />}
+      {modoSolo && <><ObtenerUsdc objetivo={TOPE_USDC} /><InterruptorPrueba /></>}
     </details>
   </section>
 }
