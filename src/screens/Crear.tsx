@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { store } from '../store'
-import { escrow } from '../services/escrow'
+import { acciones } from '../acciones'
+import { cuentaPropia } from './Invitacion'
 import { ir } from '../router'
 import type { Usuario } from '../types'
 import { CampoFecha } from '../ui'
@@ -10,7 +10,7 @@ import { validarAlquiler, hoyISO, montoNumero, sumarMeses, MIN_MESES, MAX_ANIOS,
 export function Crear({ u }: { u: Usuario }) {
   const [f, setF] = useState({ direccion: '', monto: '', email: '', inicio: '', fin: '' })
   const [tocado, setTocado] = useState<Partial<Record<Campo, boolean>>>({}); const [enviado, setEnviado] = useState(false)
-  const [reglas, setReglas] = useState<string[]>(['No se permiten mascotas']); const [regla, setRegla] = useState(''); const [ocupado, setOcupado] = useState(false)
+  const [reglas, setReglas] = useState<string[]>(['No se permiten mascotas']); const [regla, setRegla] = useState(''); const [ocupado, setOcupado] = useState(false); const [errSrv, setErrSrv] = useState('')
   const errores: Errores = validarAlquiler(f, hoyISO(), u.email)
   const ver = (k: Campo) => (enviado || tocado[k]) ? errores[k] : undefined
   const poner = (k: Campo, v: string) => setF(x => ({ ...x, [k]: v }))
@@ -22,8 +22,10 @@ export function Crear({ u }: { u: Usuario }) {
     if (primero) { document.getElementById('f-' + primero)?.focus(); return }
     setOcupado(true)
     const m = montoNumero(f.monto)
-    const a = store.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, duenoEmail: u.email, inquilinoEmail: f.email.trim() })
-    const { escrowId } = await escrow.crear(a.id, m); store.cambiar(a.id, x => { x.escrowId = escrowId }); ir('/alquiler/' + a.id)
+    try {
+      const r = await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: f.email.trim() }, u.email, await cuentaPropia())
+      ir('/alquiler/' + r.id)
+    } catch (e) { setOcupado(false); setErrSrv(e instanceof Error ? e.message : 'No pudimos crear el alquiler. Intenta de nuevo.') }
   }
   const campoUI = ({ k, et, children }: { k: Campo; et: string; children: React.ReactNode }) => <label className={'campo' + (ver(k) ? ' campo--error' : '')}><span>{et}</span>{children}
     {ver(k) && <small id={'f-' + k + '-err'} className="campo__error" role="alert">{ver(k)}</small>}</label>
@@ -47,6 +49,7 @@ export function Crear({ u }: { u: Usuario }) {
       </fieldset>
       {campoUI({ k: 'email', et: 'Correo del inquilino', children: <input {...prop('email')} type="email" placeholder="inquilino@correo.com" autoComplete="off" /> })}
       {enviado && cuantos > 0 && <p className="error" role="alert">Revisa {cuantos === 1 ? 'el campo marcado' : `los ${cuantos} campos marcados`} y vuelve a intentarlo.</p>}
+      {errSrv && <p className="error" role="alert">{errSrv}</p>}
       <button type="submit" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado}>{ocupado ? 'Creando…' : 'Crear alquiler e invitar'}</button>
       <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>
     </form>

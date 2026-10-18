@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { abreviar, conectarBilletera, detalleError, consultarSaldo, enlaceExplorer, fondear, formatoXlm, type Billetera as B } from '../services/billetera'
+import { modoTrustless } from '../servidor/config'
+import { abrirTrustlineUsdc, consultarUsdc, mensajeFirma, olvidarBilletera, abreviar, conectarBilletera, detalleError, consultarSaldo, enlaceExplorer, fondear, formatoXlm, type Billetera as B } from '../services/billetera'
 
 type Saldo = { t: 'cargando' } | { t: 'ok'; xlm: string } | { t: 'sin-cuenta' } | { t: 'error' }
 
@@ -40,7 +41,7 @@ export function Billetera() {
   const copiar = async () => { try { await navigator.clipboard.writeText(b.direccion); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { /* sin permiso de portapapeles */ } }
   const pedirFondos = async () => {
     setFondeando(true)
-    try { await fondear(b.direccion); await leer(b.direccion) } catch { setSaldo({ t: 'error' }) } finally { setFondeando(false) }
+    try { await fondear(b.direccion); olvidarBilletera(); await leer(b.direccion) } catch { setSaldo({ t: 'error' }) } finally { setFondeando(false) }
   }
   return <section className="glass tarjeta billetera" aria-label="Tu cuenta para el depósito">
     <p className="etiqueta">Tu cuenta para el depósito</p>
@@ -59,6 +60,32 @@ export function Billetera() {
         <p className="nota">La cuenta de prueba se activa cuando recibe su primer saldo de prueba (gratis, sin valor real).</p>
         <button type="button" className="boton boton--secundario boton--chico" disabled={fondeando} onClick={pedirFondos}>{fondeando ? 'Activando…' : 'Activar cuenta de prueba'}</button>
       </div>}
+      {modoTrustless && saldo.t === 'ok' && <Usdc g={b.direccion} />}
     </details>
   </section>
+}
+
+/** Prueba con Trustless Work: habilitar USDC de testnet (trustline) y cargarlo desde el faucet de Circle.
+ *  Fuentes: https://docs.trustlesswork.com/trustless-work/introduction/stellar-and-soroban-the-backbone-of-trustless-work/testnet-tokens
+ *           https://faucet.circle.com */
+function Usdc({ g }: { g: string }) {
+  const [usdc, setUsdc] = useState<string | null | undefined | 'cargando'>('cargando'); const [ocupado, setOcupado] = useState(false); const [error, setError] = useState('')
+  const leer = useCallback(() => { consultarUsdc(g).then(setUsdc).catch(() => setUsdc(undefined)) }, [g])
+  useEffect(leer, [leer])
+  const habilitar = async () => {
+    setOcupado(true); setError('')
+    try { await abrirTrustlineUsdc(); leer() } catch (e) { setError(mensajeFirma(e)) } finally { setOcupado(false) }
+  }
+  if (usdc === 'cargando' || usdc === undefined) return null
+  return <div className="billetera__fondeo">
+    {usdc === null ? <>
+      <p className="nota">Para pagar el depósito en USDC de prueba, primero habilita USDC en tu cuenta. Tu billetera te pedirá confirmar.</p>
+      <button type="button" className="boton boton--secundario boton--chico" disabled={ocupado} onClick={() => void habilitar()}>{ocupado ? 'Habilitando…' : 'Habilitar USDC de prueba'}</button>
+    </> : <>
+      <p><strong>USDC de prueba: {Number(usdc).toLocaleString('es', { maximumFractionDigits: 2 })}</strong></p>
+      <p className="nota">Para cargar USDC de prueba: copia tu dirección, abre <a className="enlace" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">faucet.circle.com</a>, elige Stellar Testnet y pega la dirección (20 USDC cada 2 horas).</p>
+      <button type="button" className="boton boton--secundario boton--chico" onClick={leer}>Actualizar saldo</button>
+    </>}
+    {error && <p className="error" role="alert">{error}</p>}
+  </div>
 }

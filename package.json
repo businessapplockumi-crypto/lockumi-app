@@ -12,10 +12,13 @@
   },
   "dependencies": {
     "@cavos/kit": "0.4.2",
+    "@stellar/stellar-sdk": "16.3.1",
+    "@supabase/supabase-js": "^2.118.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
