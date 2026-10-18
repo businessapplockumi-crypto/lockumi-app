@@ -11,10 +11,12 @@ import { obtenerUsdc, depositar, reintentarDeposito, aprobar, liberar, huellaAct
 export const DUENO_PRUEBA = 'Dueño de prueba (cuenta de testnet custodiada por Lockumi)'
 export const INQUILINO_PRUEBA = 'Inquilino de prueba (cuenta de testnet custodiada por Lockumi)'
 export const NOMBRE_PASO: Record<PasoRed, string> = {
-  trustline: 'USDC habilitado en tu cuenta', compra: 'Compra de USDC de prueba', duenoTrustline: 'USDC habilitado en la cuenta del dueño de prueba',
+  trustline: 'USDC habilitado en la cuenta del inquilino', compra: 'Compra de USDC de prueba', duenoTrustline: 'USDC habilitado en la cuenta del dueño de prueba',
   escrow: 'Cuenta segura del depósito creada', deposito: 'Depósito bloqueado en la cuenta segura', evidencia: 'Evidencia del acta de salida',
   aprobacion: 'Aprobación del dueño de prueba', liberacion: 'Depósito devuelto al inquilino',
 }
+/** Solo la primera letra en minúscula (para usar el rótulo dentro de una frase sin tocar «Lockumi»). */
+const minuscula = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 const ORDEN: PasoRed[] = ['trustline', 'compra', 'duenoTrustline', 'escrow', 'deposito', 'evidencia', 'aprobacion', 'liberacion']
 export const VerTx = ({ h }: { h: string }) => <a className="enlace" href={enlaceTx(h)} target="_blank" rel="noopener noreferrer">Ver comprobante en la red de prueba</a>
 const Error = ({ m }: { m: string }) => m ? <p className="error" role="alert">{m}</p> : null
@@ -42,7 +44,7 @@ export function InterruptorPrueba({ bloqueado = false }: { bloqueado?: boolean }
   useEffect(() => { const f = () => setV(usarPrueba()); addEventListener('lockumi-cuenta', f); return () => removeEventListener('lockumi-cuenta', f) }, [])
   return <label className="casilla interruptor-prueba">
     <input type="checkbox" checked={v} disabled={bloqueado} onChange={e => fijarUsarPrueba(e.target.checked)} />
-    <span><strong>Usar cuenta de prueba</strong>: si tu billetera no puede firmar, Lockumi crea un {INQUILINO_PRUEBA.toLowerCase()} y firma por ella. Solo usa tokens de prueba sin valor.</span>
+    <span><strong>Usar cuenta de prueba</strong>: si tu billetera no puede firmar, Lockumi crea un {minuscula(INQUILINO_PRUEBA)} y firma por ella. Solo usa tokens de prueba sin valor.</span>
   </label>
 }
 
@@ -67,7 +69,7 @@ export function ObtenerUsdc({ objetivo, onListo }: { objetivo: number; onListo?:
   return <div className="pila obtener-usdc">
     <p className="saldo-usdc" role="status">{saldo === undefined && !g ? 'Consultando tu saldo…' : <>Tienes <strong>{usd(tiene)}</strong> de prueba{g && <> en {prueba ? 'la cuenta de prueba' : 'tu billetera'} ({abreviar(g)})</>}.</>}</p>
     {tiene < objetivo ? <>
-      <p className="nota">Necesitas {usd(objetivo)} de prueba. Al tocar el botón: {prueba ? <>Lockumi crea el <strong>{INQUILINO_PRUEBA.toLowerCase()}</strong>, le da XLM de prueba gratis, habilita USDC y le envía {usd(Math.round((objetivo - tiene) * 1e7) / 1e7)} de prueba desde su tesorería de prueba. Tarda unos 15 segundos.</> : <>
+      <p className="nota">Necesitas {usd(objetivo)} de prueba. Al tocar el botón: {prueba ? <>Lockumi crea el <strong>{minuscula(INQUILINO_PRUEBA)}</strong>, le da XLM de prueba gratis, habilita USDC y le envía {usd(Math.round((objetivo - tiene) * 1e7) / 1e7)} de prueba desde su tesorería de prueba. Tarda unos 15 segundos.</> : <>
         1) activamos tu cuenta con XLM de prueba gratis si hace falta, 2) habilitamos USDC en tu cuenta y 3) compramos {usd(Math.round((objetivo - tiene) * 1e7) / 1e7)} de prueba
         con <strong>como máximo {max ?? MAX_XLM_COMPRA} XLM de prueba</strong>. Tu billetera te mostrará una ventana para confirmar: revisa y acepta. Nada de esto es dinero real.</>}</p>
       <button type="button" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado} onClick={() => void pedir()}>{ocupado ? (avance || 'Un momento…') : 'Obtener USDC de prueba'}</button>
@@ -199,10 +201,10 @@ export function DetalleSolo({ a }: { a: Alquiler }) {
     null,
     <><h2>Obtener USDC de prueba</h2><ObtenerUsdc objetivo={a.monto} onListo={r => anotar(a.id, r.txs, x => { x.red!.inquilino = r.g; x.red!.inquilinoPrueba = true; if (Number(r.saldo) >= a.monto) x.red!.usdcListo = true })} /></>,
     <>{ultimo('compra')}<h2>Depositar en la cuenta segura</h2>
-      <p>{usd(a.monto)} de prueba quedan bloqueados en una cuenta segura (escrow) de Trustless Work en la red de prueba de Stellar. Lockumi firma el depósito por el {INQUILINO_PRUEBA.toLowerCase()}.</p>
+      <p>{usd(a.monto)} de prueba quedan bloqueados en una cuenta segura (escrow) de Trustless Work en la red de prueba de Stellar. Lockumi firma el depósito por el {minuscula(INQUILINO_PRUEBA)}.</p>
       {boton(`Depositar ${usd(a.monto)}`, depositarYa)}<p className="nota">Tarda entre 20 y 60 segundos.</p></>,
     <>{ultimo('deposito')}<h2>El dueño de prueba aprueba</h2>
-      <p>Al terminar el alquiler, si todo está bien, el dueño aprueba devolver el depósito. Como es un {DUENO_PRUEBA.toLowerCase()}, Lockumi firma esa aprobación por él.</p>
+      <p>Al terminar el alquiler, si todo está bien, el dueño aprueba devolver el depósito. Como es un {minuscula(DUENO_PRUEBA)}, Lockumi firma esa aprobación por él.</p>
       {boton('Aprobar la devolución', aprobarYa)}
       <div className="simulado-caja"><p className="nota"><Simulado /> ¿Y si hubiera un daño? El reclamo y la persona mediadora son simulados en esta demo: no se registran en la red de prueba.</p></div></>,
     <>{ultimo('aprobacion')}<h2>Devolver el depósito</h2>

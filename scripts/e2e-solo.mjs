@@ -20,10 +20,15 @@ async function api(cuerpo) {
 }
 async function api0(cuerpo) {
   const h = { 'content-type': 'application/json' }; if (process.env.VERCEL_BYPASS) h['x-vercel-protection-bypass'] = process.env.VERCEL_BYPASS
+  if (process.env.VERCEL_SHARE) h.cookie = await cookieCompartir()
   const r = await fetch(BASE + '/api/solo', { method: 'POST', headers: h, body: JSON.stringify(cuerpo) })
   const t = await r.text(); let j; try { j = JSON.parse(t) } catch { j = { error: t.slice(0, 200) } }
   if (!r.ok) throw new Error(`${cuerpo.accion} → ${r.status}: ${j.error}`); return j
 }
+// Vista previa protegida: con VERCEL_SHARE (el valor de ?_vercel_share= del enlace para compartir) se pide una vez la cookie de acceso.
+let cookieP
+const cookieCompartir = () => cookieP ??= fetch(BASE + '/?_vercel_share=' + process.env.VERCEL_SHARE, { redirect: 'manual' })
+  .then(r => (r.headers.getSetCookie?.() ?? []).map(c => c.split(';')[0]).join('; ') || Promise.reject(new Error('el enlace para compartir no devolvió cookie')))
 const usdcDe = async g => (await HZ.loadAccount(g)).balances.find(b => b.asset_code === 'USDC' && b.asset_issuer === USDC.issuer)?.balance ?? null
 
 console.log(`E2E fase 1 · ${BASE} · ${MONTO} USDC · ${new Date().toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })} (hora de Costa Rica)`)
