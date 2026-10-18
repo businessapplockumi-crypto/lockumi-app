@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "revisar:bundle": "node scripts/revisar-bundle.mjs",
+    "e2e:solo": "node scripts/e2e-solo.mjs"
   },
   "dependencies": {
     "@cavos/kit": "0.4.2",
