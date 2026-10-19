@@ -33,11 +33,11 @@ export const hoyISO = (ahora = new Date()) => new Date(ahora.getTime() - ahora.g
 
 export function validarFechas(inicio: string, fin: string, hoy: string): Pick<Errores, 'inicio' | 'fin'> {
   const e: Pick<Errores, 'inicio' | 'fin'> = {}
-  if (!inicio) e.inicio = 'Escribe la fecha de entrada (dd/mm/aaaa).'
+  if (!inicio) e.inicio = 'Escribe la fecha de entrada (dd/mm/aa).'
   else if (!fechaValida(inicio)) e.inicio = 'Esa fecha no existe. Revisa el día y el mes.'
   else if (inicio < hoy) e.inicio = 'La fecha de entrada no puede ser anterior a hoy. Elige hoy o una fecha futura.'
   else if (aUTC(inicio) > aUTC(hoy) + MAX_ANTICIPO_DIAS * DIA) e.inicio = 'La entrada debe ser dentro del próximo año.'
-  if (!fin) e.fin = 'Escribe la fecha de salida (dd/mm/aaaa).'
+  if (!fin) e.fin = 'Escribe la fecha de salida (dd/mm/aa).'
   else if (!fechaValida(fin)) e.fin = 'Esa fecha no existe. Revisa el día y el mes.'
   else if (!e.inicio && inicio) {
     if (fin <= inicio) e.fin = 'La salida tiene que ser después de la entrada.'

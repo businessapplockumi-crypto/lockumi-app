@@ -32,7 +32,7 @@ const d = (s: string | number) => typeof s === 'string' && s.length === 10 ? new
 export const fecha = (s: string | number) => d(s).toLocaleDateString('es-CR', { day:'numeric', month:'short', year:'numeric' })
 export const fechaHora = (s: string | number) => d(s).toLocaleString('es-CR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
 
-/** Campo de fecha en formato dd/mm/aaaa (consistente en cualquier navegador). Valor: ISO aaaa-mm-dd (aunque sea un día
+/** Campo de fecha en formato dd/mm/aa o dd/mm/aaaa (consistente en cualquier navegador). Valor: ISO aaaa-mm-dd (aunque sea un día
  *  imposible, para que la validación lo explique) o '' si está incompleta. */
 export function CampoFecha({ etiqueta, valor, onCambio, onSalir, id, error, ayuda, min, max }: { min?: string; max?: string; etiqueta: string; valor: string; onCambio: (iso: string) => void; onSalir?: () => void; id: string; error?: string; ayuda?: string }) {
   const aTexto = (iso: string) => iso ? iso.split('-').reverse().join('/') : ''
@@ -42,14 +42,15 @@ export function CampoFecha({ etiqueta, valor, onCambio, onSalir, id, error, ayud
     const n = v.replace(/\D/g, '').slice(0, 8)
     const f = n.length > 4 ? `${n.slice(0,2)}/${n.slice(2,4)}/${n.slice(4)}` : n.length > 2 ? `${n.slice(0,2)}/${n.slice(2)}` : n
     setT(f)
-    const m = f.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
-    onCambio(m ? `${m[3]}-${m[2]}-${m[1]}` : '')
+    // Año con 2 cifras (21/10/26 = 21/10/2026) o con 4 cifras.
+    const m = f.match(/^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/)
+    onCambio(m ? `${m[3].length === 2 ? '20' + m[3] : m[3]}-${m[2]}-${m[1]}` : '')
   }
   const ok = !error && /^\d{4}-\d{2}-\d{2}$/.test(valor)
   return <div className={'campo' + (error ? ' campo--error' : '')}><label htmlFor={id} className="campo__et">{etiqueta}</label>
-    <input id={id} inputMode="numeric" autoComplete="off" placeholder="dd/mm/aaaa" value={t} onChange={e => cambiar(e.target.value)} onBlur={onSalir} min={min} max={max} data-min={min}
+    <input id={id} inputMode="numeric" autoComplete="off" placeholder="dd/mm/aa" value={t} onChange={e => cambiar(e.target.value)} onBlur={onSalir} min={min} max={max} data-min={min}
       aria-invalid={!!error} aria-describedby={id + '-ayuda'} />
-    <small id={id + '-ayuda'} className={error ? 'campo__error' : 'ayuda'} role={error ? 'alert' : undefined}>{error ?? (ok ? fecha(valor) + (ayuda ? ' · ' + ayuda : '') : ayuda ?? 'Formato dd/mm/aaaa')}</small>
+    <small id={id + '-ayuda'} className={error ? 'campo__error' : 'ayuda'} role={error ? 'alert' : undefined}>{error ?? (ok ? fecha(valor) + (ayuda ? ' · ' + ayuda : '') : ayuda ?? 'Formato dd/mm/aa')}</small>
   </div>
 }
 

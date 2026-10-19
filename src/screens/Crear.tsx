@@ -17,7 +17,7 @@ export function Crear({ u }: { u: Usuario }) {
   // Fase 1: quien prueba es el inquilino (su billetera) y el dueño es una cuenta de prueba de Lockumi; tope de 20 USDC de prueba.
   const errores: Errores = modoSolo ? (() => {
     const e = validarAlquiler({ ...f, email: 'inquilino@ejemplo.com' }, hoyISO()); delete e.email
-    if (!e.monto && !montoValido(montoNumero(f.monto))) e.monto = `En la red de prueba el depósito es de máximo ${TOPE_USDC} USDC de prueba. Escribe un monto entre 1 y ${TOPE_USDC}.`
+    if (!e.monto && !montoValido(montoNumero(f.monto))) e.monto = `En esta demo el depósito es de máximo ${TOPE_USDC} USDC de prueba (no es dinero real). Escribe un monto de ${TOPE_USDC} o menos, por ejemplo 2.`
     return e })() : validarAlquiler(f, hoyISO(), u.email)
   const ver = (k: Campo) => (enviado || tocado[k]) ? errores[k] : undefined
   const poner = (k: Campo, v: string) => setF(x => ({ ...x, [k]: v }))
