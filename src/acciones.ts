@@ -36,6 +36,8 @@ export interface Acciones {
   decidir(a: Alquiler, montoDueno: number, motivo?: string, avance?: Avance): Promise<void>
   /** Solo con Trustless Work real: el dueño aprueba en la cadena devolver el depósito. */
   aprobarDevolucion?(a: Alquiler): Promise<void>
+  /** Red de prueba (un solo aparato): el dueño de prueba firma o confirma solo, apenas el inquilino lo hizo. Devuelve qué hizo. */
+  duenoPruebaAuto?(a: Alquiler): Promise<string | null>
 }
 
 const nada: Avance = () => {}
@@ -67,6 +69,17 @@ const local: Acciones = {
       else if (etapa === 'entrada') { x.estado = 'en_curso'; x.historial.push({ fecha: cuando, texto: 'Fotos de entrada confirmadas por los dos' }) }
       else { x.estado = 'ventana_reclamo'; x.ventanaInicio = cuando; x.historial.push({ fecha: cuando, texto: 'Fotos de salida confirmadas. Empiezan los 7 días para reclamos' }) }
     })
+  },
+  async duenoPruebaAuto(a) {
+    const x = store.fresco(a.id); if (!x) return null
+    const [etapa, texto] = x.estado === 'firmas' && x.contrato.firmas.inquilino && !x.contrato.firmas.dueno ? ['contrato', 'El dueño de prueba firmó el contrato automáticamente'] as const
+      : x.estado === 'fotos_entrada' && x.entrada.firmas.inquilino && !x.entrada.firmas.dueno ? ['entrada', 'El dueño de prueba revisó y confirmó las fotos de entrada automáticamente'] as const
+      : x.estado === 'salida' && x.salida?.firmas.inquilino && !x.salida.firmas.dueno ? ['salida', 'El dueño de prueba revisó y confirmó las fotos de salida automáticamente'] as const
+      : [null, null]
+    if (!etapa) return null
+    store.cambiar(a.id, y => { y.historial.push({ fecha: iso(y), texto }) })
+    await local.firmar(store.fresco(a.id)!, etapa, 'dueno')
+    return texto
   },
   async marcar(a, etapa, cuarto, item, estado) { store.cambiar(a.id, x => { const ac = x[etapa]!; ac.cuartos[cuarto].items[item].estado = estado; ac.firmas = {} }) },
   async nota(a, etapa, cuarto, nota) { store.cambiar(a.id, x => { const ac = x[etapa]!; ac.cuartos[cuarto].nota = nota; ac.firmas = {} }) },

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { actaCompleta, ahoraDe } from '../store'
 import { acciones } from '../acciones'
-import { modoServidor } from '../servidor/config'
+import { modoServidor, modoPrueba } from '../servidor/config'
 import type { Alquiler, Rol, Cuarto, Foto } from '../types'
 import { NOMBRE_ROL } from '../types'
 import { fotoEjemplo } from '../demoFotos'
@@ -70,7 +70,7 @@ export function Firma({ a, que, rol, titulo, texto, casilla, alCompletar }: {
   return <section className="pila" aria-labelledby={'firma-' + que}>
     <h2 id={'firma-' + que}>{titulo}</h2>
     <ul className="lista firmas">{(['dueno', 'inquilino'] as Rol[]).map(r => <li key={r}>
-      <span><strong>{NOMBRE_ROL[r]}{r === rol ? ' (tú)' : ''}</strong></span>
+      <span><strong>{modoPrueba && r === 'dueno' ? 'Dueño de prueba' : NOMBRE_ROL[r]}{r === rol ? ' (tú)' : ''}</strong></span>
       {f[r] ? <span className="chip chip--exito"><Icono id="i-check" /> Firmó</span> : <span className="chip chip--neutro">Falta</span>}
     </li>)}</ul>
     <p className={'estado-firma estado-firma--' + est.tipo} role="status">{est.texto}</p>
@@ -82,6 +82,8 @@ export function Firma({ a, que, rol, titulo, texto, casilla, alCompletar }: {
       <button type="button" className="boton boton--primario boton--ancho boton--grande" disabled={!listoParaFirmar || ocupado} onClick={hacer}>
         {que === 'contrato' ? `Firma como ${NOMBRE[rol]}` : `Confirmar como ${NOMBRE[rol]}`}</button>
     </>}
-    {est.tipo === 'esperando' && <p className="nota">No tienes que hacer nada más. Te avisaremos cuando el {NOMBRE[otro(rol)]} firme.</p>}
+    {est.tipo === 'esperando' && (modoPrueba && rol === 'inquilino'
+      ? <div className="espera" role="status"><span className="espera__reloj" aria-hidden="true">⏳</span><p>El dueño de prueba {que === 'contrato' ? 'firma' : 'confirma'} solo en unos segundos. Después sigues tú.</p></div>
+      : <p className="nota">No tienes que hacer nada más. Te avisaremos cuando el {NOMBRE[otro(rol)]} firme.</p>)}
   </section>
 }

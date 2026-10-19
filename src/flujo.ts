@@ -27,6 +27,23 @@ export function estadoFirma(f: Firmas, yo: Rol): { tipo: EstadoFirma; texto: str
   return { tipo: 'te-toca', texto: 'Te toca firmar' }
 }
 
+/** Red de prueba en un solo aparato: una línea con qué pasa ahora y quién lo hace (tú eres el inquilino). */
+export function ahoraPrueba(a: Alquiler): string {
+  const c = a.contrato.firmas, e = a.entrada.firmas, s = a.salida?.firmas ?? {}
+  const dueno = (t: string) => `Ahora le toca al dueño de prueba: ${t} (lo hace solo, en unos segundos).`
+  switch (a.estado) {
+    case 'firmas': return c.inquilino ? dueno('firmar el contrato') : 'Ahora te toca: leer el contrato y firmarlo.'
+    case 'pendiente_pago': return 'Ahora te toca: pagar el depósito.'
+    case 'fotos_entrada': return e.inquilino ? dueno('confirmar las fotos de entrada') : 'Ahora te toca: tomar las fotos de entrada y confirmarlas.'
+    case 'en_curso': return 'Ahora te toca: cuando entregues el lugar, empezar las fotos de salida.'
+    case 'salida': return s.inquilino ? dueno('confirmar las fotos de salida') : 'Ahora te toca: tomar las fotos de salida y confirmarlas.'
+    case 'ventana_reclamo': return 'Ahora: corren los 7 días para reclamos. Puedes adelantar el plazo o hacer un reclamo en nombre del dueño de prueba.'
+    case 'reclamo': return 'Ahora te toca: responder el reclamo del dueño de prueba.'
+    case 'mediacion': return 'Ahora le toca a la persona mediadora (simulada): decidir el reparto. Lo decides tú con el botón de abajo.'
+    case 'cerrado': return 'Listo: el alquiler terminó. No tienes nada pendiente.'
+  }
+}
+
 /** Qué te toca a ti, qué le toca a la otra persona y qué sigue, en palabras simples. */
 export function turno(a: Alquiler, yo: Rol): { tu: string; otra: string; sigue: string } {
   const o = NOMBRE[otro(yo)]

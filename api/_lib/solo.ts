@@ -7,7 +7,7 @@
 // Sin estado propio: cada acción se valida contra el escrow que reporta Trustless Work con validateOnChain=true.
 import { Keypair, Networks, TransactionBuilder, Operation, Asset, Address, Account, xdr, hash, type Transaction } from '@stellar/stellar-sdk'
 import { ErrorTw, leerTx, hashTx, datosOnChain, sinDatosPersonales, EVIDENCIA_ONCHAIN } from './tw.js'
-import { PASSPHRASE_TESTNET, HORIZON_TESTNET, FRIENDBOT, TW_TESTNET, USDC, TOPE_USDC, MONTO_MAX_USDC, MAX_XLM_COMPRA, montoValido, mensajeSaldoAlPagar, exigirTestnet } from './red.js'
+import { PASSPHRASE_TESTNET, HORIZON_TESTNET, FRIENDBOT, TW_TESTNET, USDC, TOPE_USDC, MONTO_MAX_USDC, adelantoPermitido, MAX_XLM_COMPRA, montoValido, mensajeSaldoAlPagar, exigirTestnet } from './red.js'
 
 export type Entorno = Record<string, string | undefined>
 const G = /^G[A-Z2-7]{55}$/, C = /^C[A-Z2-7]{55}$/, UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, TOKEN = /^[0-9a-f]{64}$/, HUELLA = /^[0-9a-f]{64}$/
@@ -26,7 +26,7 @@ export function configSolo(e: Entorno) {
   const seed = e.LOCKUMI_DEMO_SEED!.trim()
   if (seed.length < 32) throw new ErrorTw(500, 'LOCKUMI_DEMO_SEED es demasiado corta.')
   const plataforma = Keypair.fromSecret(e.LOCKUMI_TW_PLATAFORMA_SECRET!.trim())
-  return { base, horizon, llave: e.TRUSTLESS_WORK_API_KEY!.trim(), seed, plataforma, P: plataforma.publicKey() }
+  return { base, horizon, passphrase, llave: e.TRUSTLESS_WORK_API_KEY!.trim(), seed, plataforma, P: plataforma.publicKey() }
 }
 export type ConfigSolo = ReturnType<typeof configSolo>
 
@@ -312,6 +312,8 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       return { tx: await firmarYEnviar(c, k, '/escrow/single-release/fund-escrow', { contractId: p.escrow, signer: k.publicKey(), amount: Number(e.amount) }, p.escrow, ['fund_escrow'], f), compraTx }
     }
     case 'aprobar': {     // evidencia (plataforma) + aprobación (dueño de prueba). Solo con el depósito completo en el escrow.
+      // Con «Solo red de prueba: adelantar el plazo» llega antes de los 7 días: solo en testnet (además de exigirTestnet en configSolo).
+      exigir(adelantoPermitido(c.passphrase), 403, 'Devolver antes del plazo solo se puede en la red de prueba.')
       exigir(p.huella === undefined || HUELLA.test(p.huella), 400, 'La huella del acta no es válida.')
       const e = await leerHasta(c, p.escrow, fondeado, f, 6, opciones.espera); validarEscrow(c, e)
       exigir(fondeado(e), 409, 'La cuenta segura todavía no tiene el depósito completo. Espera unos segundos y vuelve a intentarlo.')
@@ -329,6 +331,8 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       return { evidenciaTx, aprobacionTx }
     }
     case 'liberar': {     // solo después de la aprobación del dueño en la cadena: la plataforma libera al receiver (inquilino)
+      // Con «Solo red de prueba: adelantar el plazo» llega antes de los 7 días: solo en testnet (además de exigirTestnet en configSolo).
+      exigir(adelantoPermitido(c.passphrase), 403, 'Devolver antes del plazo solo se puede en la red de prueba.')
       const e = await leerHasta(c, p.escrow, x => !!x.milestones[0]?.approved, f, 6, opciones.espera); validarEscrow(c, e)
       exigir(!e.flags.released, 409, 'Este depósito ya se devolvió.')
       exigir(!e.flags.disputed, 409, 'Este depósito tiene un reclamo abierto.')

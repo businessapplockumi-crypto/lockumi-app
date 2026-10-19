@@ -2,6 +2,10 @@
 // Fuentes: https://developers.stellar.org/docs/learn/fundamentals/networks · https://docs.trustlesswork.com/trustless-work/api-rest/introduction
 export const PASSPHRASE_TESTNET = 'Test SDF Network ; September 2015'
 export const PASSPHRASE_MAINNET = 'Public Global Stellar Network ; September 2015'
+/** Red en la que trabaja esta app: fija en el código (no depende de variables de entorno). */
+export const RED_ACTIVA: string = PASSPHRASE_TESTNET
+/** «Solo red de prueba: adelantar el plazo» (devolver o reclamar antes de los 7 días) existe SOLO en testnet. */
+export const adelantoPermitido = (passphrase: string = RED_ACTIVA) => passphrase === PASSPHRASE_TESTNET
 export const HORIZON_TESTNET = 'https://horizon-testnet.stellar.org'
 export const RPC_TESTNET = 'https://soroban-testnet.stellar.org'
 export const FRIENDBOT = 'https://friendbot.stellar.org'

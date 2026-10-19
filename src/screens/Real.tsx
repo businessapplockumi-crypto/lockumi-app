@@ -9,8 +9,8 @@ import { enlaceTx, enlaceCuenta, enlaceContrato, TOPE_USDC, MAX_XLM_COMPRA } fro
 import { consultarUsdc, conectarBilletera, abreviar } from '../services/billetera'
 import { obtenerUsdc, depositar, reintentarDeposito, aprobar, liberar, huellaActa, usarPrueba, fijarUsarPrueba, cuentaInquilino, cotizar, maximoAGastar, type Txs } from '../services/solo'
 
-export const DUENO_PRUEBA = 'Dueño de prueba (cuenta de testnet custodiada por Lockumi)'
-export const INQUILINO_PRUEBA = 'Inquilino de prueba (cuenta de testnet custodiada por Lockumi)'
+export const DUENO_PRUEBA = 'Dueño de prueba (cuenta de Lockumi para la demo)'
+export const INQUILINO_PRUEBA = 'Inquilino de prueba (cuenta de Lockumi para la demo)'
 export { NOMBRE_PASO }
 /** Solo la primera letra en minúscula (para usar el rótulo dentro de una frase sin tocar «Lockumi»). */
 const minuscula = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)

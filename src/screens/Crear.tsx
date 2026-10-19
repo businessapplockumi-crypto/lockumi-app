@@ -94,7 +94,7 @@ export function Crear({ u }: { u: Usuario }) {
       {errSrv && <p className="error" role="alert">{errSrv}</p>}
       <button type="submit" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado}>{ocupado ? 'Creando…' : modoPrueba ? 'Crear alquiler de prueba' : 'Crear alquiler e invitar'}</button>
       {modoSolo ? <p className="nota">Prueba en la red de prueba de Stellar, sin dinero real. Tú haces los dos papeles: depositas como <strong>inquilino</strong> con tu billetera, y el dueño es un <strong>{DUENO_PRUEBA.toLowerCase()}</strong>. El nombre del lugar se queda en tu navegador: no va a la red.</p>
-        : modoPrueba ? <p className="nota">Prueba en la red de prueba de Stellar, sin dinero real: el depósito son USDC de prueba que te da Lockumi. Tú haces los dos papeles: eres el <strong>inquilino</strong> y, con «Ver como dueño», también manejas al <strong>{DUENO_PRUEBA.toLowerCase()}</strong>. El nombre del lugar y las fotos se quedan en tu navegador: no van a la red.</p>
+        : modoPrueba ? <p className="nota">Prueba en la red de prueba de Stellar, sin dinero real: el depósito son USDC de prueba que te da Lockumi. Tú eres el <strong>inquilino</strong>. El dueño es el <strong>{DUENO_PRUEBA.toLowerCase()}</strong>: por eso no te pedimos el correo del dueño. Firma y confirma solo; los reclamos los haces tú con un botón en su nombre. El nombre del lugar y las fotos se quedan en tu navegador: no van a la red.</p>
         : <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>}
     </form>
   </main>
