@@ -1,5 +1,5 @@
 import { modoReal } from './services/auth'
-import { modoSolo } from './servidor/config'
+import { modoPrueba, escrowReal } from './servidor/config'
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Usuario, Alquiler } from './types'
 import { ETAPAS, etapaDe } from './flujo'
@@ -22,9 +22,11 @@ export function Barra({ u, onSalir }: { u: Usuario; onSalir: () => void }) {
   </header>
 }
 export const AVISO_RED = 'Red de prueba: depósitos reales en testnet, sin valor'
+/** Mismo aviso mientras el depósito sea simulado (modoVideo): no promete movimientos reales en la red. */
+export const AVISO_RED_SIMULADO = 'Red de prueba: sin dinero real, depósito simulado'
 export const Fondo = ({ children }: { children: ReactNode }) => <><div className="aurora" aria-hidden="true"><div className="blob blob--1"/><div className="blob blob--2"/><div className="blob blob--3"/></div>
-  {modoSolo && <div className="aviso-red" role="note">{AVISO_RED}</div>}{children}</>
-export const usd = (n: number) => modoSolo ? new Intl.NumberFormat('es-CR', { maximumFractionDigits: 7 }).format(n) + ' USDC'
+  {modoPrueba && <div className="aviso-red" role="note">{escrowReal ? AVISO_RED : AVISO_RED_SIMULADO}</div>}{children}</>
+export const usd = (n: number) => escrowReal ? new Intl.NumberFormat('es-CR', { maximumFractionDigits: 7 }).format(n) + ' USDC'
   : new Intl.NumberFormat('es-CR', { style:'currency', currency:'USD', currencyDisplay:'code' }).format(n)
 /** Rótulo siempre visible para lo que sigue simulado en la fase 1 (reglas, reclamos y mediador). */
 export const Simulado = () => <span className="demo demo--simulado">Simulado</span>

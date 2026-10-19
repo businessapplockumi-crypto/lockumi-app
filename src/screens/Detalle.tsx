@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { LogoAnimado } from '../LogoAnimado'
 import { store, useAlquileres, obtener, ahoraDe, DIA, vistaDe, rolDe, fijarVista } from '../store'
 import { acciones, plazoMs, textoPlazo } from '../acciones'
-import { modoServidor, modoTrustless, modoSolo } from '../servidor/config'
+import { modoServidor, modoTrustless, modoSolo, modoPrueba, modoVideo } from '../servidor/config'
 import { PagoReal, CierreReal, Comprobantes, Cuentas, UltimoComprobante, DetalleSolo } from './Real'
 import { servidor } from '../servidor/repositorio'
 import { modoReal } from '../services/auth'
@@ -36,6 +36,7 @@ function Contrato({ a, rol }: P) {
   </div>
 }
 
+/** Paso del depósito. Parte 2: en modoVideo cambiar PagoSimulado por el depósito real (PagoReal ya existe para la red de prueba). */
 function Pago({ a, rol }: P) {
   if (modoSolo) return <PagoReal a={a} rol={rol} />
   return <PagoSimulado a={a} rol={rol} />
@@ -49,11 +50,11 @@ function PagoSimulado({ a, rol }: P) {
 
     } catch (e) { setC(false); setErr(e instanceof Error && modoServidor ? e.message : 'No pudimos procesar el pago. Revisa tu conexión e intenta de nuevo.') }
   }
-  return <section className="pila"><div className="cab"><h2>Depósito</h2><Demo t="Pago simulado" /></div>
+  return <section className="pila"><div className="cab"><h2>Depósito</h2>{modoVideo ? <Simulado /> : <Demo t="Pago simulado" />}</div>
     <div className="monto">{usd(a.monto)}</div>
     <p>El dinero queda guardado. El dueño no lo recibe ahora: se decide al final del alquiler.</p>
     {rol === 'inquilino' ? <>
-      {!modoReal && <p className="nota">Es una demo: no se cobra nada.</p>}
+      {(!modoReal || modoVideo) && <p className="nota">Es una prueba: no se cobra nada.</p>}
       {err && <p className="error" role="alert">{err}</p>}
       <button type="button" className="boton boton--primario boton--ancho boton--grande" disabled={cargando} onClick={pagar}>{cargando ? 'Procesando…' : `Pagar ${usd(a.monto)}`}</button>
     </> : <Espera texto="Esperando que el inquilino pague el depósito." />}
@@ -164,7 +165,7 @@ function Reclamo({ a, rol }: P) {
 
 
   }
-  return <section className="pila"><div className="cab"><h2>Reclamo del dueño</h2>{modoSolo && <Simulado />}</div><Evidencia a={a} />
+  return <section className="pila"><div className="cab"><h2>Reclamo del dueño</h2>{modoPrueba && <Simulado />}</div><Evidencia a={a} />
     {modoSolo && <p className="nota">El reclamo es simulado: no se registra en la red de prueba y el depósito de prueba sigue bloqueado en la cuenta segura.</p>}
     {rol === 'inquilino' ? <>
       <p>Si aceptas, recibes {usd(a.monto - r.monto)} y el dueño {usd(r.monto)}. Si no estás de acuerdo, una persona mediadora revisa las fotos y decide.</p>
@@ -183,8 +184,9 @@ function Mediacion({ a }: P) {
 
 
   }
-  return <section className="pila"><div className="cab"><h2>Con una persona mediadora</h2>{modoSolo && <Simulado />}</div>
+  return <section className="pila"><div className="cab"><h2>Con una persona mediadora</h2>{modoPrueba && <Simulado />}</div>
     {modoSolo && <p className="nota">La persona mediadora es simulada: su decisión no se registra en la red de prueba ni mueve el depósito de prueba.</p>}
+    {modoVideo && <p className="nota">En esta prueba la persona mediadora es simulada: puedes decidir tú con «Demo: decidir como mediador».</p>}
     <p>No hubo acuerdo. Una persona mediadora revisa las fotos de entrada y salida y decide cómo se reparte el depósito.</p>
     <Espera texto="No tienes que hacer nada. Te avisaremos cuando haya una decisión." />
     <Evidencia a={a} />

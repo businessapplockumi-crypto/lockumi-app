@@ -7,5 +7,14 @@ export const VENTANA_SEGUNDOS = Math.max(60, Math.min(604800, Number(import.meta
 export const BUCKET_FOTOS = 'lk-fotos'
 /** Trustless Work real (escrow en testnet) a través de /api/tw. Requiere modoServidor y las variables del servidor. */
 export const modoTrustless = modoServidor && import.meta.env.VITE_TRUSTLESS === '1'
-/** Fase 1: una sola persona, REAL en Stellar testnet y SIN base de datos (VITE_TRUSTLESS=1 sin Supabase). Proxy /api/solo. */
-export const modoSolo = !modoServidor && import.meta.env.VITE_TRUSTLESS === '1'
+/** Red de prueba sin base de datos (VITE_TRUSTLESS=1 sin Supabase): aviso fijo de red de prueba, dueño de prueba rotulado
+ *  (custodiado por Lockumi) y mediador rotulado «Simulado». Es lo que corre en producción. */
+export const modoPrueba = !modoServidor && import.meta.env.VITE_TRUSTLESS === '1'
+/** Fase 1 mínima: 5 pasos REALES en Stellar testnet (Real.tsx → /api/solo). Solo si además VITE_FLUJO=solo. */
+export const modoSolo = modoPrueba && import.meta.env.VITE_FLUJO === 'solo'
+/** Interfaz completa del video (8 pasos: contrato, firmas, depósito, actas con fotos, 7 días, mediador) en un solo aparato,
+ *  con «Ver como». Tú eres el inquilino y también manejas al dueño de prueba. Opción por defecto con VITE_TRUSTLESS=1. */
+export const modoVideo = modoPrueba && !modoSolo
+/** ¿El depósito se mueve de verdad en Stellar testnet? Hoy solo en modoSolo; en modoVideo el escrow es simulado
+ *  (services/escrow.ts). Parte 2: conectar el escrow real en cada paso y poner esto en true también para modoVideo. */
+export const escrowReal = modoSolo

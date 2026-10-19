@@ -1,10 +1,11 @@
-import { modoServidor, modoSolo } from './servidor/config'
+import { modoServidor, modoSolo, modoPrueba, escrowReal } from './servidor/config'
 import { repositorio } from './servidor/repositorio'
 import { useSyncExternalStore } from 'react'
 import type { Acta, Alquiler, Rol } from './types'
 import { fotoEjemplo } from './demoFotos'
 // v3: flujo nuevo (contrato y firmas antes del depósito). Fase 1 en testnet: almacén aparte y sin ejemplos ficticios.
-const K = modoSolo ? 'lockumi.alquileres.testnet.v1' : 'lockumi.alquileres.v3'
+// Cada modo guarda aparte: los alquileres de la fase 1 mínima (5 pasos) no se mezclan con los del flujo completo.
+const K = modoSolo ? 'lockumi.alquileres.testnet.v1' : modoPrueba ? 'lockumi.alquileres.prueba.v1' : 'lockumi.alquileres.v3'
 export const DIA = 86_400_000
 const CUARTOS: [string, string[]][] = [
   ['Sala', ['Paredes y pintura', 'Piso', 'Ventanas y cortinas']],
@@ -16,7 +17,7 @@ export const actaVacia = (): Acta => ({ firmas: {}, cuartos: CUARTOS.map(([nombr
 const actaLista = (fecha: string): Acta => ({ firmas: { dueno: fecha, inquilino: fecha }, cuartos: CUARTOS.map(([nombre, items], i) => ({ nombre, nota: '',
   fotos: [{ src: fotoEjemplo(nombre, 'entrada', i), por: i % 2 ? 'inquilino' : 'dueno', fecha, origen: 'ejemplo' as const }], items: items.map(texto => ({ texto, estado: 'bien' as const })) })) })
 // Datos de ejemplo (ficticios) para la demo.
-const semilla = (): Alquiler[] => modoSolo ? [] : [
+const semilla = (): Alquiler[] => modoPrueba ? [] : [
   { id:'a1', direccion:'Apartamento ejemplo · Escazú', monto:800, moneda:'USD', inicio:'2026-11-01', fin:'2027-10-31',
     reglas:['No se permiten mascotas','Pintura de paredes a cargo del dueño'], duenoEmail:'katherine@ejemplo.cr', inquilinoEmail:'inquilino@ejemplo.cr',
     estado:'en_curso', rendimiento:false, escrowId:'sim-a1', contrato:{ firmas:{ dueno:'2026-10-11T15:00:00Z', inquilino:'2026-10-11T18:00:00Z' } }, entrada: actaLista('2026-10-13T15:00:00Z'), pago:'2026-10-12T15:00:00Z', diasSimulados:0,
@@ -40,7 +41,7 @@ export const store = {
   obtener: (id: string) => datos.find(a => a.id === id),
   sinEspacio: () => avisoEspacio,
   crear(a: Pick<Alquiler,'direccion'|'monto'|'inicio'|'fin'|'reglas'|'duenoEmail'|'inquilinoEmail'>) {
-    const n: Alquiler = { ...a, moneda: modoSolo ? 'USDC' : 'USD', id: modoSolo ? crypto.randomUUID() : 'a' + Date.now().toString(36), estado:'firmas', rendimiento:false, contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados: 0,
+    const n: Alquiler = { ...a, moneda: escrowReal ? 'USDC' : 'USD', id: modoSolo ? crypto.randomUUID() : 'a' + Date.now().toString(36), estado:'firmas', rendimiento:false, contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados: 0,
       historial:[{fecha:ahoraReal(),texto:'Alquiler creado e invitación enviada al inquilino'}] }
     datos = [n, ...datos]; guardar(); return n
   },

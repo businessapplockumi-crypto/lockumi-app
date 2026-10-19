@@ -1,4 +1,5 @@
 // SIMULADO · Interfaz pensada para reemplazar por Trustless Work (escrow con liberación multiparte).
+// Parte 2: implementar esta misma interfaz sobre /api/solo (ver services/solo.ts) y poner escrowReal en servidor/config.ts.
 export interface EscrowService {
   crear(alquilerId: string, monto: number): Promise<{ escrowId: string }>
   depositar(escrowId: string, monto: number): Promise<{ ok: true; fecha: string }>
