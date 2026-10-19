@@ -71,8 +71,18 @@ Las claves de la plataforma solo viven en el servidor.
 - `supabase/migrations/20261017000000_lockumi_e2e.sql`:
   - Tablas `lk_*`: contrato, participantes (correo de Cavos y G…), actas, firmas, fotos con sha256 y hora, reclamos, eventos con tx y referencia del escrow.
   - RLS de solo lectura; toda escritura pasa por RPC `security definer` que deducen el rol de `auth.uid()`.
-  - Invitación por link de un solo uso (hash sha256, 14 días), bucket privado `lk-fotos`, Realtime y sondeo cada 8 s.
+  - Invitación por link de un solo uso (hash sha256), bucket privado `lk-fotos`, Realtime y sondeo cada 8 s.
   - Probado con PGlite: `node scripts/probar-esquema.mjs` → 47 OK.
+- `supabase/migrations/20261019000000_lockumi_invitaciones.sql` (Parte 4, rama `parte4-invitaciones`): invitaciones en los dos sentidos.
+  - `rol_creador`: el dueño o el inquilino crea e invita a la otra persona. `email_dueno` + `email_inquilino`: el correo invitado es el del otro papel.
+  - El link vence a los **7 días** (`invitacion_expira`); «Reenviar invitación» (`lk_nueva_invitacion`, solo quien creó) da otro y anula el anterior.
+  - `lk_ver_invitacion` devuelve el papel invitado, quién invitó, el resumen y las reglas; distingue «no es válido o ya se usó» de «venció».
+  - `lk_aceptar_invitacion(…, p_acepta_reglas)`: vincula la sesión al papel invitado; revisa el correo y que no sea quien creó. El inquilino acepta las reglas al entrar.
+  - Reglas: `reglas_ok_dueno` / `reglas_ok_inquilino`. `lk_confirmar_reglas` (dueño; si cambia algo, el inquilino las vuelve a aceptar) y `lk_aceptar_reglas` (inquilino). `lk_firmar('contrato')` exige las dos.
+  - Alquileres anteriores: quedan como creados por el dueño y con las reglas aprobadas.
+  - Pruebas: `src/servidor/__tests__/invitaciones-sql.test.ts` (vence, correo y papel equivocados, los dos sentidos, reglas, migración sobre datos viejos).
+- `api/invitacion-correo.ts` + `api/_lib/invitacion.ts`: «Enviar por correo» con Resend, en español, desde `invitaciones@lockumi.com`. Arma el correo con los datos de la base y solo lo manda quien creó el alquiler. Sin `RESEND_API_KEY` responde un aviso claro; crear el alquiler no depende de esto.
+- `scripts/servidor-local.mjs`: servidor local (PGlite + migraciones reales) para probar las invitaciones con dos navegadores sin Supabase. Ver README.
 - `src/servidor/*`, `src/acciones.ts`, `src/screens/Invitacion.tsx`: la app usa Supabase en lugar de localStorage cuando hay `VITE_SUPABASE_*`. Sin esas variables sigue la demo local, sin cambios.
 - `api/tw.ts` + `api/_lib/tw.ts`: proxy de Trustless Work (Vercel Function). Detalles:
   - Lee `TRUSTLESS_WORK_API_KEY` y `LOCKUMI_TW_PLATAFORMA_SECRET` de `process.env`.
@@ -118,10 +128,12 @@ Hallazgos:
 
 ## 7. Bloqueos
 
+> Lo que tiene que hacer Katherine (Supabase, Resend, Vercel solo Preview y Cavos) está, paso a paso, en el README: «Qué tiene que hacer Katherine en Supabase». Hasta entonces producción sigue en el modo de una sola persona.
+
 1. **Supabase**: `SUPABASE_ACCESS_TOKEN` es inválido (401 en la Management API), así que no se pueden crear las tablas ni activar el acceso anónimo. Salidas:
    - Un token nuevo y correr `node scripts/aplicar-supabase-e2e.mjs`.
-   - O pegar el SQL de la migración en el SQL Editor y activar Authentication → Sign In / Providers → "Allow anonymous sign-ins".
+   - O pegar en el SQL Editor las dos migraciones, en orden (`20261017000000_lockumi_e2e.sql` y `20261019000000_lockumi_invitaciones.sql`), y activar Authentication → Sign In / Providers → "Allow anonymous sign-ins".
    - Falta además la clave publishable/anon para `VITE_SUPABASE_ANON_KEY`.
-2. **Variables de Vercel (Preview)**: ya están `TRUSTLESS_WORK_API_KEY`, `LOCKUMI_TW_PLATAFORMA_SECRET` (sensibles), `VITE_TRUSTLESS=1` y `VITE_VENTANA_SEGUNDOS=300`. Faltan `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+2. **Variables de Vercel (Preview)**: ya están `TRUSTLESS_WORK_API_KEY`, `LOCKUMI_TW_PLATAFORMA_SECRET` (sensibles), `VITE_TRUSTLESS=1` y `VITE_VENTANA_SEGUNDOS=300`. Faltan `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y, para «Enviar por correo», `RESEND_API_KEY` con el dominio `lockumi.com` verificado en Resend.
 3. **Panel de Cavos**: Approvals → "Over the limit" = Ask the user, y el origen de la vista previa en allowed web origins.
 4. Sin probar todavía: el flujo por la app (proxy + Supabase) y la firma con el vault de Cavos en dos aparatos reales. El camino feliz contra TW ya está probado por script (sección 6).

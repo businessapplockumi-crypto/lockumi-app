@@ -14,7 +14,7 @@ import { fotoEjemplo } from '../demoFotos'
 import { Demo, Simulado, Icono, LineaTiempo, usd, fecha, fechaHora } from '../ui'
 import { CuartoEditor, Firma, FotoLista, cuartoListo } from './Acta'
 import { TomarFoto } from '../Camara'
-import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE, ahoraPrueba } from '../flujo'
+import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE, ahoraPrueba, ahoraDos } from '../flujo'
 import { adelantoPermitido } from '../../api/_lib/red'
 
 type P = { a: Alquiler; rol: Rol }
@@ -46,9 +46,40 @@ function Contrato({ a, rol }: P) {
       <p className="nota">El depósito queda guardado hasta el final. Nadie puede tomarlo solo: ni el dueño, ni el inquilino, ni Lockumi.</p>
       {modoPrueba && <p className="nota">El dueño es una cuenta de Lockumi para la demo: por eso no te pedimos su correo. Firma solo después de ti.</p>}
     </section>
-    <Firma key={'c-' + rol} a={a} que="contrato" rol={rol} titulo="Firmas del contrato"
-      texto="Lee el contrato. Si estás de acuerdo, fírmalo." casilla="Leí el contrato y estoy de acuerdo." />
+    {modoServidor && <PasoReglas a={a} rol={rol} />}
+    {(!modoServidor || listoParaFirmar(a)) && <Firma key={'c-' + rol} a={a} que="contrato" rol={rol} titulo="Firmas del contrato"
+      texto="Lee el contrato. Si estás de acuerdo, fírmalo." casilla="Leí el contrato y estoy de acuerdo." />}
   </div>
+}
+
+/** Con dos personas: antes de firmar, la otra persona tiene que haber entrado, el dueño confirma las reglas y el inquilino las acepta. */
+const listoParaFirmar = (a: Alquiler) => a.otroUnido !== false && !!a.reglasOk?.dueno && !!a.reglasOk?.inquilino
+function PasoReglas({ a, rol }: P) {
+  const [reglas, setReglas] = useState(a.reglas); const [regla, setRegla] = useState(''); const [acepto, setAcepto] = useState(false)
+  const p = useProceso(); const ok = a.reglasOk ?? {}
+  if (a.otroUnido === false) return <p className="nota espera" role="status">Para firmar, primero el {NOMBRE[otro(rol)]} tiene que aceptar la invitación. Cuando entre, esta pantalla se actualiza sola.</p>
+  if (!ok.dueno && rol === 'dueno') {
+    const agregar = () => { if (regla.trim()) { setReglas([...reglas, regla.trim()]); setRegla('') } }
+    return <section className="pila" aria-labelledby="t-reglas"><h3 id="t-reglas">Confirma las reglas</h3>
+      <p className="nota">El inquilino propuso estas reglas. Puedes quitar o agregar. Si cambias algo, el inquilino las vuelve a aceptar antes de firmar.</p>
+      <ul className="lista">{reglas.map((r, i) => <li key={i}>{r}<button type="button" className="x" aria-label={'Quitar regla: ' + r} onClick={() => setReglas(reglas.filter((_, j) => j !== i))}>×</button></li>)}</ul>
+      {!reglas.length && <p className="nota">Sin reglas.</p>}
+      <div className="agregar"><input aria-label="Nueva regla" value={regla} maxLength={200} onChange={e => setRegla(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }} placeholder="Agregar una regla" />
+        <button type="button" className="boton boton--secundario boton--chico" onClick={agregar}>Agregar</button></div>
+      {p.error}
+      <button type="button" className="boton boton--primario boton--ancho" disabled={p.ocupado} onClick={() => void p.correr(() => servidor.confirmarReglas(a.id, reglas))}>{p.texto('Confirmar las reglas')}</button>
+    </section>
+  }
+  if (!ok.dueno) return <p className="nota espera" role="status">El dueño tiene que revisar y confirmar las reglas que propusiste. Cuando lo haga, aquí aparece el botón para firmar.</p>
+  if (!ok.inquilino && rol === 'inquilino') return <section className="pila" aria-labelledby="t-reglas"><h3 id="t-reglas">Acepta las reglas</h3>
+    <p className="nota">El dueño confirmó las reglas de arriba{a.historial.some(h => h.texto === 'El dueño cambió y confirmó las reglas') ? ' y cambió algunas' : ''}. Para seguir, acéptalas.</p>
+    <label className="casilla"><input type="checkbox" checked={acepto} onChange={e => setAcepto(e.target.checked)} /> <span>Leí las reglas y estoy de acuerdo.</span></label>
+    {p.error}
+    <button type="button" className="boton boton--primario boton--ancho" disabled={p.ocupado || !acepto} onClick={() => void p.correr(() => servidor.aceptarReglas(a.id))}>{p.texto('Aceptar las reglas')}</button>
+    {!acepto && <p className="nota">Marca la casilla para activar el botón.</p>}
+  </section>
+  if (!ok.inquilino) return <p className="nota espera" role="status">El inquilino tiene que aceptar las reglas. Cuando lo haga, aquí aparece el botón para firmar.</p>
+  return null
 }
 
 /** Paso del depósito. Parte 2: en modoVideo cambiar PagoSimulado por el depósito real (PagoReal ya existe para la red de prueba). */
@@ -221,18 +252,28 @@ function Mediacion({ a }: P) {
   </section>
 }
 
-/** Link para que el inquilino entre desde su propio aparato (solo con servidor compartido). */
-function Invitacion({ a }: { a: Alquiler }) {
-  const [link, setLink] = useState(a.invitacion ?? ''); const [copiado, setCopiado] = useState(false); const [err, setErr] = useState('')
+/** «Invitar»: link para que la otra persona entre desde su propio aparato (solo con servidor compartido). */
+function Invitacion({ a, rol }: P) {
+  const invitado = NOMBRE[otro(rol)]
+  const [link, setLink] = useState(a.invitacion ?? ''); const [copiado, setCopiado] = useState(false); const [err, setErr] = useState(''); const [aviso, setAviso] = useState('')
+  const [ocupado, setOcupado] = useState<'' | 'correo' | 'nuevo'>('')
   const copiar = async () => { try { await navigator.clipboard.writeText(link); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { setErr('No pudimos copiar. Mantén presionado el link para copiarlo.') } }
-  const nuevo = async () => { try { setLink(await servidor.nuevaInvitacion(a.id)); setErr('') } catch (e) { setErr(e instanceof Error ? e.message : 'No pudimos crear el link.') } }
+  const correr = async (cual: 'correo' | 'nuevo', f: () => Promise<void>) => { setOcupado(cual); setErr(''); setAviso(''); try { await f() } catch (e) { setErr(e instanceof Error ? e.message : 'No pudimos terminar. Intenta de nuevo.') } finally { setOcupado('') } }
+  const correo = () => correr('correo', async () => { const r = await servidor.enviarCorreo(a.id); setAviso(`Listo: enviamos la invitación a ${r.a || a.emailInvitado}. Si no le llega, que revise la carpeta de spam o envíale el link.`) })
+  const nuevo = () => correr('nuevo', async () => { setLink(await servidor.nuevaInvitacion(a.id)); setAviso('Listo: hay un link nuevo, válido por 7 días. El anterior ya no sirve: envía este.') })
+  const [abierto] = useState(() => Date.now()) // hora en que se abrió la pantalla (alcanza para saber si el link ya venció)
+  const vence = !!a.invitacionExpira && Date.parse(a.invitacionExpira) < abierto
   return <section className="glass tarjeta pila invitacion" aria-labelledby="inv-t">
-    <h2 id="inv-t">Invita al inquilino</h2>
-    <p className="nota">Envía este link a {a.inquilinoEmail}. Tiene que entrar con ese correo. El link sirve una sola vez y vence en 14 días.</p>
-    {link ? <><input readOnly value={link} aria-label="Link de invitación" onFocus={e => e.target.select()} />
-      <button type="button" className="boton boton--primario boton--ancho" onClick={copiar}>{copiado ? 'Copiado ✓' : 'Copiar link'}</button></>
-      : <p className="nota">Este aparato no tiene el link guardado.</p>}
-    <button type="button" className="enlace" onClick={nuevo}>Crear un link nuevo (el anterior deja de servir)</button>
+    <h2 id="inv-t">Invitar al {invitado}</h2>
+    <p className="nota">Envía este link a <strong className="cortar">{a.emailInvitado}</strong>. Tiene que entrar con ese correo y entra como {invitado}. El link sirve una sola vez y vence en 7 días.</p>
+    {vence && <p className="error" role="alert">Este link ya venció. Toca «Reenviar invitación» para crear uno nuevo y envíalo.</p>}
+    {link && !vence ? <><input readOnly value={link} aria-label="Link de invitación" onFocus={e => e.target.select()} />
+      <button type="button" className="boton boton--primario boton--ancho" onClick={copiar}>{copiado ? 'Copiado ✓' : 'Copiar link'}</button>
+      <button type="button" className="boton boton--secundario boton--ancho" disabled={!!ocupado} onClick={() => void correo()}>{ocupado === 'correo' ? 'Enviando…' : 'Enviar por correo'}</button></>
+      : !vence && <p className="nota">Este aparato no tiene el link guardado. Toca «Reenviar invitación» para crear uno nuevo.</p>}
+    <button type="button" className="boton boton--secundario boton--ancho" disabled={!!ocupado} onClick={() => void nuevo()}>{ocupado === 'nuevo' ? 'Creando link…' : 'Reenviar invitación'}</button>
+    <p className="nota">«Reenviar invitación» crea un link nuevo de 7 días y el anterior deja de servir.</p>
+    {aviso && <p className="nota" role="status">{aviso}</p>}
     {err && <p className="error" role="alert">{err}</p>}
   </section>
 }
@@ -301,14 +342,15 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
       <button type="button" className="boton boton--secundario boton--chico" onClick={() => fijarVista(id, otro(rol))}>{modoVideo ? (rol === 'inquilino' ? 'Ver la pantalla del dueño de prueba' : 'Volver a mi pantalla (inquilino)') : `Ver como ${NOMBRE[otro(rol)]}`}</button>
       <span className="demo">{modoSolo ? 'Una sola persona · red de prueba' : 'Demo en un solo aparato'}</span>
       {modoSolo && <Cuentas a={a} />}</div>}
-    {modoServidor && rol === 'dueno' && a.inquilinoUnido === false && <Invitacion a={a} />}
+    {modoServidor && a.otroUnido === false && real === a.rolCreador && <Invitacion a={a} rol={real} />}
     <div className="paso-cab"><p className="paso-cab__n">{a.estado === 'cerrado' ? 'Terminado' : pasoTexto(a)}</p><p className="paso-cab__t">{ETAPAS[etapa]}</p>
       <div className="barra-paso" aria-hidden="true"><span style={{ width: `${((etapa + (a.estado === 'cerrado' ? 1 : 0.5)) / ETAPAS.length) * 100}%` }} /></div></div>
     <div className="detalle">
       <div className="detalle__principal pila">
         {modoVideo && <p className="ahora" role="status" aria-live="polite">{ahoraPrueba(a)}</p>}
+        {modoServidor && <p className="ahora" role="status" aria-live="polite"><span className="chip chip--neutro chip--mini">Eres el {NOMBRE[rol]}</span> {ahoraDos(a, rol)}</p>}
         {modoVideo && a.historial.slice(-3).filter(h => h.texto.startsWith('El dueño de prueba') && h.texto.endsWith('automáticamente')).slice(-1).map(h => <p key={h.fecha + h.texto} className="nota auto-dueno">✓ {h.texto}.</p>)}
-        <section className="turno" aria-label="Qué toca ahora" hidden={modoVideo}>
+        <section className="turno" aria-label="Qué toca ahora" hidden={modoVideo || (modoServidor && a.estado === 'firmas' && !listoParaFirmar(a))}>
           <p><span className="turno__et">Te toca</span>{t.tu}</p>
           <p><span className="turno__et">Al {NOMBRE[otro(rol)]}</span>{t.otra}</p>
           <p><span className="turno__et">Qué sigue</span>{t.sigue}</p>

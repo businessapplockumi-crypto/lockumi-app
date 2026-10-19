@@ -50,14 +50,14 @@ await falla('nadie inserta directo en tablas', () => como(DUENO, `insert into pu
 await falla('dueño no puede firmar antes de que acepte el inquilino', () => como(DUENO, `select public.lk_firmar($1, 'contrato')`, [id]), /todavía no aceptó/)
 await falla('token incorrecto', () => como(INQ, `select public.lk_aceptar_invitacion($1, 'xxx', 'inq@x.cr')`, [id]), /no es válido/)
 await falla('otro correo no puede aceptar', () => como(OTRO, `select public.lk_aceptar_invitacion($1, $2, 'otro@x.cr')`, [id, token]), /Esta invitación es para/)
-await falla('el dueño no puede aceptar su propia invitación', () => como(DUENO, `select public.lk_aceptar_invitacion($1, $2, 'inq@x.cr')`, [id, token]), /Eres el dueño/)
+await falla('el dueño no puede aceptar su propia invitación', () => como(DUENO, `select public.lk_aceptar_invitacion($1, $2, 'inq@x.cr')`, [id, token]), /Tú creaste este alquiler como dueño/)
 await espera('link nuevo invalida el anterior (solo el dueño)', async () => {
   await falla('x', () => como(INQ, `select public.lk_nueva_invitacion($1)`, [id]), /No participas/)
   const [r] = await como(DUENO, `select public.lk_nueva_invitacion($1) t`, [id])
   await falla('x', () => como(INQ, `select public.lk_ver_invitacion($1, $2)`, [id, token]), /no es válido/); token = r.t
 })
 await espera('el inquilino ve la invitación y la acepta', async () => {
-  await como(INQ, `select public.lk_ver_invitacion($1, $2)`, [id, token]); await como(INQ, `select public.lk_aceptar_invitacion($1, $2, 'INQ@x.cr', '${G2}')`, [id, token])
+  await como(INQ, `select public.lk_ver_invitacion($1, $2)`, [id, token]); await como(INQ, `select public.lk_aceptar_invitacion($1, $2, 'INQ@x.cr', '${G2}', true)`, [id, token])
 })
 await falla('el link es de un solo uso', () => como(OTRO, `select public.lk_aceptar_invitacion($1, $2, 'inq@x.cr')`, [id, token]), /no es válido/)
 await espera('los dos ven el contrato y los participantes', async () => {
@@ -118,7 +118,7 @@ await espera('tablas en la publicación de tiempo real', async () => {
 async function hastaVentana(nombre) {
   const [r] = await como(DUENO, `select public.lk_crear_contrato($1, 100, $2::date, $3::date, '{}', 'inq@x.cr', 'dueno@x.cr', '${G1}', 60) as r`, [nombre, hoy, mas(hoy, 6)])
   const { id: c, token: t } = r.r
-  await como(INQ, `select public.lk_aceptar_invitacion($1, $2, 'inq@x.cr', '${G2}')`, [c, t])
+  await como(INQ, `select public.lk_aceptar_invitacion($1, $2, 'inq@x.cr', '${G2}', true)`, [c, t])
   for (const u of [DUENO, INQ]) await como(u, `select public.lk_firmar($1, 'contrato')`, [c])
   await como(DUENO, `select public.lk_registrar_escrow($1, $2, 'tx')`, [c, 'C' + 'B'.repeat(55)]); await como(INQ, `select public.lk_registrar_pago($1, 'tx')`, [c])
   for (const etapa of ['entrada', 'salida']) {

@@ -3,6 +3,7 @@ import type { Alquiler, Acta, Foto, Rol, Estado } from '../types'
 
 export interface Filas {
   contrato: { id: string; direccion: string; monto: number | string; inicio: string; fin: string; reglas: string[]; email_inquilino: string; estado: Estado
+    rol_creador?: Rol; email_dueno?: string | null; reglas_ok_dueno?: string | null; reglas_ok_inquilino?: string | null; invitacion_expira?: string | null
     ventana_inicio: string | null; ventana_segundos: number; escrow_contract_id: string | null; resultado: { via: 'automatico' | 'acuerdo' | 'mediacion'; dueno: number | string; inquilino: number | string } | null
     liquidacion_tx: string | null; creado_en: string; actualizado_en: string }
   participantes: { rol: Rol; usuario: string; email_cavos: string; direccion_stellar: string | null }[]
@@ -34,8 +35,10 @@ export function aAlquiler(f: Filas, yo: string, url: (ruta: string) => string): 
   const pagoEv = f.eventos.find(e => /^Depósito de .* pagado/.test(e.texto))
   return {
     id: c.id, direccion: c.direccion, monto: Number(c.monto), moneda: 'USDC', inicio: c.inicio, fin: c.fin, reglas: c.reglas ?? [],
-    duenoEmail: p('dueno')?.email_cavos ?? '', inquilinoEmail: p('inquilino')?.email_cavos ?? c.email_inquilino,
-    inquilinoUnido: Boolean(p('inquilino')), miRol: mio, cuentas: { dueno: p('dueno')?.direccion_stellar ?? undefined, inquilino: p('inquilino')?.direccion_stellar ?? undefined },
+    duenoEmail: p('dueno')?.email_cavos ?? c.email_dueno ?? '', inquilinoEmail: p('inquilino')?.email_cavos ?? c.email_inquilino,
+    inquilinoUnido: Boolean(p('inquilino')), rolCreador: c.rol_creador ?? 'dueno', otroUnido: Boolean(p('dueno') && p('inquilino')),
+    emailInvitado: (c.rol_creador ?? 'dueno') === 'dueno' ? c.email_inquilino : c.email_dueno ?? '', invitacionExpira: c.invitacion_expira ?? undefined,
+    reglasOk: { ...(c.reglas_ok_dueno && { dueno: c.reglas_ok_dueno }), ...(c.reglas_ok_inquilino && { inquilino: c.reglas_ok_inquilino }) }, miRol: mio, cuentas: { dueno: p('dueno')?.direccion_stellar ?? undefined, inquilino: p('inquilino')?.direccion_stellar ?? undefined },
     estado: c.estado, rendimiento: false, escrowId: c.escrow_contract_id ?? undefined,
     contrato: { firmas: firmasDe(f.firmas, 'contrato') }, entrada: acta(f, 'entrada', url) ?? { firmas: {}, cuartos: [] }, salida: acta(f, 'salida', url),
     pago: pagoEv?.creado_en, ventanaInicio: c.ventana_inicio ?? undefined, ventanaSegundos: c.ventana_segundos, diasSimulados: 0,

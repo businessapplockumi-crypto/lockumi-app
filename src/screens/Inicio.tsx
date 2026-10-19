@@ -5,14 +5,15 @@ import { ETIQUETA_ESTADO, type Usuario } from '../types'
 import { Demo, Simulado, usd, fecha } from '../ui'
 import { modoReal } from '../services/auth'
 import { Billetera } from './Billetera'
-import { modoSolo, modoVideo } from '../servidor/config'
+import { modoSolo, modoVideo, modoServidor } from '../servidor/config'
+import { ahoraDos } from '../flujo'
 export function Inicio({ u }: { u: Usuario }) {
   const todos = useAlquileres()
   const chip = (e: string) => e === 'en_curso' || e === 'cerrado' ? 'chip--exito' : e === 'reclamo' || e === 'mediacion' ? 'chip--coral' : 'chip--neutro'
   return <main id="contenido" tabIndex={-1} className="cont" style={{ paddingBottom: 48 }}>
     <div className="hero glass">
       <div><p className="etiqueta">Hola, {u.nombre}</p><h1>Tus alquileres</h1>
-        <p className="nota">{modoSolo ? 'Prueba real en la red de prueba de Stellar, sin dinero real: creas un alquiler, depositas USDC de prueba como inquilino y un dueño de prueba de Lockumi aprueba la devolución.' : modoVideo ? 'Prueba en la red de prueba de Stellar, sin dinero real: creas un alquiler, firman el contrato, depositas USDC de prueba en una cuenta segura, toman las fotos de entrada y salida, y ves los 7 días para reclamos. Tú eres el inquilino y también manejas al dueño de prueba de Lockumi.' : 'Crea un alquiler e invita a tu inquilino, o entra a los que te invitaron. El depósito queda protegido para ambos.'}</p></div>
+        <p className="nota">{modoSolo ? 'Prueba real en la red de prueba de Stellar, sin dinero real: creas un alquiler, depositas USDC de prueba como inquilino y un dueño de prueba de Lockumi aprueba la devolución.' : modoVideo ? 'Prueba en la red de prueba de Stellar, sin dinero real: creas un alquiler, firman el contrato, depositas USDC de prueba en una cuenta segura, toman las fotos de entrada y salida, y ves los 7 días para reclamos. Tú eres el inquilino y también manejas al dueño de prueba de Lockumi.' : 'Crea un alquiler como dueño o como inquilino e invita a la otra persona, o entra a los que te invitaron. El depósito queda protegido para ambos.'}</p></div>
       <a className="boton boton--primario" href="#/crear">+ Nuevo alquiler</a>
       <LogoAnimado className="logo-pieza logo-pieza--hero" />
     </div>
@@ -24,9 +25,10 @@ export function Inicio({ u }: { u: Usuario }) {
         <div className="monto">{usd(a.monto)} <span className="nota monto__sub">de depósito</span></div>
         <p className="nota">{fecha(a.inicio)} → {fecha(a.fin)}</p>
         <p className="nota cortar"><span className="chip chip--neutro chip--mini">Eres {NOMBRE_ROL[rolDe(a, u.email)].toLowerCase()}</span> {rolDe(a, u.email) === 'dueno' ? 'Inquilino: ' + a.inquilinoEmail : 'Dueño: ' + a.duenoEmail}</p>
+        {modoServidor && a.miRol && <p className="nota ahora-mini">{ahoraDos(a, a.miRol)}</p>}
       </a></li>)}
     </ul>
-    <div className="pie nota"><span>{modoSolo ? 'Tus alquileres de prueba se guardan solo en este navegador. El depósito, la aprobación y la devolución quedan registrados en la red de prueba de Stellar, sin datos personales.' : modoVideo ? <>Tus alquileres de prueba se guardan solo en este navegador. El depósito, el reclamo y la devolución quedan registrados en la red de prueba de Stellar, sin datos personales. La persona mediadora es simulada. <Simulado /></> : <>En la demo ves todos los alquileres. Los datos son de ejemplo, ficticios, y se guardan solo en este navegador. <Demo /></>}</span>
-      <button type="button" className="boton boton--secundario boton--chico" onClick={() => { if (confirm('¿Reiniciar la demo? Se borran los cambios.')) store.reiniciar() }}>Reiniciar demo</button></div>
+    <div className="pie nota">{modoServidor ? <span>Solo ves los alquileres donde participas. Todo pasa en la red de prueba de Stellar, sin dinero real.</span> : <><span>{modoSolo ? 'Tus alquileres de prueba se guardan solo en este navegador. El depósito, la aprobación y la devolución quedan registrados en la red de prueba de Stellar, sin datos personales.' : modoVideo ? <>Tus alquileres de prueba se guardan solo en este navegador. El depósito, el reclamo y la devolución quedan registrados en la red de prueba de Stellar, sin datos personales. La persona mediadora es simulada. <Simulado /></> : <>En la demo ves todos los alquileres. Los datos son de ejemplo, ficticios, y se guardan solo en este navegador. <Demo /></>}</span>
+      <button type="button" className="boton boton--secundario boton--chico" onClick={() => { if (confirm('¿Reiniciar la demo? Se borran los cambios.')) store.reiniciar() }}>Reiniciar demo</button></>}</div>
   </main>
 }

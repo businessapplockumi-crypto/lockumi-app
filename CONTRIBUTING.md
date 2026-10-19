@@ -1,6 +1,6 @@
 # Cómo contribuir a Lockumi
 
-Gracias por tu interés. Lockumi es una demo en la **red de prueba de Stellar (testnet)**: no uses cuentas ni fondos de la red principal.
+Gracias por tu interés. Lockumi es una demo en la **red de prueba de Stellar (testnet)**: no uses cuentas ni fondos de la red principal. El código bloquea la red principal; no quites esos bloqueos.
 
 ## Proponer cambios
 
@@ -22,6 +22,23 @@ npm run build   # TypeScript + Vite
 ```
 
 Si agregas lógica nueva, agrega su prueba en `src/**/__tests__/`.
+
+Antes de publicar, revisa que el build no lleve secretos:
+
+```bash
+npm run build && npm run revisar:bundle
+```
+
+### Base de datos (Supabase)
+
+- Los cambios de esquema van en una migración nueva en `supabase/migrations/` (no edites una ya aplicada). Tienen que poder correrse dos veces.
+- Toda escritura pasa por funciones `lk_*` que deducen el papel de la sesión (`auth.uid()`): cada persona solo actúa como dueño o como inquilino.
+- `npm test` corre las migraciones en PGlite (`src/servidor/__tests__/invitaciones-sql.test.ts`) y `node scripts/probar-esquema.mjs` hace el recorrido completo del esquema.
+- Para probar en el navegador con dos personas sin Supabase: `scripts/servidor-local.mjs` (ver README, «Invitaciones sin Supabase»).
+
+### Qué corre en producción
+
+app.lockumi.com es la prueba de **una sola persona** en testnet (tú eres el inquilino y el dueño es una cuenta de prueba de Lockumi). Las invitaciones entre dos personas necesitan Supabase y por ahora solo se prueban en vistas previas. No actives `VITE_SUPABASE_*` en «Production» de Vercel sin una prueba con dos sesiones.
 
 ## No subas secretos
 

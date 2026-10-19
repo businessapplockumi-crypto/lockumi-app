@@ -22,7 +22,8 @@ export function textoPlazo(a: Pick<Alquiler, 'ventanaSegundos'>) {
 
 
 export interface Acciones {
-  crear(d: { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string; propia?: { g: string; firma: 'cavos' | 'freighter' } }, email: string, cuenta?: string): Promise<{ id: string; link?: string }>
+  /** Con servidor: `rol` es el papel de quien crea y `otroEmail` el correo de la persona invitada. */
+  crear(d: { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string; rol?: Rol; otroEmail?: string; propia?: { g: string; firma: 'cavos' | 'freighter' } }, email: string, cuenta?: string): Promise<{ id: string; link?: string }>
   firmar(a: Alquiler, etapa: Etapa, rol: Rol): Promise<void>
   marcar(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, item: number, estado: 'bien' | 'detalle'): Promise<void>
   nota(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, nota: string): Promise<void>
@@ -50,7 +51,8 @@ const guardarEn = (id: string): Guardar => (txs, red) => store.cambiar(id, x => 
 const paso = (a: Alquiler, nombre: string, f: (x: Alquiler) => Promise<void>) => unaVez(a.id + ':' + nombre, async () => { const x = store.fresco(a.id); if (x) await f(x) })
 
 const local: Acciones = {
-  async crear({ propia, ...d }, email) {
+  async crear({ propia, rol: _r, otroEmail: _o, ...d }, email) {
+    void _r; void _o
     const a = store.crear({ ...d, duenoEmail: email })
     // Depósito con USDC de prueba de la propia cuenta del inquilino: queda anotada desde ya (no hay tope de 20, el límite es su saldo).
     if (propia) store.cambiar(a.id, x => { x.red = { ...(x.red ?? { txs: {} }), inquilino: propia.g, inquilinoPrueba: false, firma: propia.firma } })

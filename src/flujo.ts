@@ -44,6 +44,19 @@ export function ahoraPrueba(a: Alquiler): string {
   }
 }
 
+/** Dos personas reales (servidor compartido): «Ahora te toca…» o «Ahora le toca al …», con la invitación y las reglas primero. */
+export function ahoraDos(a: Alquiler, yo: Rol): string {
+  const o = NOMBRE[otro(yo)], ok = a.reglasOk ?? {}
+  if (a.otroUnido === false) return yo === a.rolCreador
+    ? `Ahora le toca al ${o}: aceptar la invitación. Envíale el link de abajo; entra con ${a.emailInvitado || 'su correo'}.`
+    : `Ahora le toca al ${o}: terminar de crear el alquiler.`
+  if (a.estado === 'firmas' && !ok.dueno) return yo === 'dueno' ? 'Ahora te toca: revisar las reglas que propuso el inquilino y confirmarlas.' : 'Ahora le toca al dueño: confirmar las reglas que propusiste.'
+  if (a.estado === 'firmas' && !ok.inquilino) return yo === 'inquilino' ? 'Ahora te toca: aceptar las reglas del dueño.' : 'Ahora le toca al inquilino: aceptar las reglas.'
+  const t = turno(a, yo), min = (x: string) => x.charAt(0).toLowerCase() + x.slice(1)
+  if (a.estado === 'cerrado') return 'Listo: el alquiler terminó. No tienes nada pendiente.'
+  return /^(No tienes|Ya |Disfruta)/.test(t.tu) ? `Ahora: ${min(t.otra)}` : `Ahora te toca: ${min(t.tu)}`
+}
+
 /** Qué te toca a ti, qué le toca a la otra persona y qué sigue, en palabras simples. */
 export function turno(a: Alquiler, yo: Rol): { tu: string; otra: string; sigue: string } {
   const o = NOMBRE[otro(yo)]

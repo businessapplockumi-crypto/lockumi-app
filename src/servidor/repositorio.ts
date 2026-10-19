@@ -9,6 +9,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, BUCKET_FOTOS, VENTANA_SEGUNDOS } from 
 import { aAlquiler, mensajeServidor, type Filas } from './mapeo'
 
 export class ErrorServidor extends Error {}
+/** Lo que ve la persona invitada antes de aceptar (lk_ver_invitacion). */
+export interface VistaInvitacion { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; rol_invitado: Rol; rol_creador: Rol
+  email_invitado: string; email_creador: string; expira: string; reglas_por_confirmar: boolean; email_inquilino: string; email_dueno: string | null }
 let cliente: Promise<SupabaseClient> | null = null
 export const supabase = () => cliente ??= import('@supabase/supabase-js').then(({ createClient }) =>
   createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, storageKey: 'lockumi.sesion-servidor' } }))
@@ -42,7 +45,7 @@ export const linkInvitacion = (id: string, token: string) => `${location.origin}
 
 export async function recargar() {
   const sb = await supabase(); yo = await sesion()
-  const { data: cs, error } = await sb.from('lk_contratos').select('id, direccion, monto, inicio, fin, reglas, email_inquilino, estado, ventana_inicio, ventana_segundos, escrow_contract_id, resultado, liquidacion_tx, creado_en, actualizado_en').order('creado_en', { ascending: false })
+  const { data: cs, error } = await sb.from('lk_contratos').select('id, direccion, monto, inicio, fin, reglas, email_inquilino, email_dueno, rol_creador, reglas_ok_dueno, reglas_ok_inquilino, invitacion_expira, estado, ventana_inicio, ventana_segundos, escrow_contract_id, resultado, liquidacion_tx, creado_en, actualizado_en').order('creado_en', { ascending: false })
   if (error) throw new ErrorServidor(mensajeServidor(error))
   const ids = (cs ?? []).map(c => c.id); if (!ids.length) { datos = []; cargado = true; avisar(); return }
   const de = (t: string, cols: string) => sb.from(t).select('contrato_id, ' + cols).in('contrato_id', ids)
@@ -63,7 +66,7 @@ export async function recargar() {
     const a = aAlquiler({ contrato: c as Filas['contrato'], participantes: por(ps, c.id) as unknown as Filas['participantes'], actas: por(as, c.id) as unknown as Filas['actas'],
       firmas: por(fs, c.id) as unknown as Filas['firmas'], fotos: por(fts, c.id) as unknown as Filas['fotos'], reclamo: (por(rs, c.id)[0] ?? null) as unknown as Filas['reclamo'],
       eventos: por(es, c.id) as unknown as Filas['eventos'] }, yo, r => urls.get(r) ?? '')
-    if (a.miRol === 'dueno' && !a.inquilinoUnido && inv[a.id]) a.invitacion = linkInvitacion(a.id, inv[a.id])
+    if (a.miRol && a.miRol === a.rolCreador && !a.otroUnido && inv[a.id]) a.invitacion = linkInvitacion(a.id, inv[a.id])
     return a
   })
   cargado = true; avisar()
@@ -105,14 +108,33 @@ async function subirFoto(id: string, etapa: 'entrada' | 'salida' | 'reclamo', cu
 
 const tras = async <T>(p: Promise<T>) => { const r = await p; await recargar(); return r }
 export const servidor = {
-  async crear(d: { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string }, email: string, cuenta?: string) {
+  /** Crea el alquiler. `rol`: el papel de quien crea (dueño o inquilino); `otroEmail`: el correo de la persona invitada. */
+  async crear(d: { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string; rol?: Rol; otroEmail?: string }, email: string, cuenta?: string) {
+    const rol = d.rol ?? 'dueno'
     const r = await rpc<{ id: string; token: string }>('lk_crear_contrato', { p_direccion: d.direccion, p_monto: d.monto, p_inicio: d.inicio, p_fin: d.fin, p_reglas: d.reglas,
-      p_email_inquilino: d.inquilinoEmail, p_email_cavos: email, p_direccion_stellar: cuenta ?? null, p_ventana_segundos: VENTANA_SEGUNDOS })
+      p_email_otro: d.otroEmail ?? d.inquilinoEmail, p_email_cavos: email, p_direccion_stellar: cuenta ?? null, p_ventana_segundos: VENTANA_SEGUNDOS, p_rol_creador: rol })
     guardarInvitacion(r.id, r.token); await recargar(); return { id: r.id, link: linkInvitacion(r.id, r.token) }
   },
+  /** «Reenviar invitación»: link nuevo de 7 días; el anterior deja de servir. Solo quien creó el alquiler. */
   async nuevaInvitacion(id: string) { const t = await rpc<string>('lk_nueva_invitacion', { p_contrato: id }); guardarInvitacion(id, t); await recargar(); return linkInvitacion(id, t) },
-  verInvitacion: (id: string, token: string) => rpc<{ direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; email_inquilino: string; email_dueno: string }>('lk_ver_invitacion', { p_contrato: id, p_token: token }),
-  aceptarInvitacion: (id: string, token: string, email: string, cuenta?: string) => tras(rpc('lk_aceptar_invitacion', { p_contrato: id, p_token: token, p_email_cavos: email, p_direccion_stellar: cuenta ?? null })),
+  verInvitacion: (id: string, token: string) => rpc<VistaInvitacion>('lk_ver_invitacion', { p_contrato: id, p_token: token }),
+  /** Acepta la invitación: la sesión queda vinculada al papel invitado. El inquilino tiene que aceptar las reglas aquí mismo. */
+  aceptarInvitacion: (id: string, token: string, email: string, cuenta?: string, aceptaReglas = false) =>
+    tras(rpc<Rol>('lk_aceptar_invitacion', { p_contrato: id, p_token: token, p_email_cavos: email, p_direccion_stellar: cuenta ?? null, p_acepta_reglas: aceptaReglas })),
+  /** Dueño: confirma (o cambia) las reglas. Si cambian, el inquilino las vuelve a aceptar. */
+  confirmarReglas: (id: string, reglas: string[]) => tras(rpc('lk_confirmar_reglas', { p_contrato: id, p_reglas: reglas })),
+  /** Inquilino: acepta las reglas que confirmó el dueño. */
+  aceptarReglas: (id: string) => tras(rpc('lk_aceptar_reglas', { p_contrato: id })),
+  /** «Enviar por correo»: el servidor arma el correo con los datos de la base (no con los del navegador). */
+  async enviarCorreo(id: string): Promise<{ enviado: true; a: string }> {
+    const token = invitaciones()[id]
+    if (!token) throw new ErrorServidor('Este aparato no tiene el link guardado. Toca «Reenviar invitación» para crear uno nuevo.')
+    const r = await fetch('/api/invitacion-correo', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + await tokenSesion() },
+      body: JSON.stringify({ id, token, origen: location.origin }) }).catch(() => null)
+    const j = await r?.json().catch(() => null) as { enviado?: true; a?: string; error?: string } | null
+    if (!r?.ok || !j?.enviado) throw new ErrorServidor(j?.error ?? 'No pudimos enviar el correo. Copia el link y envíalo tú.')
+    return { enviado: true, a: j.a ?? '' }
+  },
   actualizarCuenta: (id: string, cuenta: string) => tras(rpc('lk_actualizar_direccion', { p_contrato: id, p_direccion_stellar: cuenta })),
   firmar: (id: string, etapa: 'contrato' | 'entrada' | 'salida') => tras(rpc<string>('lk_firmar', { p_contrato: id, p_etapa: etapa })),
   marcar: (id: string, etapa: 'entrada' | 'salida', cuarto: number, item: number, estado: 'bien' | 'detalle') => tras(rpc('lk_editar_item', { p_contrato: id, p_etapa: etapa, p_cuarto: cuarto, p_item: item, p_estado: estado })),

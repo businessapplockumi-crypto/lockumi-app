@@ -16,6 +16,9 @@ export interface Alquiler {
   id: string; direccion: string; monto: number; moneda: 'USD' | 'USDC'
   /** Solo con servidor: mi rol según la sesión, si el inquilino ya aceptó y las cuentas G… declaradas. */
   miRol?: Rol; inquilinoUnido?: boolean; cuentas?: Partial<Record<Rol, string>>; ventanaSegundos?: number; liquidacionTx?: string; invitacion?: string
+  /** Solo con servidor (invitaciones en los dos sentidos): quién creó, si la otra persona ya entró, a quién se invitó, cuándo vence el link
+   *  y cuándo aprobó las reglas cada uno (el dueño las confirma; el inquilino las acepta). Sin las dos aprobaciones no se firma. */
+  rolCreador?: Rol; otroUnido?: boolean; emailInvitado?: string; invitacionExpira?: string; reglasOk?: Partial<Record<Rol, string>>
   inicio: string; fin: string; reglas: string[]
   duenoEmail: string; inquilinoEmail: string
   estado: Estado; rendimiento: boolean; historial: Evento[]

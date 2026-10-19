@@ -24,30 +24,45 @@ Lockumi es una app de **depósito de alquiler protegido** para Costa Rica. Dueñ
 - [Contratos e IDs en testnet](#contratos-e-ids-en-testnet)
 - [Privacidad en la cadena](#privacidad-en-la-cadena)
 - [Qué es real y qué es simulado](#qué-es-real-y-qué-es-simulado)
+- [Invitaciones sin Supabase](#invitaciones-sin-supabase-servidor-local) · [Qué tiene que hacer Katherine en Supabase](#qué-tiene-que-hacer-katherine-en-supabase)
 - [Cómo correrlo localmente](#cómo-correrlo-localmente)
 - [Stack](#stack) · [Enlaces](#enlaces) · [Equipo](#equipo) · [Contribuir](#contribuir) · [Licencia](#licencia)
 
 ## Prueba el flujo en 5 minutos (guía para jueces)
 
-Esta guía describe la versión con flujo real en testnet. Antes de empezar:
+Así funciona hoy https://app.lockumi.com. Antes de empezar:
 
-- **Es la red de prueba de Stellar (testnet).** Los USDC y XLM que vas a usar son tokens de prueba **sin valor**.
-- **En esta versión el servidor firma con cuentas de prueba rotuladas** ("dueño de prueba" e "inquilino de prueba"), para que una sola persona pueda recorrer todo el flujo. Sus llaves viven solo en el servidor; el navegador nunca las recibe.
-- **El mediador es simulado.** En el camino feliz no hace falta: no hay reclamo.
-- Tope de **20 USDC** por contrato de prueba.
+- **Es la red de prueba de Stellar (testnet).** Los USDC y XLM son tokens de prueba **sin valor**. La red principal está bloqueada en el cliente y en el servidor.
+- **Tú eres el inquilino.** El dueño es el **«Dueño de prueba (cuenta de Lockumi para la demo)»**: por eso no se pide su correo. Firma y confirma solo, unos segundos después de ti, y lo ves en una línea «✓ El dueño de prueba … automáticamente».
+- **Cada pantalla dice qué sigue** en una línea «Ahora te toca: …» o «Ahora le toca al dueño de prueba: …».
+- **Montos:** con «Obtener USDC de prueba de Lockumi» el depósito es de máximo **20 USDC de prueba** (salen de la tesorería de prueba). Con «De mi cuenta» puedes depositar lo que tenga tu cuenta (hasta 50 000).
+- **La persona mediadora es simulada**, pero el reparto que decide se hace de verdad en la red de prueba.
 
-Pasos en https://app.lockumi.com:
+Pasos:
 
-1. **Entrar.** Elige "Continuar con Google", "Continuar con Apple" o "Continuar con tu correo" (Cavos). No necesitas instalar una billetera ni guardar frases semilla. <!-- AJUSTAR_UI -->
-2. **Aceptar los términos.** Marca "Acepto los Términos y condiciones" (y el consentimiento de privacidad, si aparece) y toca "Entrar". Son textos de demo, pendientes de revisión por abogado. <!-- AJUSTAR_UI -->
-3. **Crear el alquiler.** Completa inmueble, monto (hasta 20 USDC), fechas y reglas, y toca "Crear alquiler e invitar". <!-- AJUSTAR_UI -->
-4. **Obtener USDC de prueba.** Toca "Obtener USDC de prueba". La app prepara la cuenta de testnet y le carga USDC de prueba de Circle (sin valor). <!-- AJUSTAR_UI -->
-5. **Depositar en el escrow.** Toca "Depositar". El servidor crea el escrow *single-release* en Trustless Work y el inquilino deposita los USDC en ese contrato. <!-- AJUSTAR_UI -->
-6. **El dueño de prueba aprueba.** Al terminar el alquiler, toca "Todo está bien: aprobar la devolución". La plataforma deja la evidencia en el hito y el dueño de prueba aprueba en la cadena. <!-- AJUSTAR_UI -->
-7. **Liberar.** Toca "Liberar el depósito". La plataforma (releaseSigner) libera los fondos al inquilino; Trustless Work descuenta su comisión de 0,3 %. <!-- AJUSTAR_UI -->
-8. **Abrir cada comprobante en stellar.expert.** Cada paso muestra "Ver comprobante en la red de prueba", que abre la transacción en `stellar.expert/explorer/testnet`. Ahí se ve el contrato del escrow, el depósito y la liberación. <!-- AJUSTAR_UI -->
+1. **Entrar.** «Continuar con Google», «Continuar con Apple» o «Continuar con tu correo» (Cavos: sin instalar billetera ni guardar frases semilla). Marca «Acepto los Términos y condiciones» y toca «Entrar».
+2. **Crear.** Toca «+ Nuevo alquiler». Elige de dónde salen los USDC de prueba: «Obtener USDC de prueba de Lockumi (máximo 20)» o «De mi cuenta (cualquier monto que tenga)» (con «Usar mi cuenta Lockumi» o «Usar Freighter»; la app muestra tu saldo). Completa lugar, depósito, fechas y reglas, y toca «Crear alquiler de prueba».
+3. **Contrato.** Marca «Leí el contrato y estoy de acuerdo.» y toca «Firma como inquilino». El dueño de prueba firma solo.
+4. **Depósito.** Toca «Pagar N USDC». Lockumi prepara las cuentas, crea la cuenta segura (escrow *single-release* de Trustless Work) y bloquea ahí el depósito.
+5. **Fotos de entrada.** En cada espacio: «Demo: usar una foto de ejemplo» (o la cámara), marca «Bien» en cada punto y toca «Siguiente espacio»; al final «Revisar y confirmar», marca «Las fotos muestran cómo está el lugar al entrar.» y toca «Confirmar como inquilino».
+6. **Fotos de salida.** «Empezar fotos de salida», lo mismo que en la entrada, y «Confirmar como inquilino».
+7. **7 días para reclamos.** Elige un camino:
+   - **Devolución:** «Solo red de prueba: adelantar el plazo» (solo existe en testnet). El dueño de prueba aprueba y Lockumi devuelve el depósito.
+   - **Reclamo y mediación:** «Hacer un reclamo como dueño de prueba» → monto, motivo y foto → «Enviar reclamo» → «No estoy de acuerdo» → «Decidir como persona mediadora» → «Confirmar el reparto».
+8. **Comprobantes.** Cada paso tiene «Ver comprobante en la red de prueba», que abre la transacción en `stellar.expert/explorer/testnet`.
 
-¿No quieres crear nada? Abajo están las transacciones de una corrida real del mismo camino feliz: [Contratos e IDs en testnet](#contratos-e-ids-en-testnet).
+¿No quieres crear nada? Abajo están las transacciones de una corrida real: [Contratos e IDs en testnet](#contratos-e-ids-en-testnet).
+
+### Dos personas reales con invitaciones (rama `parte4-invitaciones`, todavía no publicada)
+
+Con el servidor compartido (Supabase) cada persona usa su propio teléfono:
+
+1. Quien crea elige **«¿Eres dueño o inquilino?»** y escribe el correo de la otra persona. Si crea el dueño, pone las reglas; si crea el inquilino, las reglas son una propuesta.
+2. Después de crear aparece **«Invitar al inquilino»** (o «Invitar al dueño») con el link `/#/invitacion/{id}/{token}`, **«Copiar link»**, **«Enviar por correo»** y **«Reenviar invitación»** (link nuevo de 7 días; el anterior deja de servir).
+3. La persona invitada abre el link, ve su papel (**«Entras como dueño»** o **«Entras como inquilino»**), el resumen y las reglas, y toca **«Aceptar invitación»** con el mismo correo al que la invitaron. El inquilino acepta las reglas ahí mismo; el dueño invitado pasa a **«Confirma las reglas»** (puede quitar o agregar) y toca **«Confirmar las reglas»**. Si el dueño cambió algo, el inquilino ve **«Acepta las reglas»** antes de firmar.
+4. Desde ahí, cada uno ve «Eres el dueño» / «Eres el inquilino» y «Ahora te toca…» o «Ahora le toca al …». No hay dueño de prueba automático.
+
+Si el link venció, ya se usó o se abre con otro correo, la pantalla explica qué hacer (pedir «Reenviar invitación» o entrar con el correo correcto). Para probarlo sin Supabase: [Invitaciones sin Supabase](#invitaciones-sin-supabase-servidor-local).
 
 ## El problema
 
@@ -55,7 +70,7 @@ En muchos alquileres el depósito de garantía queda retenido al terminar el con
 
 ## Cómo funciona
 
-1. **Contrato:** el dueño crea el alquiler (inmueble, monto, fechas y reglas), invita al inquilino y ambos firman.
+1. **Contrato:** el dueño o el inquilino crea el alquiler (inmueble, monto, fechas y reglas) e invita a la otra persona. El dueño pone o confirma las reglas, el inquilino las acepta y los dos firman.
 2. **Depósito protegido:** el inquilino deposita; nadie puede liberar el dinero por su cuenta.
 3. **Fotos de entrada:** se hace el acta de entrada con inventario y fotos con fecha y hora.
 4. **Fotos de salida:** al terminar se hace el acta de salida.
@@ -186,22 +201,21 @@ Todo lo que se escribe en un escrow queda público y permanente en Stellar. Por 
 - **Título fijo:** el escrow lleva un texto genérico fijo ("Depósito de alquiler Lockumi") y el id opaco del contrato como `engagementId` (en la versión con flujo real).
 - **Sin datos personales:** nunca se envían a la cadena la dirección del inmueble, nombres, correos ni teléfonos; una última verificación en el servidor bloquea el deploy si algún texto los trae (en la versión con flujo real). Las fotos y las actas no van a la cadena; la evidencia del hito es un texto fijo (en la versión con flujo real).
 - **Red principal bloqueada:** el proxy rechaza cualquier API de Trustless Work que no sea la de testnet (`dev.api.trustlesswork.com`) y lee y firma las transacciones solo con el passphrase de testnet (rama `testnet-e2e`). En la versión con flujo real, además, rechaza cualquier passphrase, Horizon o RPC que no sea de testnet.
-- **Tope de 20 USDC** por contrato de prueba, en el cliente y en el servidor (en la versión con flujo real).
-
-En `master`, app.lockumi.com no escribe nada en la cadena: el depósito es simulado.
+- **Montos de prueba:** con USDC de la tesorería de prueba de Lockumi, máximo 20 USDC por contrato (cliente y servidor). Con USDC de prueba de la cuenta propia del inquilino, el límite es su saldo (máximo 50 000).
 
 ## Qué es real y qué es simulado
 
-| Parte | En `master` | En la versión con flujo real |
+| Parte | Hoy en app.lockumi.com (`master`) | Con servidor compartido (rama `parte4-invitaciones`, pendiente de Supabase) |
 |---|---|---|
-| Login | Real con Cavos si `VITE_CAVOS_APP_ID` está definido; si no, simulado (sin red; sirve cualquier código de 6 dígitos). | Real con Cavos. |
-| Billetera | Billetera Stellar de testnet creada por Cavos; activación con Friendbot y saldo leído en Horizon testnet. | Igual, más la trustline de USDC de prueba. |
-| Escrow | Simulado (`src/services/escrow.ts`); en pantalla se marca como "Pago simulado". | Real en testnet: Trustless Work single-release con USDC de prueba. |
-| Firmas del dueño e inquilino | No hay firmas en la cadena. | El servidor firma con cuentas de prueba rotuladas (dueño e inquilino de prueba). En la rama `testnet-e2e` firman las billeteras de Cavos (`signXdr`). |
-| Mediación | Simulada, sin efecto legal. | Simulada, sin efecto legal. |
-| Plazo de reclamos | 7 días, con un botón de demo para adelantarlos. | Configurable para la prueba con `VITE_VENTANA_SEGUNDOS` (rama `testnet-e2e`). |
-| Rendimiento con Blend (40/40/20) | Simulado (`src/services/yield.ts`). Es una **función futura, no disponible**: el reparto sería 40 % inquilino, 40 % dueño y 20 % Lockumi, con rendimiento variable y no garantizado. | Igual. |
-| Datos | En el navegador (localStorage). | El servidor compartido con Supabase está en la rama `testnet-e2e`. |
+| Login | Real con Cavos (Google, Apple o correo). | Igual. |
+| Escrow | Real en testnet: Trustless Work *single-release* con USDC de prueba de Circle. | Real en testnet por `/api/tw`. |
+| Dueño | «Dueño de prueba (cuenta de Lockumi para la demo)»: firma y aprueba solo, desde el servidor. | Una persona real invitada (o que invita). |
+| Inquilino | Tú. El depósito lo firma tu cuenta (Cavos o Freighter) o, si tu billetera no puede firmar, un «inquilino de prueba» de Lockumi. | Una persona real; firma con su cuenta de Cavos. |
+| Invitaciones | No hay (una sola persona). | Link de un solo uso, 7 días, en los dos sentidos. «Enviar por correo» con Resend. |
+| Mediación | Simulada, sin efecto legal; el reparto se hace en testnet. | Simulada, sin efecto legal. |
+| Plazo de reclamos | 7 días, con «Solo red de prueba: adelantar el plazo» (solo testnet). | 7 días o `VITE_VENTANA_SEGUNDOS`. |
+| Rendimiento con Blend (40/40/20) | Simulado (`src/services/yield.ts`). Es una **función futura, no disponible**. | Igual. |
+| Datos del alquiler | En el navegador (localStorage). En la cadena solo van montos, cuentas y hashes. | Supabase con RLS: cada persona ve solo sus alquileres y solo actúa en su papel. |
 | Textos legales | `/terminos` y `/privacidad`, versión de demo, pendientes de revisión por abogado. | Igual. |
 
 ### Login sin billetera con Cavos
@@ -211,6 +225,29 @@ En `master`, app.lockumi.com no escribe nada en la cadena: el depósito es simul
 - Google (redirección OAuth);
 - Apple (redirección OAuth);
 - correo electrónico con código de un solo uso (9 caracteres).
+
+## Invitaciones sin Supabase (servidor local)
+
+`scripts/servidor-local.mjs` corre las migraciones reales en PGlite (Postgres en WASM) y responde lo mínimo de Supabase que usa la app (sesión anónima, RPC y lecturas con RLS). Sirve para probar las invitaciones con dos navegadores sin tocar Supabase:
+
+```bash
+VITE_SUPABASE_URL=http://localhost:54329 VITE_SUPABASE_ANON_KEY=local npx vite build --outDir dist-local
+node scripts/servidor-local.mjs      # abre http://localhost:54329 en dos navegadores (o uno normal y uno privado)
+```
+
+Sin `RESEND_API_KEY`, «Enviar por correo» muestra el aviso de que el correo no está configurado y el link sigue sirviendo. Con `RESEND_API_KEY=x RESEND_FALSO=1` el correo no sale: se guarda en `/tmp/lockumi-correos.jsonl`. Las pruebas del SQL están en `src/servidor/__tests__/invitaciones-sql.test.ts` (corren con `npm test`).
+
+## Qué tiene que hacer Katherine en Supabase
+
+Antes de publicar las invitaciones (nada de esto toca producción; app.lockumi.com sigue en modo de una sola persona):
+
+1. **Supabase → SQL Editor** (proyecto `sddgjnuvxzkrhhuczuly`): pegar y correr, en este orden, `supabase/migrations/20261017000000_lockumi_e2e.sql` y `supabase/migrations/20261019000000_lockumi_invitaciones.sql`. Las dos se pueden volver a correr sin problema.
+2. **Authentication → Sign In / Providers**: activar «Allow anonymous sign-ins».
+3. **Settings → API**: copiar la clave *publishable/anon* y la *service role*.
+4. **Vercel → Settings → Environment Variables, solo «Preview»** (no «Production»): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (sensible).
+5. **Resend** (para «Enviar por correo»): crear la cuenta, agregar el dominio `lockumi.com` y poner en el DNS los registros que pide (SPF y DKIM) hasta que diga *Verified*. Crear una API key y cargarla en Vercel (solo «Preview», sensible) como `RESEND_API_KEY`. Opcional: `RESEND_FROM` (por defecto `Lockumi <invitaciones@lockumi.com>`). Sin esto, todo funciona igual y la app pide copiar el link.
+6. **Cavos**: agregar el origen de la vista previa en *allowed web origins*.
+7. Avisar para volver a probar con **dos sesiones** en la vista previa. Recién después se publica en producción.
 
 ## Cómo correrlo localmente
 
@@ -242,8 +279,10 @@ Variables de entorno (ver `.env.example`; **nunca subas `.env`**, está en `.git
 | `SUPABASE_URL` | Servidor | URL del proyecto de Supabase para el proxy. *(rama `testnet-e2e`)* |
 | `SUPABASE_ANON_KEY` | Servidor | Clave anon de Supabase, para validar la sesión del usuario. *(rama `testnet-e2e`)* |
 | `SUPABASE_SERVICE_ROLE_KEY` | Servidor | Clave de servicio de Supabase (lectura y registro de eventos desde el proxy). *(rama `testnet-e2e`)* |
+| `RESEND_API_KEY` | Servidor | Llave de Resend para «Enviar por correo» la invitación (`api/invitacion-correo.ts`). Sin ella la app pide copiar el link. *(rama `parte4-invitaciones`)* |
+| `RESEND_FROM` | Servidor | Opcional: remitente; por defecto `Lockumi <invitaciones@lockumi.com>` (el dominio tiene que estar verificado en Resend). *(rama `parte4-invitaciones`)* |
 
-En `master` solo se usa `VITE_CAVOS_APP_ID`.
+Producción (`master`) usa `VITE_CAVOS_APP_ID`, `VITE_TRUSTLESS=1` y las variables de servidor de Trustless Work, **sin** `VITE_SUPABASE_*`: así queda en modo de una sola persona con escrow real en testnet.
 
 ## Stack
 
