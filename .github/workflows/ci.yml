@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint, tests y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Vitest 5 pide Node ^22.12.0; package.json no fija versión y no hay .nvmrc.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: |
+          if npm pkg get scripts.lint | grep -qv '{}'; then
+            npm run lint
+          else
+            echo "No hay script de lint; se omite."
+          fi
+
+      - name: Tests (vitest run)
+        run: npm test
+
+      - name: Build
+        run: npm run build
