@@ -7,11 +7,12 @@
 // Sin estado propio: cada acción se valida contra el escrow que reporta Trustless Work con validateOnChain=true.
 import { Keypair, Networks, TransactionBuilder, Operation, Asset, Address, Account, xdr, hash, type Transaction } from '@stellar/stellar-sdk'
 import { ErrorTw, leerTx, hashTx, datosOnChain, sinDatosPersonales, EVIDENCIA_ONCHAIN } from './tw.js'
-import { PASSPHRASE_TESTNET, HORIZON_TESTNET, FRIENDBOT, TW_TESTNET, USDC, TOPE_USDC, MAX_XLM_COMPRA, montoValido, exigirTestnet } from './red.js'
+import { PASSPHRASE_TESTNET, HORIZON_TESTNET, FRIENDBOT, TW_TESTNET, USDC, TOPE_USDC, MONTO_MAX_USDC, MAX_XLM_COMPRA, montoValido, mensajeSaldoAlPagar, exigirTestnet } from './red.js'
 
 export type Entorno = Record<string, string | undefined>
 const G = /^G[A-Z2-7]{55}$/, C = /^C[A-Z2-7]{55}$/, UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, TOKEN = /^[0-9a-f]{64}$/, HUELLA = /^[0-9a-f]{64}$/
 const exigir = (ok: unknown, estado: number, m: string): void => { if (!ok) throw new ErrorTw(estado, m) }
+const MAX_TXT = MONTO_MAX_USDC.toLocaleString('es-CR')
 
 export function configSolo(e: Entorno) {
   const base = (e.TRUSTLESS_WORK_BASE_URL || TW_TESTNET).replace(/\/$/, '')
@@ -122,7 +123,7 @@ export function validarEscrow(c: ConfigSolo, e: Escrow, receiver?: string) {
   exigir(e.signer === c.P && e.roles.platformAddress === c.P && e.roles.releaseSigner === c.P && e.roles.serviceProvider === c.P, 403, 'Esta cuenta segura no es de Lockumi.')
   exigir(e.roles.approver === duenoDe(c, e.engagementId).publicKey(), 403, 'El dueño de esta cuenta segura no es el dueño de prueba de Lockumi.')
   exigir(e.trustline?.address === USDC.issuer, 403, 'Esta cuenta segura no usa USDC de prueba.')
-  exigir(montoValido(Number(e.amount)), 403, `El monto supera el tope de ${TOPE_USDC} USDC de prueba.`)
+  exigir(montoValido(Number(e.amount)), 403, `El monto supera el máximo de ${MAX_TXT} USDC de prueba.`)
   exigir(!e.inconsistencies?.inconsistencyFound, 409, 'Los datos de la cuenta segura no coinciden con la red. Espera unos segundos y vuelve a intentarlo.')
   if (receiver !== undefined) exigir(e.roles.receiver === receiver, 403, 'El depósito tiene que salir de la cuenta que lo recibe de vuelta.')
 }
@@ -232,13 +233,13 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
     case 'cuenta-prueba': {   // inquilino de prueba custodiado por el servidor: Friendbot + trustline + USDC desde la tesorería (plataforma)
       exigir(TOKEN.test(p.token), 400, 'Falta el identificador de la cuenta de prueba.')
       const objetivo = p.monto === undefined ? TOPE_USDC : p.monto
-      exigir(montoValido(objetivo), 400, `Puedes pedir hasta ${TOPE_USDC} USDC de prueba.`)
+      exigir(montoValido(objetivo, TOPE_USDC), 400, `Puedes pedir hasta ${TOPE_USDC} USDC de prueba.`)
       const k = inquilinoPruebaDe(c, p.token); const { trustline } = await prepararCuenta(c, k, f)
       const a = (await cuenta(c, k.publicKey(), f))!
       const falta = Math.round((objetivo - Number(usdcDe(a) ?? 0)) * 1e7) / 1e7; let compra: string | null = null, via: 'tesoreria' | 'dex' | null = null
       if (falta > 0) {
         const tes = await cuenta(c, c.P, f)
-        if (Number(usdcDe(tes) ?? 0) >= falta) {   // tesorería: la plataforma envía el USDC de prueba que falta (nunca más del tope)
+        if (Number(usdcDe(tes) ?? 0) >= falta) {   // tesorería: la plataforma envía el USDC de prueba que falta (nunca más del tope de 20)
           compra = await pagarDesdeTesoreria(c, k.publicKey(), falta, f); via = 'tesoreria'
         } else {                                    // respaldo: la cuenta de prueba compra en el DEX de testnet con su XLM de Friendbot
           const t = tb(a).addOperation(Operation.pathPaymentStrictReceive({ sendAsset: Asset.native(), sendMax: String(MAX_XLM_COMPRA), destination: k.publicKey(),
@@ -251,13 +252,15 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
     case 'desplegar': {   // la plataforma crea el escrow; textos fijos y el uuid del contrato (sin datos personales)
       exigir(UUID.test(p.contrato), 400, 'Contrato inválido.')
       exigir(G.test(p.inquilino), 400, 'La cuenta del inquilino no es válida.')
-      exigir(montoValido(p.monto), 400, `El depósito de prueba tiene que ser mayor que 0 y como máximo ${TOPE_USDC} USDC.`)
+      // Sin tope de 20: con USDC de prueba propios el límite es el saldo real de la cuenta (Horizon) y el máximo de la app.
+      // El tope de 20 de los USDC que da Lockumi se revisa en cuenta-prueba y fondear-prueba (los únicos pasos que usan la tesorería).
+      exigir(montoValido(p.monto), 400, `El depósito de prueba tiene que ser mayor que 0 y como máximo ${MAX_TXT} USDC.`)
       const dueno = duenoDe(c, p.contrato).publicKey()
       exigir(new Set([p.inquilino, dueno, c.P]).size === 3, 400, 'La cuenta del inquilino no puede ser la del dueño ni la de Lockumi.')
       const inq = await cuenta(c, p.inquilino, f)
       exigir(inq, 409, 'Tu cuenta todavía no existe en la red de prueba. Toca "Obtener USDC de prueba" primero.')
       exigir(usdcDe(inq) !== null, 409, 'Tu cuenta todavía no tiene USDC habilitado. Toca "Obtener USDC de prueba" primero.')
-      exigir(Number(usdcDe(inq)) >= p.monto, 409, `Te faltan USDC de prueba: tienes ${Number(usdcDe(inq))} y el depósito es de ${p.monto}. Toca "Obtener USDC de prueba".`)
+      exigir(Number(usdcDe(inq)) >= p.monto, 409, mensajeSaldoAlPagar(Number(usdcDe(inq)), p.monto))
       await prepararCuenta(c, duenoDe(c, p.contrato), f)
       const pub = datosOnChain({ id: p.contrato })
       sinDatosPersonales([pub.title, pub.description, ...pub.milestones.map(m => m.description)], { direccion: '' })
@@ -280,6 +283,8 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       exigir(G.test(p.inquilino), 400, 'La cuenta del inquilino no es válida.')
       const e = await leerHasta(c, p.escrow, x => x.contractId === p.escrow, f, 1); validarEscrow(c, e, p.inquilino)
       exigir(!fondeado(e) && !e.flags.released && !e.flags.disputed, 409, 'Este depósito ya se pagó.')
+      const inq = await cuenta(c, p.inquilino, f), tiene = Number(usdcDe(inq) ?? 0)
+      exigir(tiene >= Number(e.amount), 409, mensajeSaldoAlPagar(tiene, Number(e.amount)))
       const j = await tw(c, '/escrow/single-release/fund-escrow', { contractId: p.escrow, signer: p.inquilino, amount: Number(e.amount) }, f)
       const x = sinFirmar(j), t = leerTx(x)
       exigir(t.source === p.inquilino, 502, 'La transacción del depósito no sale de tu cuenta.'); exigirLlamada(t, p.escrow, ['fund_escrow'])
@@ -299,6 +304,7 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       const k = inquilinoPruebaDe(c, p.token)
       const e = await leerEscrow(c, p.escrow, f); validarEscrow(c, e, k.publicKey())
       exigir(!fondeado(e) && !e.flags.released, 409, 'Este depósito ya se pagó.')
+      exigir(montoValido(Number(e.amount), TOPE_USDC), 403, `Con «Obtener USDC de prueba» el depósito es de máximo ${TOPE_USDC} USDC de prueba. Para un monto mayor, usa USDC de prueba de tu propia cuenta.`)
       // Si al inquilino de prueba le falta USDC (por ejemplo, dos depósitos a la vez), la tesorería completa lo que falta (nunca más del tope).
       const inq = await cuenta(c, k.publicKey(), f); exigir(inq && usdcDe(inq) !== null, 409, 'La cuenta de prueba todavía no está lista. Vuelve a tocar el botón.')
       const falta = Math.round((Number(e.amount) - Number(usdcDe(inq))) * 1e7) / 1e7

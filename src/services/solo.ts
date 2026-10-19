@@ -2,10 +2,10 @@
 // viven solo en el servidor: aquí solo llegan claves públicas (G…), la cuenta segura (C…) y hashes de transacciones.
 // Fuentes: https://developers.stellar.org/docs/data/apis/horizon/api-reference/list-strict-receive-payment-paths
 //          https://docs.cavos.xyz/docs/stellar (signXdr, addTrustline) · https://docs.cavos.xyz/docs/vault
-import { PASSPHRASE_TESTNET, HORIZON_TESTNET, USDC, TOPE_USDC, MAX_XLM_COMPRA, montoValido } from '../../api/_lib/red'
+import { PASSPHRASE_TESTNET, HORIZON_TESTNET, USDC, TOPE_USDC, MONTO_MAX_USDC, MAX_XLM_COMPRA, montoValido, mensajeSaldoPropio, mensajeSaldoAlPagar } from '../../api/_lib/red'
 import { conectarBilletera, consultarUsdc, consultarSaldo, fondear, firmarXdr, abrirTrustlineUsdc, olvidarBilletera, mensajeFirma } from './billetera'
 
-export { TOPE_USDC, MAX_XLM_COMPRA, montoValido }
+export { TOPE_USDC, MONTO_MAX_USDC, MAX_XLM_COMPRA, montoValido, mensajeSaldoPropio, mensajeSaldoAlPagar }
 export class ErrorSolo extends Error {}
 async function api<T>(cuerpo: Record<string, unknown>): Promise<T> {
   let r: Response
@@ -62,7 +62,7 @@ export function maximoAGastar(precio: number) {
 
 /** "Obtener USDC de prueba" con la billetera Cavos: Friendbot si hace falta → trustline (addTrustline) → path payment XLM→USDC (signXdr). */
 export async function obtenerUsdc(objetivo: number, avance: (t: string) => void = () => {}): Promise<{ g: string; txs: Txs; saldo: string }> {
-  if (!montoValido(objetivo)) throw new ErrorSolo(`Puedes pedir hasta ${TOPE_USDC} USDC de prueba.`)
+  if (!montoValido(objetivo, TOPE_USDC)) throw new ErrorSolo(`Puedes pedir hasta ${TOPE_USDC} USDC de prueba.`)
   if (usarPrueba()) { avance('Preparando el inquilino de prueba y enviando USDC de prueba…'); const r = await prepararCuentaPrueba(objetivo); return { ...r, saldo: (await consultarUsdc(r.g)) ?? '0' } }
   const g = (await conectarBilletera()).direccion; const txs: Txs = {}
   if (await consultarSaldo(g) === null) { avance('Activando tu cuenta con XLM de prueba gratis…'); await fondear(g); olvidarBilletera() }
@@ -99,7 +99,7 @@ export async function obtenerUsdc(objetivo: number, avance: (t: string) => void 
 // ── Depósito, aprobación y liberación ──
 export type Pasos = Partial<Record<'escrow' | 'trustline' | 'compra' | 'deposito' | 'evidencia' | 'aprobacion' | 'liberacion' | 'duenoTrustline', string>>
 export async function depositar(contrato: string, monto: number, avance: (t: string) => void = () => {}) {
-  if (!montoValido(monto)) throw new ErrorSolo(`El depósito de prueba es de máximo ${TOPE_USDC} USDC.`)
+  if (!montoValido(monto)) throw new ErrorSolo(`El depósito de prueba es de máximo ${MONTO_MAX_USDC.toLocaleString('es-CR')} USDC.`)
   const { g, prueba } = await cuentaInquilino()
   if (!g) throw new ErrorSolo('Primero toca "Obtener USDC de prueba".')
   avance('Preparando la cuenta del dueño de prueba…')
@@ -128,6 +128,9 @@ export async function reintentarDeposito(escrow: string) {
 }
 export const prepararDueno = (contrato: string) => api<{ dueno: string; trustlineTx: string | null }>({ accion: 'dueno', contrato })
 export const desplegar = (contrato: string, inquilino: string, monto: number) => api<{ escrow: string; tx: string; dueno: string }>({ accion: 'desplegar', contrato, inquilino, monto })
+/** Cuenta propia: el servidor arma la transacción del depósito para la dirección de la persona; su billetera la firma. */
+export const fondearPropio = (escrow: string, inquilino: string) => api<{ unsignedXdr: string }>({ accion: 'fondear', escrow, inquilino })
+export const enviarDeposito = (escrow: string, signedXdr: string) => api<{ tx: string }>({ accion: 'enviar-deposito', escrow, signedXdr })
 export const fondearPrueba = (escrow: string) => api<{ tx: string; compraTx: string | null }>({ accion: 'fondear-prueba', escrow, token: tokenPrueba() })
 export const disputar = (escrow: string) => api<{ tx?: string; yaDisputado?: boolean }>({ accion: 'disputar', escrow })
 export const resolver = (escrow: string, alDueno: number) => api<{ tx?: string; yaResuelto?: boolean }>({ accion: 'resolver', escrow, alDueno })

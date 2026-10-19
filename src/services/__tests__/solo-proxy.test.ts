@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Keypair, Account, TransactionBuilder, Operation, Networks, Address, nativeToScVal } from '@stellar/stellar-sdk'
 import { atenderSolo, conReintento, hmacSha256, configSolo, duenoDe, inquilinoPruebaDe, limitar, reiniciarLimites, type Entorno, type Escrow } from '../../../api/_lib/solo'
-import { PASSPHRASE_TESTNET, PASSPHRASE_MAINNET, TOPE_USDC, MAX_XLM_COMPRA, montoValido, exigirTestnet, USDC } from '../../../api/_lib/red'
+import { PASSPHRASE_TESTNET, PASSPHRASE_MAINNET, TOPE_USDC, MONTO_MAX_USDC, MAX_XLM_COMPRA, montoValido, mensajeSaldoPropio, exigirTestnet, USDC } from '../../../api/_lib/red'
 import { TEXTO_ONCHAIN } from '../../../api/_lib/tw'
 
 const P = Keypair.random(), SEED = 'semilla-de-prueba-'.padEnd(48, 'x')
@@ -64,16 +64,31 @@ describe('fase 1 · solo testnet (condición 2 de Legal)', () => {
   })
 })
 
-describe('fase 1 · tope de 20 USDC (condición 3)', () => {
-  it('montoValido', () => { expect(TOPE_USDC).toBe(20); for (const m of [20, 0.5, 1e-7]) expect(montoValido(m)).toBe(true); for (const m of [20.0000001, 21, 0, -1, NaN, Infinity, '5', 1e-8]) expect(montoValido(m)).toBe(false) })
-  it('desplegar con 20 USDC pasa y con 20,5 se rechaza', async () => {
-    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 20.5 })).rejects.toThrow(/máximo 20 USDC/)
-    const s = simular(escrow(), '25'); await ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 20 }, s)
-    expect(s.llamadas.find(l => l.url.endsWith('/deployer/single-release'))!.cuerpo!.amount).toBe(20)
+describe('tope de 20 USDC solo para los USDC de Lockumi; con cuenta propia, el saldo real (máximo 50 000)', () => {
+  it('montoValido', () => {
+    expect(TOPE_USDC).toBe(20); expect(MONTO_MAX_USDC).toBe(50_000)
+    for (const m of [20, 0.5, 1e-7]) expect(montoValido(m, TOPE_USDC)).toBe(true); for (const m of [20.0000001, 21, 0, -1, NaN, Infinity, '5', 1e-8]) expect(montoValido(m, TOPE_USDC)).toBe(false)
+    for (const m of [50_000, 500, 1000]) expect(montoValido(m)).toBe(true); expect(montoValido(50_000.01)).toBe(false)
   })
-  it('un escrow por encima del tope no se puede fondear', async () => {
-    await expect(ir({ accion: 'fondear', escrow: ESC, inquilino: INQ.publicKey() }, simular(escrow({ amount: 50 })))).rejects.toThrow(/tope/)
+  it('cuenta propia: desplegar 500 pasa si el saldo real alcanza; si no, mensaje claro; más de 50 000 se rechaza', async () => {
+    const s = simular(escrow(), '600'); await ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 500 }, s)
+    expect(s.llamadas.find(l => l.url.endsWith('/deployer/single-release'))!.cuerpo!.amount).toBe(500)
+    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 500 }, simular(escrow(), '50'))).rejects.toThrow('Tu cuenta tiene 50 USDC de prueba y el depósito es de 500. Carga más USDC de prueba en tu cuenta y vuelve a tocar el botón.')
+    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 50_001 }, simular(escrow(), '60000'))).rejects.toThrow(/máximo 50/)
   })
+  it('cuenta propia: fondear arma el depósito de 500 para la dirección de la persona y revisa su saldo', async () => {
+    const r = await ir({ accion: 'fondear', escrow: ESC, inquilino: INQ.publicKey() }, simular(escrow({ amount: 500 }), '500'))
+    expect(typeof r.unsignedXdr).toBe('string')
+    await expect(ir({ accion: 'fondear', escrow: ESC, inquilino: INQ.publicKey() }, simular(escrow({ amount: 500 }), '499.5'))).rejects.toThrow(/Tu cuenta tiene 499,5 USDC de prueba/)
+    await expect(ir({ accion: 'fondear', escrow: ESC, inquilino: INQ.publicKey() }, simular(escrow({ amount: 60_000 }), '70000'))).rejects.toThrow(/máximo/)
+  })
+  it('con «Obtener USDC de prueba» (tesorería) el depósito sigue con tope de 20', async () => {
+    const T = 'e'.repeat(64), e = escrow({ amount: 50 }); e.roles = { ...e.roles, receiver: inquilinoPruebaDe(C, T).publicKey() }
+    const s = simular(e, '500')
+    await expect(ir({ accion: 'fondear-prueba', escrow: ESC, token: T }, s)).rejects.toThrow(/máximo 20 USDC de prueba/)
+    expect(s.llamadas.filter(l => l.url.endsWith('/transactions'))).toHaveLength(0)
+  })
+  it('mensaje al crear con cuenta propia', () => expect(mensajeSaldoPropio(12.5)).toBe('Tu cuenta tiene 12,5 USDC de prueba. Escribe un monto de 12,5 o menos, o usa «Obtener USDC de prueba».'))
   it('la tesorería envía al inquilino de prueba solo lo que falta, sin pasar del tope', async () => {
     const s = simular(escrow(), '500'); const llam = s.llamadas
     const f = (async (url: string, init?: RequestInit) => url.includes('/accounts/') && !url.includes(P.publicKey())
@@ -89,9 +104,9 @@ describe('fase 1 · tope de 20 USDC (condición 3)', () => {
     const { maximoAGastar } = await import('../solo')
     expect(maximoAGastar(22.6)).toBeCloseTo(24.86, 2); expect(maximoAGastar(59)).toBe(MAX_XLM_COMPRA); expect(() => maximoAGastar(61)).toThrow(/no gastamos más/)
   })
-  it('el cliente no deposita más del tope', async () => {
+  it('el cliente no deposita más del máximo y no pide más de 20 a Lockumi', async () => {
     const { depositar, obtenerUsdc } = await import('../solo')
-    await expect(depositar(ID, 21)).rejects.toThrow(/máximo 20/); await expect(obtenerUsdc(25)).rejects.toThrow(/hasta 20/)
+    await expect(depositar(ID, 50_001)).rejects.toThrow(/máximo 50/); await expect(obtenerUsdc(25)).rejects.toThrow(/hasta 20/)
   })
 })
 

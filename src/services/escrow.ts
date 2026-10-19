@@ -9,6 +9,7 @@ import type { Alquiler, PasoRed, RedPrueba } from '../types'
 import { escrowReal } from '../servidor/config'
 import * as solo from './solo'
 import { TOPE_USDC, montoValido } from '../../api/_lib/red'
+import * as propia from './cuentaPropia'
 
 export type Txs = Partial<Record<PasoRed, string>>
 export type Guardar = (txs: Txs, red?: Partial<RedPrueba>) => void
@@ -26,10 +27,12 @@ export interface EscrowService {
 }
 
 // ── Monto que va a la cuenta segura ──
-// Parte 3: cambiar SOLO esto (hoy el monto del alquiler con el tope de TOPE_USDC USDC de prueba que paga la tesorería).
-export const TOPE_DEPOSITO: number | null = escrowReal ? TOPE_USDC : null
+// El monto del alquiler. Tope de TOPE_USDC solo con los USDC de prueba que da Lockumi (tesorería); con USDC de la propia cuenta
+// el límite es el saldo real (lo revisa el servidor en Horizon) y el máximo de la app.
+export const usaCuentaPropia = (a: Pick<Alquiler, 'red'>) => a.red?.inquilinoPrueba === false && !!a.red.inquilino
+export const TOPE_DEPOSITO = (a: Pick<Alquiler, 'red'>): number | null => !escrowReal ? null : usaCuentaPropia(a) ? null : TOPE_USDC
 export const montoDeposito = (a: Pick<Alquiler, 'monto'>) => a.monto
-export const montoPermitido = (m: number) => TOPE_DEPOSITO === null ? m > 0 : montoValido(m)
+export const montoPermitido = (m: number, tope: number | null) => !escrowReal ? m > 0 : tope === null ? montoValido(m) : montoValido(m, tope)
 /** Comisión de Trustless Work al devolver o repartir (0,3 %). */
 export const COMISION = 0.003
 export const COMISION_TEXTO = '0,3 %'
@@ -46,11 +49,39 @@ function claro(e: unknown): Error {
 }
 const yaHecho = (e: unknown, re: RegExp) => e instanceof Error && re.test(e.message)
 
+/** Cuenta propia: el servidor arma el depósito para la dirección de la persona, su billetera lo firma y se envía. */
+async function depositarPropio(a: Alquiler, monto: number, guardar: Guardar, avance: Avance) {
+  const red = a.red!, g = red.inquilino!, firma = red.firma ?? 'cavos'
+  try {
+    let escrow = red.escrow
+    if (!escrow) {
+      avance('Revisando tu saldo…')
+      const s = await propia.saldoPropio(g) ?? 0
+      if (s < monto) throw new solo.ErrorSolo(solo.mensajeSaldoAlPagar(s, monto))
+      avance('Preparando al dueño de prueba…')
+      const d = await solo.prepararDueno(a.id); guardar({ duenoTrustline: d.trustlineTx ?? undefined }, { dueno: d.dueno })
+      avance('Creando la cuenta segura del depósito…')
+      const e = await solo.desplegar(a.id, g, monto); escrow = e.escrow; guardar({ escrow: e.tx }, { escrow })
+    }
+    let xdr: string
+    try { xdr = (await solo.fondearPropio(escrow, g)).unsignedXdr }
+    catch (x) { if (yaHecho(x, /ya se pagó/)) { guardar({ deposito: 'ya-pagado' }); return } throw x }
+    avance(`Confirma el depósito en ${propia.NOMBRE_FIRMA[firma]}…`)
+    const firmada = await propia.firmar(firma, xdr, g)
+    avance('Guardando el depósito en la cuenta segura…')
+    try { guardar({ deposito: (await solo.enviarDeposito(escrow, firmada)).tx }) }
+    catch (x) { if (yaHecho(x, /ya se pagó/)) guardar({ deposito: 'ya-pagado' }); else throw x }
+  } catch (x) { throw claro(x) }
+}
+
 const real: EscrowService = {
   real: true,
   async depositar(a, guardar, avance) {
     const red = a.red ?? { txs: {} }; if (red.txs.deposito) return
-    const monto = montoDeposito(a); if (!montoPermitido(monto)) throw new solo.ErrorSolo(`En esta prueba el depósito es de máximo ${TOPE_USDC} USDC de prueba.`)
+    const monto = montoDeposito(a), tope = TOPE_DEPOSITO(a)
+    if (!montoPermitido(monto, tope)) throw new solo.ErrorSolo(tope === null ? `El depósito de prueba es de máximo ${solo.MONTO_MAX_USDC.toLocaleString('es-CR')} USDC.`
+      : `Con «Obtener USDC de prueba» el depósito es de máximo ${tope} USDC de prueba. Para un monto mayor, usa USDC de prueba de tu propia cuenta.`)
+    if (usaCuentaPropia(a)) return depositarPropio(a, monto, guardar, avance)
     try {
       let g = red.inquilino ?? solo.cuentaPruebaGuardada() ?? ''
       if (!g) {

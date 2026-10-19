@@ -9,14 +9,21 @@ export const TW_TESTNET = 'https://dev.api.trustlesswork.com'
 export const EXPLORADOR = 'https://stellar.expert/explorer/testnet'
 /** USDC de prueba de Circle en testnet (emisor que usa Trustless Work). */
 export const USDC = { code: 'USDC', issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5' } as const
-/** Tope por contrato de prueba (términos 1.4-demo, 2.2 d). Se aplica en el cliente y en el servidor. */
+/** Tope de los USDC de prueba que da Lockumi (botón «Obtener USDC de prueba», desde la tesorería). Términos 2.2 d). */
 export const TOPE_USDC = 20
+/** Máximo de la app por depósito (igual que MONTO_MAX de validacion.ts). Con USDC de prueba propios, el límite es el saldo de la cuenta. */
+export const MONTO_MAX_USDC = 50_000
+const fmt = (x: number) => x.toLocaleString('es-CR', { maximumFractionDigits: 7 })
+/** Al crear el alquiler: la cuenta propia no alcanza para el monto escrito. */
+export const mensajeSaldoPropio = (x: number) => `Tu cuenta tiene ${fmt(x)} USDC de prueba. Escribe un monto de ${fmt(x)} o menos, o usa «Obtener USDC de prueba».`
+/** Al depositar: la cuenta propia ya no alcanza (por ejemplo, se gastó después de crear el alquiler). */
+export const mensajeSaldoAlPagar = (x: number, monto: number) => `Tu cuenta tiene ${fmt(x)} USDC de prueba y el depósito es de ${fmt(monto)}. Carga más USDC de prueba en tu cuenta y vuelve a tocar el botón.`
 /** Máximo de XLM de prueba que se gasta en una compra de USDC de prueba (cubre 20 USDC con margen; hoy ~1,13 XLM por USDC). */
 export const MAX_XLM_COMPRA = 60
 
-/** Monto válido para un contrato de prueba: número > 0, ≤ TOPE_USDC y con 7 decimales como máximo. */
-export function montoValido(m: unknown): m is number {
-  return typeof m === 'number' && Number.isFinite(m) && m > 0 && m <= TOPE_USDC && Math.round(m * 1e7) === m * 1e7
+/** Monto válido: número > 0, ≤ tope y con 7 decimales como máximo. Por defecto el máximo de la app; con USDC de Lockumi, TOPE_USDC. */
+export function montoValido(m: unknown, tope: number = MONTO_MAX_USDC): m is number {
+  return typeof m === 'number' && Number.isFinite(m) && m > 0 && m <= tope && Math.round(m * 1e7) === m * 1e7
 }
 /** Rechaza cualquier configuración que no sea testnet. */
 export function exigirTestnet(passphrase: string, ...urls: string[]) {

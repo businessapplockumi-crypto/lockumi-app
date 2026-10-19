@@ -18,7 +18,9 @@ Estos términos aplican a la app app.lockumi.com y están publicados en https://
 a) Los tokens que se usan, incluidos el XLM y el USDC de prueba, **no son dinero real, no tienen valor económico y no se pueden canjear** por dinero ni por ningún otro bien.
 b) El depósito, la aprobación y la liberación **sí se registran en la red de prueba**. Las reglas de retención y de devolución, los reclamos y la persona mediadora son **simulados** y aparecen rotulados como "Demo". Sus resultados no tienen ningún efecto legal.
 c) **No hay rendimiento ni intereses** de ningún tipo.
-d) Cada contrato de prueba tiene un **tope de 20 USDC de prueba**.
+<!-- CAMBIO 19/10/2026 · PENDIENTE DE REVISIÓN DE LEGAL · antes: «d) Cada contrato de prueba tiene un **tope de 20 USDC de prueba**.» -->
+d) Cada contrato de prueba tiene un **tope de 20 USDC de prueba** cuando los USDC de prueba se obtienen con el botón «Obtener USDC de prueba» de Lockumi. Si depositas USDC de prueba que ya tienes en tu propia cuenta, el límite es tu saldo, hasta 50 000 USDC de prueba.
+<!-- FIN DEL CAMBIO -->
 2.3 **Fase 1 (disponible):** tú haces el papel de **inquilino** con tu billetera, y el **dueño** es una **cuenta de prueba** que genera Lockumi, rotulada como tal.
 2.4 **Fase 2 (cuando esté disponible):** dos personas reales, cada una con su cuenta, podrán simular juntas un alquiler. Cada una verá lo que la otra registre en ese alquiler simulado: su correo, sus firmas, el inventario con las fotos, el reclamo y su respuesta, y el historial. No verá tu llave privada ni tus otros alquileres.
 2.5 **No uses la app para depositar garantías reales de alquiler.** Lo que hagas en la demo no crea, modifica ni extingue obligaciones reales entre un dueño y un inquilino.

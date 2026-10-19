@@ -32,7 +32,8 @@ function lista(ls: string[]): string {
 }
 
 export function aHtml(md: string): string {
-  const L = md.replace(/\r\n?/g, '\n').split('\n'); const out: string[] = []; let i = 0
+  // Las notas internas para Legal (<!-- … --> en su propia línea) no se muestran en la página.
+  const L = md.replace(/\r\n?/g, '\n').replace(/^<!--[\s\S]*?-->[ \t]*(\n|$)/gm, '').split('\n'); const out: string[] = []; let i = 0
   const esLista = (l: string) => /^\s*([-*+]|\d+[.)])\s+/.test(l)
   const esBloque = (l: string) => /^(#{1,6})\s|^\s*>|^\s*(---+|\*\*\*+)\s*$|^\s*\|/.test(l) || esLista(l)
   while (i < L.length) {

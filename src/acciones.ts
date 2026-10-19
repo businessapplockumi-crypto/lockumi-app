@@ -22,7 +22,7 @@ export function textoPlazo(a: Pick<Alquiler, 'ventanaSegundos'>) {
 
 
 export interface Acciones {
-  crear(d: { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string }, email: string, cuenta?: string): Promise<{ id: string; link?: string }>
+  crear(d: { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string; propia?: { g: string; firma: 'cavos' | 'freighter' } }, email: string, cuenta?: string): Promise<{ id: string; link?: string }>
   firmar(a: Alquiler, etapa: Etapa, rol: Rol): Promise<void>
   marcar(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, item: number, estado: 'bien' | 'detalle'): Promise<void>
   nota(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, nota: string): Promise<void>
@@ -48,8 +48,10 @@ const guardarEn = (id: string): Guardar => (txs, red) => store.cambiar(id, x => 
 const paso = (a: Alquiler, nombre: string, f: (x: Alquiler) => Promise<void>) => unaVez(a.id + ':' + nombre, async () => { const x = store.fresco(a.id); if (x) await f(x) })
 
 const local: Acciones = {
-  async crear(d, email) {
+  async crear({ propia, ...d }, email) {
     const a = store.crear({ ...d, duenoEmail: email })
+    // Depósito con USDC de prueba de la propia cuenta del inquilino: queda anotada desde ya (no hay tope de 20, el límite es su saldo).
+    if (propia) store.cambiar(a.id, x => { x.red = { ...(x.red ?? { txs: {} }), inquilino: propia.g, inquilinoPrueba: false, firma: propia.firma } })
     // Fase 1 (testnet real): la cuenta segura se crea en la red al depositar (Real.tsx → /api/solo).
     if (modoSolo) { store.cambiar(a.id, x => { x.red = { txs: {} }; x.estado = 'pendiente_pago' }); return { id: a.id } }
     return { id: a.id }
