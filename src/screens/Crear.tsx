@@ -5,7 +5,7 @@ import { ir } from '../router'
 import type { Usuario } from '../types'
 import { CampoFecha } from '../ui'
 import { LogoAnimado } from '../LogoAnimado'
-import { modoSolo, modoPrueba } from '../servidor/config'
+import { modoSolo, modoPrueba, escrowReal } from '../servidor/config'
 import { DUENO_PRUEBA } from './Real'
 import { TOPE_USDC, montoValido } from '../services/solo'
 import { validarAlquiler, hoyISO, montoNumero, sumarMeses, MIN_MESES, MAX_ANIOS, type Campo, type Errores } from '../validacion'
@@ -18,7 +18,7 @@ export function Crear({ u }: { u: Usuario }) {
   // Flujo completo en la red de prueba (modoVideo): igual, tú eres el inquilino y el dueño es el de prueba; el depósito es simulado (sin tope).
   const errores: Errores = modoPrueba ? (() => {
     const e = validarAlquiler({ ...f, email: 'inquilino@ejemplo.com' }, hoyISO()); delete e.email
-    if (modoSolo && !e.monto && !montoValido(montoNumero(f.monto))) e.monto = `En esta demo el depósito es de máximo ${TOPE_USDC} USDC de prueba (no es dinero real). Escribe un monto de ${TOPE_USDC} o menos, por ejemplo 2.`
+    if (escrowReal && !e.monto && !montoValido(montoNumero(f.monto))) e.monto = `En esta demo el depósito es de máximo ${TOPE_USDC} USDC de prueba (no es dinero real). Escribe un monto de ${TOPE_USDC} o menos, por ejemplo 2.`
     return e })() : validarAlquiler(f, hoyISO(), u.email)
   const ver = (k: Campo) => (enviado || tocado[k]) ? errores[k] : undefined
   const poner = (k: Campo, v: string) => setF(x => ({ ...x, [k]: v }))
@@ -46,7 +46,7 @@ export function Crear({ u }: { u: Usuario }) {
     <div className="cab titulo"><h1>Nuevo alquiler</h1><LogoAnimado className="logo-pieza logo-pieza--titulo" /></div>
     <form className="glass glass--fuerte tarjeta pila" noValidate onSubmit={e => { e.preventDefault(); crear() }}>
       {campoUI({ k: 'direccion', et: 'Dirección o nombre del lugar', children: <input {...prop('direccion')} placeholder="Ej.: Apartamento 3B, Escazú" autoComplete="off" maxLength={140} /> })}
-      {campoUI({ k: 'monto', et: modoSolo ? `Depósito (USDC de prueba, máximo ${TOPE_USDC})` : 'Depósito (USD)', children: <input {...prop('monto')} inputMode="decimal" placeholder={modoSolo ? 'Ej.: 2' : 'Ej.: 800'} autoComplete="off" /> })}
+      {campoUI({ k: 'monto', et: escrowReal ? `Depósito (USDC de prueba, máximo ${TOPE_USDC})` : 'Depósito (USD)', children: <input {...prop('monto')} inputMode="decimal" placeholder={escrowReal ? 'Ej.: 2' : 'Ej.: 800'} autoComplete="off" /> })}
       <div className="fila">
         <CampoFecha id="f-inicio" etiqueta="Entrada" valor={f.inicio} onCambio={v => poner('inicio', v)} onSalir={tocar('inicio')} error={ver('inicio')} ayuda="Desde hoy en adelante" min={hoyISO()} max={sumarMeses(hoyISO(), 12)} />
         <CampoFecha id="f-fin" etiqueta="Salida" valor={f.fin} onCambio={v => poner('fin', v)} onSalir={tocar('fin')} error={ver('fin')} ayuda={`De ${MIN_MESES} mes a ${MAX_ANIOS} años`} />
@@ -62,7 +62,7 @@ export function Crear({ u }: { u: Usuario }) {
       {errSrv && <p className="error" role="alert">{errSrv}</p>}
       <button type="submit" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado}>{ocupado ? 'Creando…' : modoPrueba ? 'Crear alquiler de prueba' : 'Crear alquiler e invitar'}</button>
       {modoSolo ? <p className="nota">Prueba en la red de prueba de Stellar, sin dinero real. Tú haces los dos papeles: depositas como <strong>inquilino</strong> con tu billetera, y el dueño es un <strong>{DUENO_PRUEBA.toLowerCase()}</strong>. El nombre del lugar se queda en tu navegador: no va a la red.</p>
-        : modoPrueba ? <p className="nota">Prueba sin dinero real: el depósito es simulado. Tú haces los dos papeles: eres el <strong>inquilino</strong> y, con «Ver como dueño», también manejas al <strong>{DUENO_PRUEBA.toLowerCase()}</strong>. Los datos se quedan en tu navegador.</p>
+        : modoPrueba ? <p className="nota">Prueba en la red de prueba de Stellar, sin dinero real: el depósito son USDC de prueba que te da Lockumi. Tú haces los dos papeles: eres el <strong>inquilino</strong> y, con «Ver como dueño», también manejas al <strong>{DUENO_PRUEBA.toLowerCase()}</strong>. El nombre del lugar y las fotos se quedan en tu navegador: no van a la red.</p>
         : <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>}
     </form>
   </main>

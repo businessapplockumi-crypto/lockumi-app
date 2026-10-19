@@ -1,7 +1,9 @@
 // Acciones del flujo. Las pantallas llaman a estas funciones; según la configuración van al servidor compartido
 // (Supabase, dos aparatos) o al almacenamiento local de la demo (un aparato, con "Ver como").
 import { store, ahoraDe, actaVacia } from './store'
-import { escrow } from './services/escrow'
+import { escrow, type Guardar, type Avance } from './services/escrow'
+import { NOMBRE_PASO, ORDEN, esHash } from './services/comprobantes'
+import { unaVez } from './services/pasos'
 import { firmar as firmarLocal, ambos, NOMBRE } from './flujo'
 import { usd } from './ui'
 import type { Alquiler, Foto, Rol } from './types'
@@ -25,22 +27,32 @@ export interface Acciones {
   marcar(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, item: number, estado: 'bien' | 'detalle'): Promise<void>
   nota(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, nota: string): Promise<void>
   agregarFoto(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, f: Foto): Promise<void>
-  pagar(a: Alquiler): Promise<void>
+  // `avance` recibe textos cortos mientras un paso trabaja en la red de prueba (para mostrarlos en el botón).
+  pagar(a: Alquiler, avance?: Avance): Promise<void>
   iniciarSalida(a: Alquiler): Promise<void>
-  reclamar(a: Alquiler, monto: number, motivo: string, fotos: Foto[]): Promise<void>
-  responder(a: Alquiler, acepta: boolean): Promise<void>
-  cerrarSinReclamo(a: Alquiler): Promise<void>
-  decidir(a: Alquiler, montoDueno: number, motivo?: string): Promise<void>
+  reclamar(a: Alquiler, monto: number, motivo: string, fotos: Foto[], avance?: Avance): Promise<void>
+  responder(a: Alquiler, acepta: boolean, avance?: Avance): Promise<void>
+  cerrarSinReclamo(a: Alquiler, avance?: Avance): Promise<void>
+  decidir(a: Alquiler, montoDueno: number, motivo?: string, avance?: Avance): Promise<void>
   /** Solo con Trustless Work real: el dueño aprueba en la cadena devolver el depósito. */
   aprobarDevolucion?(a: Alquiler): Promise<void>
 }
+
+const nada: Avance = () => {}
+/** Anota en el alquiler cada transacción de la red de prueba apenas termina (con su entrada en el historial). */
+const guardarEn = (id: string): Guardar => (txs, red) => store.cambiar(id, x => {
+  x.red ??= { txs: {} }; Object.assign(x.red, red ?? {}); if (red?.escrow) x.escrowId = red.escrow
+  for (const k of ORDEN) { const h = txs[k]; if (h && !x.red.txs[k]) { x.red.txs[k] = h; if (esHash(h)) x.historial.push({ fecha: new Date().toISOString(), texto: NOMBRE_PASO[k], tx: h }) } }
+})
+/** Paso idempotente: una sola vez a la vez (pestaña y navegador) y siempre sobre el alquiler recién leído. */
+const paso = (a: Alquiler, nombre: string, f: (x: Alquiler) => Promise<void>) => unaVez(a.id + ':' + nombre, async () => { const x = store.fresco(a.id); if (x) await f(x) })
 
 const local: Acciones = {
   async crear(d, email) {
     const a = store.crear({ ...d, duenoEmail: email })
     // Fase 1 (testnet real): la cuenta segura se crea en la red al depositar (Real.tsx → /api/solo).
     if (modoSolo) { store.cambiar(a.id, x => { x.red = { txs: {} }; x.estado = 'pendiente_pago' }); return { id: a.id } }
-    const { escrowId } = await escrow.crear(a.id, d.monto); store.cambiar(a.id, x => { x.escrowId = escrowId }); return { id: a.id }
+    return { id: a.id }
   },
   async firmar(a, etapa, rol) {
     const titulo = { contrato: 'Contrato', entrada: 'Fotos de entrada', salida: 'Fotos de salida' }[etapa]
@@ -57,33 +69,45 @@ const local: Acciones = {
   async marcar(a, etapa, cuarto, item, estado) { store.cambiar(a.id, x => { const ac = x[etapa]!; ac.cuartos[cuarto].items[item].estado = estado; ac.firmas = {} }) },
   async nota(a, etapa, cuarto, nota) { store.cambiar(a.id, x => { const ac = x[etapa]!; ac.cuartos[cuarto].nota = nota; ac.firmas = {} }) },
   async agregarFoto(a, etapa, cuarto, f) { store.cambiar(a.id, x => { const ac = x[etapa]!; ac.cuartos[cuarto].fotos.push(f); ac.firmas = {} }) },
-  async pagar(a) {
-    const r = await escrow.depositar(a.escrowId ?? 'sim-' + a.id, a.monto)
-    store.cambiar(a.id, x => { x.estado = 'fotos_entrada'; x.pago = r.fecha; x.escrowId ??= 'sim-' + a.id }, `Depósito de ${usd(a.monto)} pagado y guardado`)
-  },
+  pagar: (a, avance = nada) => paso(a, 'pago', async x => {
+    if (x.estado !== 'pendiente_pago') return
+    await escrow.depositar(x, guardarEn(a.id), avance)
+    store.cambiar(a.id, y => { if (y.estado !== 'pendiente_pago') return; y.estado = 'fotos_entrada'; y.pago = iso(y); y.historial.push({ fecha: iso(y), texto: `Depósito de ${usd(y.monto)} pagado y guardado` }) })
+  }),
   async iniciarSalida(a) { store.cambiar(a.id, x => { x.estado = 'salida'; x.salida = actaVacia() }, 'Empezaron las fotos de salida') },
-  async reclamar(a, monto, motivo, fotos) { store.cambiar(a.id, x => { x.estado = 'reclamo'; x.reclamo = { monto, motivo, fotos, fecha: iso(x) } }, `El dueño reclamó ${usd(monto)}`) },
-  async responder(a, acepta) {
-    const r = a.reclamo!
-    if (acepta) {
-      await escrow.aprobarLiberacion(a.escrowId!, 'inquilino', a.monto - r.monto); await escrow.aprobarLiberacion(a.escrowId!, 'dueno', a.monto - r.monto)
-      store.cambiar(a.id, x => { x.reclamo!.respuesta = 'aceptado'; x.estado = 'cerrado'; x.resultado = { dueno: r.monto, inquilino: x.monto - r.monto, via: 'acuerdo', fecha: iso(x) } },
-        `El inquilino aceptó el reclamo: ${usd(r.monto)} al dueño y ${usd(a.monto - r.monto)} al inquilino`)
-    } else store.cambiar(a.id, x => { x.reclamo!.respuesta = 'rechazado'; x.estado = 'mediacion' }, 'El inquilino no aceptó el reclamo. Pasa a una persona mediadora')
-  },
-  async cerrarSinReclamo(a) {
-    if (modoSolo) return   // fase 1: se cierra con la aprobación y la devolución reales (CierreReal)
-    store.cambiar(a.id, x => {
-      if (x.estado !== 'ventana_reclamo' || x.reclamo || ahoraDe(x) < +new Date(x.ventanaInicio!) + plazoMs(x)) return
-      x.estado = 'cerrado'; x.resultado = { inquilino: x.monto, dueno: 0, via: 'automatico', fecha: iso(x) }
-      x.historial.push({ fecha: iso(x), texto: `Sin reclamos en 7 días: ${usd(x.monto)} devueltos al inquilino` })
+  // Reclamo del dueño: primero se registra en la cuenta segura (disputa) y después cambia la pantalla.
+  reclamar: (a, monto, motivo, fotos, avance = nada) => paso(a, 'reclamo', async x => {
+    if (x.estado !== 'ventana_reclamo' || x.reclamo) return
+    await escrow.disputar(x, guardarEn(a.id), avance)
+    store.cambiar(a.id, y => { if (y.estado !== 'ventana_reclamo') return; y.estado = 'reclamo'; y.reclamo = { monto, motivo, fotos, fecha: iso(y) }; y.historial.push({ fecha: iso(y), texto: `El dueño reclamó ${usd(monto)}` }) })
+  }),
+  responder: (a, acepta, avance = nada) => acepta
+    ? paso(a, 'reparto', async x => {     // acuerdo: el reparto se hace en la cuenta segura con lo que pidió el dueño
+      if (x.estado !== 'reclamo' || !x.reclamo) return
+      const r = await escrow.resolver(x, x.reclamo.monto, guardarEn(a.id), avance)
+      store.cambiar(a.id, y => { if (y.estado !== 'reclamo') return; y.reclamo!.respuesta = 'aceptado'; y.estado = 'cerrado'; y.resultado = { dueno: r.dueno, inquilino: r.inquilino, via: 'acuerdo', fecha: iso(y) }
+        y.historial.push({ fecha: iso(y), texto: `El inquilino aceptó el reclamo: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino` }) })
     })
-  },
-  async decidir(a, aDueno) {
-    await escrow.aprobarLiberacion(a.escrowId!, 'mediador', a.monto - aDueno)
-    store.cambiar(a.id, x => { x.estado = 'cerrado'; x.resultado = { dueno: aDueno, inquilino: x.monto - aDueno, via: 'mediacion', fecha: iso(x) } },
-      `La persona mediadora decidió: ${usd(aDueno)} al dueño y ${usd(a.monto - aDueno)} al inquilino`)
-  },
+    : paso(a, 'rechazo', async x => {
+      if (x.estado !== 'reclamo') return
+      store.cambiar(a.id, y => { if (y.estado !== 'reclamo') return; y.reclamo!.respuesta = 'rechazado'; y.estado = 'mediacion' }, 'El inquilino no aceptó el reclamo. Pasa a una persona mediadora')
+    }),
+  // Sin reclamos al terminar el plazo: el dueño (de prueba) aprueba y Lockumi devuelve el depósito al inquilino.
+  cerrarSinReclamo: (a, avance = nada) => modoSolo ? Promise.resolve() : paso(a, 'devolucion', async x => {
+    if (x.estado !== 'ventana_reclamo' || x.reclamo || ahoraDe(x) < +new Date(x.ventanaInicio!) + plazoMs(x)) return
+    const r = await escrow.devolver(x, guardarEn(a.id), avance)
+    store.cambiar(a.id, y => {
+      if (y.estado !== 'ventana_reclamo' || y.reclamo) return
+      y.estado = 'cerrado'; y.resultado = { inquilino: r.inquilino, dueno: 0, via: 'automatico', fecha: iso(y) }
+      y.historial.push({ fecha: iso(y), texto: `Sin reclamos en ${textoPlazo(y)}: ${usd(r.inquilino)} devueltos al inquilino` })
+    })
+  }),
+  decidir: (a, aDueno, _motivo, avance = nada) => paso(a, 'reparto', async x => {
+    if (x.estado !== 'mediacion') return
+    const r = await escrow.resolver(x, aDueno, guardarEn(a.id), avance)
+    store.cambiar(a.id, y => { if (y.estado !== 'mediacion') return; y.estado = 'cerrado'; y.resultado = { dueno: r.dueno, inquilino: r.inquilino, via: 'mediacion', fecha: iso(y) }
+      y.historial.push({ fecha: iso(y), texto: `La persona mediadora decidió: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino` }) })
+  }),
 }
 
 const remoto: Acciones = {

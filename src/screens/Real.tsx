@@ -2,6 +2,7 @@
 // Botones sin palabras técnicas; los enlaces a stellar.expert dicen "Ver comprobante en la red de prueba".
 import { useCallback, useEffect, useState } from 'react'
 import { store } from '../store'
+import { NOMBRE_PASO, ORDEN, esHash } from '../services/comprobantes'
 import type { Alquiler, PasoRed, Rol } from '../types'
 import { usd, fechaHora, Simulado } from '../ui'
 import { enlaceTx, enlaceCuenta, enlaceContrato, TOPE_USDC, MAX_XLM_COMPRA } from '../../api/_lib/red'
@@ -10,14 +11,9 @@ import { obtenerUsdc, depositar, reintentarDeposito, aprobar, liberar, huellaAct
 
 export const DUENO_PRUEBA = 'Dueño de prueba (cuenta de testnet custodiada por Lockumi)'
 export const INQUILINO_PRUEBA = 'Inquilino de prueba (cuenta de testnet custodiada por Lockumi)'
-export const NOMBRE_PASO: Record<PasoRed, string> = {
-  trustline: 'USDC habilitado en la cuenta del inquilino', compra: 'Compra de USDC de prueba', duenoTrustline: 'USDC habilitado en la cuenta del dueño de prueba',
-  escrow: 'Cuenta segura del depósito creada', deposito: 'Depósito bloqueado en la cuenta segura', evidencia: 'Evidencia del acta de salida',
-  aprobacion: 'Aprobación del dueño de prueba', liberacion: 'Depósito devuelto al inquilino',
-}
+export { NOMBRE_PASO }
 /** Solo la primera letra en minúscula (para usar el rótulo dentro de una frase sin tocar «Lockumi»). */
 const minuscula = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
-const ORDEN: PasoRed[] = ['trustline', 'compra', 'duenoTrustline', 'escrow', 'deposito', 'evidencia', 'aprobacion', 'liberacion']
 export const VerTx = ({ h }: { h: string }) => <a className="enlace" href={enlaceTx(h)} target="_blank" rel="noopener noreferrer">Ver comprobante en la red de prueba</a>
 const Error = ({ m }: { m: string }) => m ? <p className="error" role="alert">{m}</p> : null
 const textoError = (e: unknown) => e instanceof globalThis.Error ? e.message : 'Algo salió mal. Vuelve a intentarlo en un minuto.'
@@ -157,7 +153,7 @@ export function CierreReal({ a, rol }: { a: Alquiler; rol: Rol }) {
 
 /** Todos los comprobantes del alquiler en la red de prueba (stellar.expert, testnet). */
 export function Comprobantes({ a }: { a: Alquiler }) {
-  const txs = a.red?.txs ?? {}; const hay = ORDEN.filter(k => txs[k] && txs[k] !== 'ya-aprobado')
+  const txs = a.red?.txs ?? {}; const hay = ORDEN.filter(k => esHash(txs[k]))
   return <section className="glass tarjeta" aria-labelledby="t-comp"><h3 id="t-comp">Comprobantes en la red de prueba</h3>
     {hay.length === 0 ? <p className="nota">Aquí aparece cada paso que quede registrado en la red de prueba de Stellar.</p> :
       <ol className="lista comprobantes">{hay.map(k => <li key={k}><span>{NOMBRE_PASO[k]}</span><VerTx h={txs[k]!} /></li>)}</ol>}
@@ -167,7 +163,7 @@ export function Comprobantes({ a }: { a: Alquiler }) {
 
 /** Último paso registrado en la red de prueba, para mostrarlo arriba del panel. */
 export function UltimoComprobante({ a }: { a: Alquiler }) {
-  const e = [...a.historial].reverse().find(h => h.tx && h.tx !== 'ya-aprobado'); if (!e) return null
+  const e = [...a.historial].reverse().find(h => esHash(h.tx)); if (!e) return null
   return <p className="ultimo-comprobante nota" role="status">✓ {e.texto} · {fechaHora(e.fecha)} · <VerTx h={e.tx!} /></p>
 }
 

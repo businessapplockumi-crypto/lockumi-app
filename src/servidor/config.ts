@@ -15,6 +15,6 @@ export const modoSolo = modoPrueba && import.meta.env.VITE_FLUJO === 'solo'
 /** Interfaz completa del video (8 pasos: contrato, firmas, depósito, actas con fotos, 7 días, mediador) en un solo aparato,
  *  con «Ver como». Tú eres el inquilino y también manejas al dueño de prueba. Opción por defecto con VITE_TRUSTLESS=1. */
 export const modoVideo = modoPrueba && !modoSolo
-/** ¿El depósito se mueve de verdad en Stellar testnet? Hoy solo en modoSolo; en modoVideo el escrow es simulado
- *  (services/escrow.ts). Parte 2: conectar el escrow real en cada paso y poner esto en true también para modoVideo. */
-export const escrowReal = modoSolo
+/** ¿El depósito se mueve de verdad en Stellar testnet (Trustless Work)? Sí en la red de prueba (modoSolo y modoVideo):
+ *  services/escrow.ts usa /api/solo en cada paso. Sin VITE_TRUSTLESS=1 (demo local) el escrow sigue simulado. */
+export const escrowReal = modoPrueba

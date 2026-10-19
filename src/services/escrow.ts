@@ -1,14 +1,116 @@
-// SIMULADO · Interfaz pensada para reemplazar por Trustless Work (escrow con liberación multiparte).
-// Parte 2: implementar esta misma interfaz sobre /api/solo (ver services/solo.ts) y poner escrowReal en servidor/config.ts.
+// Escrow del depósito detrás de una sola interfaz:
+// - real: Trustless Work en Stellar TESTNET por /api/solo (services/solo.ts). El servidor firma por el dueño de prueba rotulado,
+//   por el inquilino de prueba (cuenta custodiada por Lockumi) y por la plataforma; la persona mediadora es simulada, pero su
+//   decisión es una transacción real (resolve_dispute).
+// - simulado: demo local sin red (sin VITE_TRUSTLESS=1).
+// Cada método recibe el alquiler RECIÉN LEÍDO y salta lo que ya quedó registrado en a.red.txs: si un paso falla a la mitad,
+// al reintentar no se repite lo hecho. `guardar` anota cada transacción apenas termina.
+import type { Alquiler, PasoRed, RedPrueba } from '../types'
+import { escrowReal } from '../servidor/config'
+import * as solo from './solo'
+import { TOPE_USDC, montoValido } from '../../api/_lib/red'
+
+export type Txs = Partial<Record<PasoRed, string>>
+export type Guardar = (txs: Txs, red?: Partial<RedPrueba>) => void
+export type Avance = (texto: string) => void
 export interface EscrowService {
-  crear(alquilerId: string, monto: number): Promise<{ escrowId: string }>
-  depositar(escrowId: string, monto: number): Promise<{ ok: true; fecha: string }>
-  // Liberar requiere aprobación de ambas partes (o del mediador): nadie libera solo.
-  aprobarLiberacion(escrowId: string, parte: 'dueno'|'inquilino'|'mediador', repartoInquilino: number): Promise<{ aprobaciones: string[] }>
+  real: boolean
+  /** Crea la cuenta segura y bloquea el depósito. */
+  depositar(a: Alquiler, guardar: Guardar, avance: Avance): Promise<void>
+  /** Sin reclamos: el dueño (de prueba) aprueba y Lockumi devuelve el depósito al inquilino. */
+  devolver(a: Alquiler, guardar: Guardar, avance: Avance): Promise<{ inquilino: number }>
+  /** El dueño abre un reclamo: el depósito queda en disputa. */
+  disputar(a: Alquiler, guardar: Guardar, avance: Avance): Promise<void>
+  /** Reparto final del reclamo (acuerdo entre las partes o decisión de la persona mediadora). */
+  resolver(a: Alquiler, alDueno: number, guardar: Guardar, avance: Avance): Promise<{ dueno: number; inquilino: number }>
 }
-const aprob: Record<string, Set<string>> = {}
-export const escrow: EscrowService = {
-  async crear(id) { return { escrowId: 'sim-' + id } },
-  async depositar() { return { ok: true, fecha: new Date().toISOString() } },
-  async aprobarLiberacion(escrowId, parte) { (aprob[escrowId] ??= new Set()).add(parte); return { aprobaciones: [...aprob[escrowId]] } },
+
+// ── Monto que va a la cuenta segura ──
+// Parte 3: cambiar SOLO esto (hoy el monto del alquiler con el tope de TOPE_USDC USDC de prueba que paga la tesorería).
+export const TOPE_DEPOSITO: number | null = escrowReal ? TOPE_USDC : null
+export const montoDeposito = (a: Pick<Alquiler, 'monto'>) => a.monto
+export const montoPermitido = (m: number) => TOPE_DEPOSITO === null ? m > 0 : montoValido(m)
+/** Comisión de Trustless Work al devolver o repartir (0,3 %). */
+export const COMISION = 0.003
+export const COMISION_TEXTO = '0,3 %'
+const r7 = (n: number) => Math.round(n * 1e7) / 1e7
+export const neto = (n: number) => escrowReal ? r7(n * (1 - COMISION)) : n
+
+/** Mensajes técnicos del servidor (Trustless Work, Horizon, códigos HTTP) → instrucción clara para la persona. */
+function claro(e: unknown): Error {
+  const m = e instanceof Error ? e.message : String(e)
+  console.warn('[Lockumi] paso en la red de prueba:', m)
+  if (/Trustless Work|Horizon|respondió \d{3}|rechazó la operación|no aceptó la transacción|bad_?seq/i.test(m))
+    return new solo.ErrorSolo('La red de prueba está lenta o no respondió. Espera unos segundos y vuelve a tocar el botón: no se repite lo que ya quedó hecho.')
+  return e instanceof Error ? e : new Error(m)
 }
+const yaHecho = (e: unknown, re: RegExp) => e instanceof Error && re.test(e.message)
+
+const real: EscrowService = {
+  real: true,
+  async depositar(a, guardar, avance) {
+    const red = a.red ?? { txs: {} }; if (red.txs.deposito) return
+    const monto = montoDeposito(a); if (!montoPermitido(monto)) throw new solo.ErrorSolo(`En esta prueba el depósito es de máximo ${TOPE_USDC} USDC de prueba.`)
+    try {
+      let g = red.inquilino ?? solo.cuentaPruebaGuardada() ?? ''
+      if (!g) {
+        avance('Preparando tu cuenta de prueba…')
+        const c = await solo.prepararCuentaPrueba(monto); g = c.g
+        guardar({ trustline: c.txs.trustline, compra: c.txs.compra }, { inquilino: g, inquilinoPrueba: true })
+      }
+      let escrow = red.escrow
+      if (!escrow) {
+        avance('Preparando al dueño de prueba…')
+        const d = await solo.prepararDueno(a.id); guardar({ duenoTrustline: d.trustlineTx ?? undefined }, { dueno: d.dueno, inquilino: g, inquilinoPrueba: true })
+        avance('Creando la cuenta segura del depósito…')
+        const e = await solo.desplegar(a.id, g, monto); escrow = e.escrow; guardar({ escrow: e.tx }, { escrow })
+      }
+      avance('Guardando el depósito en la cuenta segura…')
+      try { const f = await solo.fondearPrueba(escrow); guardar({ compra: f.compraTx ?? undefined, deposito: f.tx }) }
+      catch (x) { if (yaHecho(x, /ya se pagó/)) guardar({ deposito: 'ya-pagado' }); else throw x }
+    } catch (x) { throw claro(x) }
+  },
+  async devolver(a, guardar, avance) {
+    const red = a.red ?? { txs: {} }; const escrow = red.escrow
+    if (!escrow) throw new solo.ErrorSolo('Este alquiler no tiene cuenta segura en la red de prueba.')
+    try {
+      if (!red.txs.aprobacion) {
+        avance('El dueño de prueba está aprobando la devolución…')
+        const h = await solo.huellaActa((a.salida?.cuartos ?? []).flatMap(c => c.fotos.map(f => f.huella ?? '')))
+        const r = await solo.aprobar(escrow, h)
+        guardar({ evidencia: r.evidenciaTx ?? undefined, aprobacion: r.aprobacionTx ?? (r.yaAprobado ? 'ya-aprobado' : undefined) })
+      }
+      if (!red.txs.liberacion) {
+        avance('Devolviendo el depósito al inquilino…')
+        try { guardar({ liberacion: (await solo.liberar(escrow)).tx }) }
+        catch (x) { if (yaHecho(x, /ya se devolvió/)) guardar({ liberacion: 'ya-devuelto' }); else throw x }
+      }
+    } catch (x) { throw claro(x) }
+    return { inquilino: neto(montoDeposito(a)) }
+  },
+  async disputar(a, guardar, avance) {
+    const red = a.red ?? { txs: {} }; if (red.txs.disputa) return
+    if (!red.escrow) throw new solo.ErrorSolo('Este alquiler no tiene cuenta segura en la red de prueba.')
+    avance('Registrando el reclamo en la cuenta segura…')
+    try { const r = await solo.disputar(red.escrow); guardar({ disputa: r.tx ?? 'ya-disputado' }) } catch (x) { throw claro(x) }
+  },
+  async resolver(a, alDueno, guardar, avance) {
+    const red = a.red ?? { txs: {} }; const m = montoDeposito(a), d = r7(Math.min(Math.max(alDueno, 0), m))
+    if (!red.txs.resolucion) {
+      if (!red.escrow) throw new solo.ErrorSolo('Este alquiler no tiene cuenta segura en la red de prueba.')
+      avance('Repartiendo el depósito en la red de prueba…')
+      try { const r = await solo.resolver(red.escrow, d); guardar({ resolucion: r.tx ?? 'ya-resuelto' }) } catch (x) { throw claro(x) }
+    }
+    return { dueno: neto(d), inquilino: neto(r7(m - d)) }
+  },
+}
+
+const simulado: EscrowService = {
+  real: false,
+  async depositar(a, guardar) { guardar({}, { escrow: a.red?.escrow ?? 'sim-' + a.id }) },
+  async devolver(a) { return { inquilino: a.monto } },
+  async disputar() {},
+  async resolver(a, alDueno) { return { dueno: alDueno, inquilino: a.monto - alDueno } },
+}
+
+export const escrow: EscrowService = escrowReal ? real : simulado

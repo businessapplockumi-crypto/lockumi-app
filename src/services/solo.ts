@@ -126,6 +126,11 @@ export async function reintentarDeposito(escrow: string) {
   let firmada: string; try { firmada = await firmarXdr(unsignedXdr) } catch (x) { throw new ErrorSolo(mensajeFirma(x)) }
   return (await api<{ tx: string }>({ accion: 'enviar-deposito', escrow, signedXdr: firmada })).tx
 }
+export const prepararDueno = (contrato: string) => api<{ dueno: string; trustlineTx: string | null }>({ accion: 'dueno', contrato })
+export const desplegar = (contrato: string, inquilino: string, monto: number) => api<{ escrow: string; tx: string; dueno: string }>({ accion: 'desplegar', contrato, inquilino, monto })
+export const fondearPrueba = (escrow: string) => api<{ tx: string; compraTx: string | null }>({ accion: 'fondear-prueba', escrow, token: tokenPrueba() })
+export const disputar = (escrow: string) => api<{ tx?: string; yaDisputado?: boolean }>({ accion: 'disputar', escrow })
+export const resolver = (escrow: string, alDueno: number) => api<{ tx?: string; yaResuelto?: boolean }>({ accion: 'resolver', escrow, alDueno })
 export const aprobar = (escrow: string, huella?: string) => api<{ evidenciaTx: string | null; aprobacionTx?: string; yaAprobado?: boolean }>({ accion: 'aprobar', escrow, ...(huella && { huella }) })
 export const liberar = (escrow: string) => api<{ tx: string }>({ accion: 'liberar', escrow })
 

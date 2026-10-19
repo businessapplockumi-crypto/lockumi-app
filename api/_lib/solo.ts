@@ -46,7 +46,7 @@ export const inquilinoPruebaDe = (c: Pick<ConfigSolo, 'seed'>, token: string) =>
 // ── Límite de frecuencia por IP (en memoria) ──
 // Límite conocido: vive en la memoria de cada instancia de la función de Vercel; se reinicia en cada arranque en frío y no se
 // comparte entre instancias. Frena el abuso casual, no un ataque distribuido (para eso haría falta un almacén compartido).
-const LIMITES = { general: { n: 60, ventanaMs: 10 * 60_000 }, costosa: { n: 8, ventanaMs: 60 * 60_000 } } as const
+const LIMITES = { general: { n: 60, ventanaMs: 10 * 60_000 }, costosa: { n: 12, ventanaMs: 60 * 60_000 } } as const
 const COSTOSAS = new Set(['desplegar', 'cuenta-prueba', 'fondear-prueba'])
 const visitas = new Map<string, number[]>()
 export function limitar(ip: string, accion: string, ahora = Date.now()) {
@@ -72,9 +72,35 @@ const sinFirmar = (j: Record<string, unknown>) => {
   if (typeof x !== 'string') throw new ErrorTw(502, 'Trustless Work no devolvió la transacción sin firmar.'); return x
 }
 async function enviarTw(c: ConfigSolo, signedXdr: string, f: typeof fetch) {
-  const r = await tw(c, '/helper/send-transaction', { signedXdr }, f)
-  if (r.status && r.status !== 'SUCCESS') throw new ErrorTw(502, 'La red de prueba no aceptó la transacción: ' + JSON.stringify(r).slice(0, 200))
-  return { r, tx: hashTx(signedXdr) }
+  try {
+    const r = await tw(c, '/helper/send-transaction', { signedXdr }, f)
+    if (r.status && r.status !== 'SUCCESS') throw new ErrorTw(502, 'La red de prueba no aceptó la transacción: ' + JSON.stringify(r).slice(0, 200))
+    return { r, tx: hashTx(signedXdr) }
+  } catch (e) { return { r: await desenlace(c, signedXdr, e, f), tx: hashTx(signedXdr) } }
+}
+/** El envío falló o se agotó el tiempo (con dos transacciones a la vez de la misma cuenta, la segunda suele quedar así).
+ *  Se mira en Horizon qué pasó con ESA transacción: si entró, es éxito; si su secuencia ya la usó otra, se marca tx_bad_seq
+ *  para que conReintento la vuelva a pedir y firmar; si no se sabe, se devuelve el error (no se reenvía a ciegas). */
+async function desenlace(c: ConfigSolo, signedXdr: string, e: unknown, f: typeof fetch): Promise<Record<string, unknown>> {
+  const m = e instanceof Error ? e.message : String(e)
+  if (!/timed? ?out|timeout|bad_?seq|try_again_later|duplicate/i.test(m)) throw e
+  const t = leerTx(signedXdr), h = hashTx(signedXdr)
+  for (let i = 0; i < 4; i++) {
+    const r = await f(`${c.horizon}/transactions/${h}`)
+    if (r.ok) { const j = await r.json() as { successful?: boolean }; if (j.successful) return { status: 'SUCCESS', recuperada: true }; throw new ErrorTw(502, 'La red de prueba rechazó la transacción.') }
+    const a = await cuenta(c, t.source, f)
+    if (a && BigInt(a.sequence) >= BigInt(t.sequence)) throw new ErrorTw(409, 'tx_bad_seq: otra transacción de la misma cuenta entró antes.')
+    await espera(2000)
+  }
+  throw e
+}
+// ── Una transacción a la vez por cuenta (en esta instancia del servidor): evita choques de secuencia antes de que pasen. ──
+const filas = new Map<string, Promise<unknown>>()
+export function enFila<T>(cuentaG: string, f: () => Promise<T>): Promise<T> {
+  const antes = filas.get(cuentaG) ?? Promise.resolve()
+  const p = antes.catch(() => {}).then(f)
+  const cola = p.catch(() => {}); filas.set(cuentaG, cola); void cola.then(() => { if (filas.get(cuentaG) === cola) filas.delete(cuentaG) })
+  return p
 }
 
 export interface Escrow {
@@ -142,9 +168,22 @@ async function prepararCuenta(c: ConfigSolo, k: Keypair, f: typeof fetch) {
   if (!a) { await friendbot(k.publicKey(), f); a = await cuenta(c, k.publicKey(), f) }
   exigir(a, 502, 'No pudimos activar la cuenta de prueba. Intenta de nuevo en un minuto.')
   if (usdcDe(a) !== null) return { a: a!, trustline: null as string | null }
-  const t = tb(a!).addOperation(Operation.changeTrust({ asset: new Asset(USDC.code, USDC.issuer) })).setTimeout(60).build(); t.sign(k)
-  return { a: a!, trustline: await enviarHorizon(c, t, f) }
+  const trustline = await conReintento(() => enFila(k.publicKey(), async () => {
+    const a2 = (await cuenta(c, k.publicKey(), f))!; if (usdcDe(a2) !== null) return null   // otra solicitud ya la abrió
+    const t = tb(a2).addOperation(Operation.changeTrust({ asset: new Asset(USDC.code, USDC.issuer) })).setTimeout(60).build(); t.sign(k)
+    return enviarHorizon(c, t, f)
+  }))
+  return { a: a!, trustline }
 }
+
+/** La plataforma (tesorería) envía USDC de prueba; con secuencia fresca en cada intento. */
+const pagarDesdeTesoreria = (c: ConfigSolo, destino: string, monto: number, f: typeof fetch) => conReintento(() => enFila(c.P, async () => {
+  const t = tb((await cuenta(c, c.P, f))!).addOperation(Operation.payment({ destination: destino, asset: new Asset(USDC.code, USDC.issuer), amount: monto.toFixed(7) })).setTimeout(60).build()
+  t.sign(c.plataforma); return enviarHorizon(c, t, f)
+}))
+/** Pide a Trustless Work la transacción, la firma la cuenta del servidor y la envía; reintenta si la secuencia quedó vieja. */
+const firmarYEnviar = (c: ConfigSolo, k: Keypair, ruta: string, cuerpo: unknown, escrow: string, metodos: string[], f: typeof fetch) =>
+  conReintento(() => enFila(k.publicKey(), async () => (await enviarTw(c, firmarComo(k, sinFirmar(await tw(c, ruta, cuerpo, f)), escrow, metodos), f)).tx))
 
 // ── Acciones permitidas ──
 export type PedidoSolo =
@@ -156,9 +195,23 @@ export type PedidoSolo =
   | { accion: 'fondear-prueba'; escrow: string; token: string }
   | { accion: 'aprobar'; escrow: string; huella?: string }
   | { accion: 'liberar'; escrow: string }
-export const ACCIONES = ['dueno', 'cuenta-prueba', 'desplegar', 'fondear', 'enviar-deposito', 'fondear-prueba', 'aprobar', 'liberar'] as const
+  | { accion: 'disputar'; escrow: string }
+  | { accion: 'resolver'; escrow: string; alDueno: number }
+export const ACCIONES = ['dueno', 'cuenta-prueba', 'desplegar', 'fondear', 'enviar-deposito', 'fondear-prueba', 'aprobar', 'liberar', 'disputar', 'resolver'] as const
 
 const espera = (ms: number) => new Promise(r => setTimeout(r, ms))
+/** Número de secuencia viejo (tx_bad_seq / txBadSeq): otra transacción de la misma cuenta entró antes. */
+export const esSecuenciaVieja = (e: unknown) => /bad_?seq/i.test(e instanceof Error ? e.message : String(e))
+/** Concurrencia: reintenta una transacción firmada por el servidor si la secuencia quedó vieja. Cada intento vuelve a pedir la
+ *  transacción (Trustless Work u Horizon cargan la cuenta de nuevo), la firma otra vez y la envía. Espera corta y acotada. */
+export async function conReintento<T>(f: () => Promise<T>, ms = 400, intentos = 4): Promise<T> {
+  for (let i = 1; ; i++) {
+    try { return await f() } catch (e) {
+      if (i >= intentos || !esSecuenciaVieja(e)) throw e
+      await espera(ms * i + Math.floor(Math.random() * ms))
+    }
+  }
+}
 async function leerHasta(c: ConfigSolo, id: string, ok: (e: Escrow) => boolean, f: typeof fetch, intentos = 6, ms = 1500) {
   let e = await leerEscrow(c, id, f)
   for (let i = 1; i < intentos && !ok(e); i++) { await espera(ms); e = await leerEscrow(c, id, f) }
@@ -186,8 +239,7 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       if (falta > 0) {
         const tes = await cuenta(c, c.P, f)
         if (Number(usdcDe(tes) ?? 0) >= falta) {   // tesorería: la plataforma envía el USDC de prueba que falta (nunca más del tope)
-          const t = tb(tes!).addOperation(Operation.payment({ destination: k.publicKey(), asset: new Asset(USDC.code, USDC.issuer), amount: falta.toFixed(7) })).setTimeout(60).build(); t.sign(c.plataforma)
-          compra = await enviarHorizon(c, t, f); via = 'tesoreria'
+          compra = await pagarDesdeTesoreria(c, k.publicKey(), falta, f); via = 'tesoreria'
         } else {                                    // respaldo: la cuenta de prueba compra en el DEX de testnet con su XLM de Friendbot
           const t = tb(a).addOperation(Operation.pathPaymentStrictReceive({ sendAsset: Asset.native(), sendMax: String(MAX_XLM_COMPRA), destination: k.publicKey(),
             destAsset: new Asset(USDC.code, USDC.issuer), destAmount: falta.toFixed(7), path: [] })).setTimeout(60).build(); t.sign(k)
@@ -209,17 +261,19 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       await prepararCuenta(c, duenoDe(c, p.contrato), f)
       const pub = datosOnChain({ id: p.contrato })
       sinDatosPersonales([pub.title, pub.description, ...pub.milestones.map(m => m.description)], { direccion: '' })
-      const j = await tw(c, '/deployer/single-release', {
-        signer: c.P, ...pub,
-        roles: { approver: dueno, serviceProvider: c.P, platformAddress: c.P, releaseSigner: c.P, disputeResolver: c.P, receiver: p.inquilino },
-        amount: p.monto, platformFee: 0, trustline: { address: USDC.issuer, symbol: USDC.code },
-      }, f)
-      const t = leerTx(sinFirmar(j)); exigir(t.source === c.P, 502, 'La transacción no es de la cuenta de la plataforma.')
-      exigir(t.operations.length === 1 && t.operations[0].type === 'invokeHostFunction', 502, 'Transacción inesperada.')
-      t.sign(c.plataforma)
-      const { r, tx } = await enviarTw(c, t.toXDR(), f)
+      const { r, tx } = await conReintento(() => enFila(c.P, async () => {
+        const j = await tw(c, '/deployer/single-release', {
+          signer: c.P, ...pub,
+          roles: { approver: dueno, serviceProvider: c.P, platformAddress: c.P, releaseSigner: c.P, disputeResolver: c.P, receiver: p.inquilino },
+          amount: p.monto, platformFee: 0, trustline: { address: USDC.issuer, symbol: USDC.code },
+        }, f)
+        const t = leerTx(sinFirmar(j)); exigir(t.source === c.P, 502, 'La transacción no es de la cuenta de la plataforma.')
+        exigir(t.operations.length === 1 && t.operations[0].type === 'invokeHostFunction', 502, 'Transacción inesperada.')
+        t.sign(c.plataforma)
+        return enviarTw(c, t.toXDR(), f)
+      }))
       const id = String(r.contractId ?? (r.escrow as { contractId?: string } | undefined)?.contractId ?? '')
-      exigir(C.test(id), 502, 'Trustless Work no devolvió la cuenta segura del depósito.')
+      exigir(C.test(id), 502, r.recuperada ? 'La cuenta segura se creó, pero la red de prueba tardó en responder. Vuelve a tocar el botón.' : 'Trustless Work no devolvió la cuenta segura del depósito.')
       return { escrow: id, tx, dueno }
     }
     case 'fondear': {     // XDR del depósito para que el inquilino la firme con su billetera
@@ -245,8 +299,11 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       const k = inquilinoPruebaDe(c, p.token)
       const e = await leerEscrow(c, p.escrow, f); validarEscrow(c, e, k.publicKey())
       exigir(!fondeado(e) && !e.flags.released, 409, 'Este depósito ya se pagó.')
-      const j = await tw(c, '/escrow/single-release/fund-escrow', { contractId: p.escrow, signer: k.publicKey(), amount: Number(e.amount) }, f)
-      return { tx: (await enviarTw(c, firmarComo(k, sinFirmar(j), p.escrow, ['fund_escrow']), f)).tx }
+      // Si al inquilino de prueba le falta USDC (por ejemplo, dos depósitos a la vez), la tesorería completa lo que falta (nunca más del tope).
+      const inq = await cuenta(c, k.publicKey(), f); exigir(inq && usdcDe(inq) !== null, 409, 'La cuenta de prueba todavía no está lista. Vuelve a tocar el botón.')
+      const falta = Math.round((Number(e.amount) - Number(usdcDe(inq))) * 1e7) / 1e7
+      const compraTx = falta > 0 ? await pagarDesdeTesoreria(c, k.publicKey(), falta, f) : null
+      return { tx: await firmarYEnviar(c, k, '/escrow/single-release/fund-escrow', { contractId: p.escrow, signer: k.publicKey(), amount: Number(e.amount) }, p.escrow, ['fund_escrow'], f), compraTx }
     }
     case 'aprobar': {     // evidencia (plataforma) + aprobación (dueño de prueba). Solo con el depósito completo en el escrow.
       exigir(p.huella === undefined || HUELLA.test(p.huella), 400, 'La huella del acta no es válida.')
@@ -259,12 +316,10 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       if (h.status !== 'Completed') {
         const evidencia = EVIDENCIA_ONCHAIN + (p.huella ? ` · sha256:${p.huella}` : '')
         sinDatosPersonales([evidencia], { direccion: '' })
-        const j = await tw(c, '/escrow/single-release/change-milestone-status', { contractId: p.escrow, milestoneIndex: '0', newStatus: 'Completed', newEvidence: evidencia, serviceProvider: c.P }, f)
-        evidenciaTx = (await enviarTw(c, firmarComo(c.plataforma, sinFirmar(j), p.escrow, ['change_milestone_status']), f)).tx
+        evidenciaTx = await firmarYEnviar(c, c.plataforma, '/escrow/single-release/change-milestone-status', { contractId: p.escrow, milestoneIndex: '0', newStatus: 'Completed', newEvidence: evidencia, serviceProvider: c.P }, p.escrow, ['change_milestone_status'], f)
       }
       const dueno = duenoDe(c, e.engagementId)
-      const j = await tw(c, '/escrow/single-release/approve-milestone', { contractId: p.escrow, milestoneIndex: '0', approver: dueno.publicKey() }, f)
-      const aprobacionTx = (await enviarTw(c, firmarComo(dueno, sinFirmar(j), p.escrow, ['approve_milestone']), f)).tx
+      const aprobacionTx = await firmarYEnviar(c, dueno, '/escrow/single-release/approve-milestone', { contractId: p.escrow, milestoneIndex: '0', approver: dueno.publicKey() }, p.escrow, ['approve_milestone'], f)
       return { evidenciaTx, aprobacionTx }
     }
     case 'liberar': {     // solo después de la aprobación del dueño en la cadena: la plataforma libera al receiver (inquilino)
@@ -273,8 +328,26 @@ export async function atenderSolo(env: Entorno, p: PedidoSolo, ip: string, f: ty
       exigir(!e.flags.disputed, 409, 'Este depósito tiene un reclamo abierto.')
       exigir(e.milestones[0]?.approved, 409, 'Primero el dueño tiene que aprobar la devolución.')
       exigir(Number(e.balance) > 0, 409, 'La cuenta segura no tiene saldo.')
-      const j = await tw(c, '/escrow/single-release/release-funds', { contractId: p.escrow, releaseSigner: c.P }, f)
-      return { tx: (await enviarTw(c, firmarComo(c.plataforma, sinFirmar(j), p.escrow, ['release_funds']), f)).tx, receiver: e.roles.receiver }
+      return { tx: await firmarYEnviar(c, c.plataforma, '/escrow/single-release/release-funds', { contractId: p.escrow, releaseSigner: c.P }, p.escrow, ['release_funds'], f), receiver: e.roles.receiver }
+    }
+    case 'disputar': {    // el dueño de prueba abre el reclamo en la cadena (dispute_escrow), firmado por el servidor
+      const e = await leerHasta(c, p.escrow, fondeado, f, 6, opciones.espera); validarEscrow(c, e)
+      if (e.flags.disputed) return { yaDisputado: true }
+      exigir(fondeado(e), 409, 'La cuenta segura todavía no tiene el depósito completo. Espera unos segundos y vuelve a intentarlo.')
+      exigir(!e.flags.released && !e.flags.resolved, 409, 'Este depósito ya se cerró.')
+      const dueno = duenoDe(c, e.engagementId)
+      return { tx: await firmarYEnviar(c, dueno, '/escrow/single-release/dispute-escrow', { contractId: p.escrow, signer: dueno.publicKey() }, p.escrow, ['dispute_escrow'], f) }
+    }
+    case 'resolver': {    // reparto del reclamo (acuerdo o persona mediadora): resolve_dispute firmado por la plataforma (disputeResolver)
+      const e = await leerHasta(c, p.escrow, x => x.flags.disputed || x.flags.resolved, f, 6, opciones.espera); validarEscrow(c, e)
+      if (e.flags.resolved) return { yaResuelto: true }
+      exigir(e.flags.disputed, 409, 'Este depósito no tiene un reclamo abierto.')
+      const saldo = Number(e.balance)
+      exigir(typeof p.alDueno === 'number' && Number.isFinite(p.alDueno) && p.alDueno >= 0 && p.alDueno <= saldo && Math.round(p.alDueno * 1e7) === p.alDueno * 1e7, 400, `El monto para el dueño tiene que estar entre 0 y ${saldo} USDC de prueba.`)
+      const alInquilino = Math.round((saldo - p.alDueno) * 1e7) / 1e7
+      const distributions = [{ address: e.roles.approver, amount: p.alDueno }, { address: e.roles.receiver, amount: alInquilino }].filter(d => d.amount > 0)
+      const tx = await firmarYEnviar(c, c.plataforma, '/escrow/single-release/resolve-dispute', { contractId: p.escrow, disputeResolver: c.P, distributions }, p.escrow, ['resolve_dispute'], f)
+      return { tx, alDueno: p.alDueno, alInquilino }
     }
   }
 }

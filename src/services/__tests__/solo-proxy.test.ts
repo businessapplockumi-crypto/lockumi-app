@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Keypair, Account, TransactionBuilder, Operation, Networks, Address, nativeToScVal } from '@stellar/stellar-sdk'
-import { atenderSolo, hmacSha256, configSolo, duenoDe, inquilinoPruebaDe, limitar, reiniciarLimites, type Entorno, type Escrow } from '../../../api/_lib/solo'
+import { atenderSolo, conReintento, hmacSha256, configSolo, duenoDe, inquilinoPruebaDe, limitar, reiniciarLimites, type Entorno, type Escrow } from '../../../api/_lib/solo'
 import { PASSPHRASE_TESTNET, PASSPHRASE_MAINNET, TOPE_USDC, MAX_XLM_COMPRA, montoValido, exigirTestnet, USDC } from '../../../api/_lib/red'
 import { TEXTO_ONCHAIN } from '../../../api/_lib/tw'
 
@@ -29,6 +29,8 @@ function simular(e: Escrow = escrow(), usdc: string | null = '5') {
     if (url.endsWith('change-milestone-status')) return ok({ unsignedTransaction: xdrDe(P.publicKey(), 'change_milestone_status').toXDR() })
     if (url.endsWith('approve-milestone')) return ok({ unsignedTransaction: xdrDe(String(cuerpo!.approver), 'approve_milestone').toXDR() })
     if (url.endsWith('release-funds')) return ok({ unsignedTransaction: xdrDe(P.publicKey(), 'release_funds').toXDR() })
+    if (url.endsWith('dispute-escrow')) return ok({ unsignedTransaction: xdrDe(String(cuerpo!.signer), 'dispute_escrow').toXDR() })
+    if (url.endsWith('resolve-dispute')) return ok({ unsignedTransaction: xdrDe(P.publicKey(), 'resolve_dispute').toXDR() })
     if (url.includes('horizon-testnet.stellar.org/accounts/')) return ok({ id: url.split('/').pop(), sequence: '1', balances: usdc === null ? [] : [{ asset_type: 'credit_alphanum4', asset_code: 'USDC', asset_issuer: USDC.issuer, balance: usdc }] })
     if (url.endsWith('/transactions')) return ok({ hash: 'ab'.repeat(32) })
     return new Response('no', { status: 404 })
@@ -166,11 +168,47 @@ describe('fase 1 · validaciones contra el escrow', () => {
     expect(enviadas.map(t => t.source)).toEqual([P.publicKey(), DUENO.publicKey()])
   })
   it('límite de frecuencia por IP', () => {
-    for (let i = 0; i < 8; i++) limitar('9.9.9.9', 'desplegar', 1000 + i)
+    for (let i = 0; i < 12; i++) limitar('9.9.9.9', 'desplegar', 1000 + i)
     expect(() => limitar('9.9.9.9', 'desplegar', 2000)).toThrow(/muchas solicitudes/)
     expect(() => limitar('8.8.8.8', 'desplegar', 2000)).not.toThrow()
     for (let i = 0; i < 60; i++) limitar('7.7.7.7', 'fondear', 1000 + i)
     expect(() => limitar('7.7.7.7', 'fondear', 2000)).toThrow(/muchas solicitudes/)
     expect(() => limitar('7.7.7.7', 'fondear', 1000 + 11 * 60_000)).not.toThrow()
+  })
+})
+
+describe('parte 2 · reclamo y reparto en la cuenta segura', () => {
+  const enviadas = (s: ReturnType<typeof simular>) => s.llamadas.filter(l => l.url.endsWith('/helper/send-transaction')).map(l => TransactionBuilder.fromXDR(String(l.cuerpo!.signedXdr), Networks.TESTNET) as unknown as { source: string })
+  it('el reclamo lo firma el dueño de prueba y solo con el depósito completo', async () => {
+    await expect(ir({ accion: 'disputar', escrow: ESC })).rejects.toThrow(/depósito completo/)
+    const s = simular(escrow({ balance: 2 })); expect((await ir({ accion: 'disputar', escrow: ESC }, s)).tx).toMatch(/^[0-9a-f]{64}$/)
+    expect(enviadas(s).map(t => t.source)).toEqual([DUENO.publicKey()])
+    expect(await ir({ accion: 'disputar', escrow: ESC }, simular(escrow({ balance: 2, flags: { disputed: true, released: false, resolved: false } })))).toEqual({ yaDisputado: true })
+  })
+  it('el reparto lo firma la plataforma, suma el saldo y no se repite', async () => {
+    await expect(ir({ accion: 'resolver', escrow: ESC, alDueno: 1 }, simular(escrow({ balance: 2 })))).rejects.toThrow(/reclamo abierto/)
+    const disputado = escrow({ balance: 2, flags: { disputed: true, released: false, resolved: false } })
+    await expect(ir({ accion: 'resolver', escrow: ESC, alDueno: 2.5 }, simular(disputado))).rejects.toThrow(/entre 0 y 2/)
+    const s = simular(disputado); const r = await ir({ accion: 'resolver', escrow: ESC, alDueno: 0.4 }, s)
+    expect(r).toMatchObject({ alDueno: 0.4, alInquilino: 1.6 }); expect(enviadas(s).map(t => t.source)).toEqual([P.publicKey()])
+    const cuerpo = s.llamadas.find(l => l.url.endsWith('resolve-dispute'))!.cuerpo!
+    expect(cuerpo.distributions).toEqual([{ address: DUENO.publicKey(), amount: 0.4 }, { address: INQ.publicKey(), amount: 1.6 }])
+    const todo = simular(disputado); await ir({ accion: 'resolver', escrow: ESC, alDueno: 0 }, todo)
+    expect(todo.llamadas.find(l => l.url.endsWith('resolve-dispute'))!.cuerpo!.distributions).toEqual([{ address: INQ.publicKey(), amount: 2 }])
+    expect(await ir({ accion: 'resolver', escrow: ESC, alDueno: 1 }, simular(escrow({ balance: 0, flags: { disputed: true, released: false, resolved: true } })))).toEqual({ yaResuelto: true })
+  })
+})
+describe('parte 2 · concurrencia (tx_bad_seq)', () => {
+  it('reintenta con una transacción nueva si la secuencia quedó vieja, y se detiene ante otros errores', async () => {
+    const s = simular(escrow({ balance: 2, milestones: [{ status: 'Completed', approved: true }] })); let fallas = 1
+    const f = (async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/helper/send-transaction') && fallas-- > 0) return new Response(JSON.stringify({ message: 'Your transaction submission request has timed out' }), { status: 400 })
+      if (url.includes('horizon-testnet.stellar.org/accounts/')) return new Response(JSON.stringify({ id: url.split('/').pop(), sequence: '9', balances: [] }))   // la secuencia ya la usó otra
+      return s.f(url, init)
+    }) as typeof fetch
+    expect((await atenderSolo(ENV, { accion: 'liberar', escrow: ESC }, '5.5.5.5', f, { espera: 0 })).tx).toMatch(/^[0-9a-f]{64}$/)
+    expect(s.llamadas.filter(l => l.url.endsWith('release-funds')).length).toBe(2)   // la transacción se pidió de nuevo
+    let n = 0; await expect(conReintento(async () => { n++; throw new Error('otro error') }, 1)).rejects.toThrow('otro error'); expect(n).toBe(1)
+    n = 0; await expect(conReintento(async () => { n++; throw new Error('tx_bad_seq') }, 1, 3)).rejects.toThrow(); expect(n).toBe(3)
   })
 })

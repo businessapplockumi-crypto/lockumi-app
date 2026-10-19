@@ -5,7 +5,7 @@ import type { Acta, Alquiler, Rol } from './types'
 import { fotoEjemplo } from './demoFotos'
 // v3: flujo nuevo (contrato y firmas antes del depósito). Fase 1 en testnet: almacén aparte y sin ejemplos ficticios.
 // Cada modo guarda aparte: los alquileres de la fase 1 mínima (5 pasos) no se mezclan con los del flujo completo.
-const K = modoSolo ? 'lockumi.alquileres.testnet.v1' : modoPrueba ? 'lockumi.alquileres.prueba.v1' : 'lockumi.alquileres.v3'
+const K = modoSolo ? 'lockumi.alquileres.testnet.v1' : modoPrueba ? 'lockumi.alquileres.prueba.v2' : 'lockumi.alquileres.v3'
 export const DIA = 86_400_000
 const CUARTOS: [string, string[]][] = [
   ['Sala', ['Paredes y pintura', 'Piso', 'Ventanas y cortinas']],
@@ -26,9 +26,14 @@ const semilla = (): Alquiler[] => modoPrueba ? [] : [
     reglas:['Jardín a cargo del inquilino'], duenoEmail:'katherine@ejemplo.cr', inquilinoEmail:'otra@ejemplo.cr',
     estado:'firmas', rendimiento:false, escrowId:'sim-a2', contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados:0, historial:[{fecha:'2026-10-15T15:00:00Z',texto:'Alquiler creado'}] },
 ]
-let datos: Alquiler[] = (() => { try { const s = localStorage.getItem(K); return s ? JSON.parse(s) : semilla() } catch { return semilla() } })()
+const leer = (): Alquiler[] => { try { const s = localStorage.getItem(K); return s ? JSON.parse(s) : semilla() } catch { return semilla() } }
+let datos: Alquiler[] = leer()
 const subs = new Set<() => void>()
 let avisoEspacio = false
+/** Varias pestañas: antes de cada cambio se vuelve a leer lo guardado (no se pisa lo que hizo otra pestaña) y,
+ *  cuando otra pestaña guarda, esta se actualiza sola. Si no hay espacio para guardar, se sigue con lo que hay en memoria. */
+const recargar = () => { if (!avisoEspacio) datos = leer() }
+if (typeof window !== 'undefined') window.addEventListener('storage', e => { if (e.key === K) { datos = leer(); subs.forEach(f => f()) } })
 const guardar = () => {
   try { localStorage.setItem(K, JSON.stringify(datos)); avisoEspacio = false } catch { avisoEspacio = true }
   subs.forEach(f => f())
@@ -39,14 +44,17 @@ export const ahoraDe = (a: Alquiler) => Date.now() + a.diasSimulados * DIA
 export const store = {
   todos: () => datos,
   obtener: (id: string) => datos.find(a => a.id === id),
+  /** El alquiler tal como está guardado ahora (incluye cambios de otras pestañas). */
+  fresco: (id: string) => { recargar(); return datos.find(a => a.id === id) },
   sinEspacio: () => avisoEspacio,
   crear(a: Pick<Alquiler,'direccion'|'monto'|'inicio'|'fin'|'reglas'|'duenoEmail'|'inquilinoEmail'>) {
-    const n: Alquiler = { ...a, moneda: escrowReal ? 'USDC' : 'USD', id: modoSolo ? crypto.randomUUID() : 'a' + Date.now().toString(36), estado:'firmas', rendimiento:false, contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados: 0,
+    const n: Alquiler = { ...a, moneda: escrowReal ? 'USDC' : 'USD', id: escrowReal ? crypto.randomUUID() : 'a' + Date.now().toString(36), estado:'firmas', rendimiento:false, contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados: 0,
       historial:[{fecha:ahoraReal(),texto:'Alquiler creado e invitación enviada al inquilino'}] }
-    datos = [n, ...datos]; guardar(); return n
+    recargar(); datos = [n, ...datos]; guardar(); return n
   },
   /** Aplica un cambio inmutable y, si se indica, agrega un evento al historial. */
   cambiar(id: string, fn: (a: Alquiler) => void, evento?: string) {
+    recargar()
     datos = datos.map(a => {
       if (a.id !== id) return a
       const c: Alquiler = structuredClone(a); fn(c)
