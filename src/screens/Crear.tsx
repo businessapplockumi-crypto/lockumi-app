@@ -52,18 +52,23 @@ function Hoja({ id, titulo, abierta, onCerrar, ancla, alDerecha, children }: { i
   useEffect(() => {
     const d = ref.current; if (!d) return
     if (abierta && !d.open) {
-      d.showModal(); document.documentElement.classList.add('sin-scroll')
+      d.style.maxHeight = ''; d.showModal(); document.documentElement.classList.add('sin-scroll')
       const a = ancla?.current
       if (a && matchMedia('(min-width: 720px)').matches) {
         let r = a.getBoundingClientRect(); const w = d.offsetWidth, h = d.offsetHeight
         // Si no cabe ni abajo ni arriba del campo, sube la página lo necesario para que quepa abajo (sin tapar el campo).
         if (r.bottom + 8 + h > innerHeight - 12 && r.top - h - 8 < 12) { scrollBy(0, r.bottom + 8 + h - (innerHeight - 12)); r = a.getBoundingClientRect() }
-        let top = r.bottom + 8; if (top + h > innerHeight - 12 && r.top - h - 8 >= 12) top = r.top - h - 8
-        top = Math.max(12, Math.min(top, innerHeight - h - 12))
+        // Abajo si cabe; si no, arriba; si no cabe en ninguno (fin de la página), en el lado con más espacio y con scroll interno: nunca tapa el campo.
+        const abajo = innerHeight - 12 - (r.bottom + 8), arriba = r.top - 8 - 12
+        let top: number
+        if (h <= abajo) top = r.bottom + 8
+        else if (h <= arriba) top = r.top - 8 - h
+        else if (abajo >= arriba) { top = r.bottom + 8; d.style.maxHeight = abajo + 'px' }
+        else { top = 12; d.style.maxHeight = arriba + 'px' }
         // Tarjeta de la izquierda: alinea por la izquierda. Tarjeta de la derecha (alDerecha) o si no cabe: alinea con su borde derecho.
         let left = alDerecha ? r.right - w : r.left; if (left + w > innerWidth - 12) left = r.right - w
         d.style.top = top + 'px'; d.style.left = Math.max(12, Math.min(left, innerWidth - w - 12)) + 'px'
-      } else { d.style.top = ''; d.style.left = '' }
+      } else { d.style.top = ''; d.style.left = ''; d.style.maxHeight = '' }
     }
     if (!abierta && d.open) d.close()
     if (!abierta) document.documentElement.classList.remove('sin-scroll')
