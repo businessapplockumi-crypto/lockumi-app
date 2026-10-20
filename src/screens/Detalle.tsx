@@ -5,7 +5,7 @@ import { acciones, plazoMs, textoPlazo } from '../acciones'
 import { modoServidor, modoTrustless, modoSolo, modoPrueba, modoVideo, escrowReal } from '../servidor/config'
 import { COMISION_TEXTO, usaCuentaPropia } from '../services/escrow'
 import { abreviar } from '../services/billetera'
-import { PagoReal, CierreReal, Comprobantes, Cuentas, UltimoComprobante, DetalleSolo, VerTx, DUENO_PRUEBA } from './Real'
+import { PagoReal, CierreReal, Comprobantes, Cuentas, UltimoComprobante, DetalleSolo, VerTx } from './Real'
 import { esHash } from '../services/comprobantes'
 import { servidor } from '../servidor/repositorio'
 import { modoReal } from '../services/auth'
@@ -13,6 +13,7 @@ import { NOMBRE_ROL, type Alquiler, type Rol, type Foto, type Usuario } from '..
 import { fotoEjemplo } from '../demoFotos'
 import { Demo, Simulado, Icono, LineaTiempo, usd, fecha, fechaHora } from '../ui'
 import { CuartoEditor, Firma, FotoLista, cuartoListo } from './Acta'
+import { ContratoDoc } from './ContratoDoc'
 import { TomarFoto } from '../Camara'
 import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE, ahoraPrueba } from '../flujo'
 import { adelantoPermitido } from '../../api/_lib/red'
@@ -33,19 +34,8 @@ const Espera = ({ texto }: { texto: string }) => <div className="espera" role="s
 
 function Contrato({ a, rol }: P) {
   return <div className="pila">
-    <section className="pila"><h2>El contrato</h2>
-      <ul className="lista resumen">
-        <li><span>Lugar</span><strong>{a.direccion}</strong></li>
-        <li><span>Depósito</span><strong>{usd(a.monto)}</strong></li>
-        <li><span>Entrada</span><strong>{fecha(a.inicio)}</strong></li>
-        <li><span>Salida</span><strong>{fecha(a.fin)}</strong></li>
-        <li><span>Dueño</span><strong className="cortar">{modoPrueba ? DUENO_PRUEBA : a.duenoEmail}</strong></li>
-        <li><span>Inquilino</span><strong className="cortar">{a.inquilinoEmail}</strong></li>
-      </ul>
-      {a.reglas.length > 0 && <><p className="mini">Reglas</p><ul className="reglas">{a.reglas.map((r, i) => <li key={i}>{r}</li>)}</ul></>}
-      <p className="nota">El depósito queda guardado hasta el final. Nadie puede tomarlo solo: ni el dueño, ni el inquilino, ni Lockumi.</p>
-      {modoPrueba && <p className="nota">El dueño es una cuenta de Lockumi para la demo: por eso no te pedimos su correo. Firma solo después de ti.</p>}
-    </section>
+    <ContratoDoc a={a} />
+    {modoPrueba && <p className="nota">El dueño es una cuenta de Lockumi para la demo: por eso no te pedimos su correo. Firma solo después de ti.</p>}
     <Firma key={'c-' + rol} a={a} que="contrato" rol={rol} titulo="Firmas del contrato"
       texto="Lee el contrato. Si estás de acuerdo, fírmalo." casilla="Leí el contrato y estoy de acuerdo." />
   </div>
@@ -319,6 +309,7 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
       <aside className="detalle__lado pila">
         {escrowReal && <Comprobantes a={a} />}
         <section className="glass tarjeta" aria-labelledby="t-estado"><h3 id="t-estado">Los pasos</h3><LineaTiempo a={a} /></section>
+        {a.estado !== 'firmas' && <section className="glass tarjeta" aria-label="Contrato"><ContratoDoc a={a} /></section>}
         <details className="glass tarjeta detalles"><summary>Detalles</summary>
           <ul className="lista"><li><span>Dueño</span><span className="cortar">{a.duenoEmail}</span></li><li><span>Inquilino</span><span className="cortar">{a.inquilinoEmail}</span></li>
             <li><span>Depósito</span><span>{usd(a.monto)}</span></li><li><span>Fechas</span><span>{fecha(a.inicio)} → {fecha(a.fin)}</span></li></ul>

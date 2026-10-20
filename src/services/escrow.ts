@@ -74,6 +74,14 @@ async function depositarPropio(a: Alquiler, monto: number, guardar: Guardar, ava
   } catch (x) { throw claro(x) }
 }
 
+/** Texto si la tesorería no pudo recargar la cuenta de prueba (lo aprobó Katherine el 20/10/2026). */
+export const MENSAJE_RECARGA = 'Ahora no pudimos ponerte USDC de prueba. Espera unos minutos y vuelve a tocar «Pagar».'
+/** Recarga la cuenta de prueba hasta `monto`. Si falla, un solo mensaje claro (salvo el de «muchas solicitudes», que ya dice cuánto esperar). */
+export async function recargarCuentaPrueba(monto: number) {
+  try { return await solo.prepararCuentaPrueba(monto) }
+  catch (e) { throw new solo.ErrorSolo(e instanceof Error && /muchas solicitudes/i.test(e.message) ? e.message : MENSAJE_RECARGA) }
+}
+
 const real: EscrowService = {
   real: true,
   async depositar(a, guardar, avance) {
@@ -84,12 +92,15 @@ const real: EscrowService = {
     if (usaCuentaPropia(a)) return depositarPropio(a, monto, guardar, avance)
     try {
       let g = red.inquilino ?? solo.cuentaPruebaGuardada() ?? ''
-      if (!g) {
-        avance('Preparando tu cuenta de prueba…')
-        const c = await solo.prepararCuentaPrueba(monto); g = c.g
+      let escrow = red.escrow
+      // Siempre, antes de crear la cuenta segura: Lockumi completa la cuenta de prueba hasta el monto del depósito (aunque ya
+      // exista y haya gastado su USDC en otro alquiler). Es idempotente: si ya tiene el monto, no se envía nada.
+      // También sirve para reintentar un alquiler que guardó una cuenta en 0. El servidor sigue revisando el saldo al crear la cuenta segura.
+      if (!escrow) {
+        avance('Poniendo USDC de prueba en tu cuenta de prueba…')
+        const c = await recargarCuentaPrueba(monto); g = c.g
         guardar({ trustline: c.txs.trustline, compra: c.txs.compra }, { inquilino: g, inquilinoPrueba: true })
       }
-      let escrow = red.escrow
       if (!escrow) {
         avance('Preparando al dueño de prueba…')
         const d = await solo.prepararDueno(a.id); guardar({ duenoTrustline: d.trustlineTx ?? undefined }, { dueno: d.dueno, inquilino: g, inquilinoPrueba: true })
