@@ -9,6 +9,8 @@ import type { Usuario } from '../types'
 import { LogoAnimado } from '../LogoAnimado'
 import { modoSolo, modoPrueba, escrowReal } from '../servidor/config'
 import { DUENO_PRUEBA } from './Real'
+/** Primera letra en minúscula, sin tocar el resto («cuenta de Lockumi» conserva la L). */
+const minuscula = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 import { TOPE_USDC, MONTO_MAX_USDC, montoValido, mensajeSaldoPropio } from '../services/solo'
 import { conectar, saldoPropio, hayFreighter, hayCavos, NOMBRE_FIRMA, type Firma } from '../services/cuentaPropia'
 import { abreviar } from '../services/billetera'
@@ -246,23 +248,33 @@ export function Crear({ u }: { u: Usuario }) {
       {enviado && cuantos > 0 && <p className="error na-error" role="alert">Revisa {cuantos === 1 ? 'el campo marcado' : `los ${cuantos} campos marcados`} y vuelve a intentarlo.</p>}
       {errSrv && <p className="error na-error" role="alert">{errSrv}</p>}
       <button type="submit" className="boton boton--primario boton--ancho boton--grande na-crear" disabled={ocupado}>{ocupado ? 'Creando…' : modoPrueba ? 'Crear alquiler de prueba' : 'Crear alquiler e invitar'}</button>
-      {/* LEGAL: revisar. Línea aprobada por Katherine (20-oct-2026): «Lugar y fotos: se quedan en tu navegador; a la red solo va una huella de las fotos». La hoja «Red de prueba» conserva el texto anterior. */}
-      {modoPrueba ? <p className="na-priv"><Ico n="escudo" />Lugar y fotos: se quedan en tu navegador; a la red solo va una huella de las fotos</p>
+      {/* LEGAL: revisar. Texto propuesto por Legal (cambios-1.5-vs-1.4.md, «Línea de la fase 1»), palabra por palabra. */}
+      {modoPrueba ? <p className="na-priv"><Ico n="escudo" /><span>Lugar y fotos: se quedan en tu navegador; a la red solo va una huella de las fotos.</span></p>
         : <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>}
     </form>
 
     <Hoja id="info" titulo={info === 'red' ? 'Red de prueba' : info === 'usdc' ? 'USDC de prueba' : 'Fechas'} abierta={!!info} onCerrar={() => setInfo(null)}>
       <div className="na-hoja__texto">
-        {/* Textos de antes, sin cambios de fondo (los legales se mantienen palabra por palabra). */}
-        {info === 'red' && (modoSolo
-          ? <p>Prueba en la red de prueba de Stellar, sin dinero real. Tú haces los dos papeles: depositas como <strong>inquilino</strong> con tu billetera, y el dueño es un <strong>{DUENO_PRUEBA.toLowerCase()}</strong>. El nombre del lugar se queda en tu navegador: no va a la red.</p>
-          : <p>Prueba en la red de prueba de Stellar, sin dinero real: el depósito son USDC de prueba que te da Lockumi. Tú eres el <strong>inquilino</strong>. El dueño es el <strong>{DUENO_PRUEBA.toLowerCase()}</strong>: por eso no te pedimos el correo del dueño. Firma y confirma solo; los reclamos los haces tú con un botón en su nombre. El nombre del lugar y las fotos se quedan en tu navegador: no van a la red.</p>)}
-        {/* LEGAL: revisar. Texto nuevo que explica los dos orígenes (antes eran las etiquetas «Obtener USDC de prueba de Lockumi (máximo 20)» y «De mi cuenta (cualquier monto que tenga)»). */}
+        {/* LEGAL: revisar. Hoja «Red de prueba» 1.5 (borrador): 1.er párrafo = ⓘ de la píldora propuesto por Legal; el resto, versión corta del texto 1.4 con los cambios pedidos. */}
+        {info === 'red' && <>
+          <p>Esta demo funciona en la red de prueba (testnet) de Stellar. Los tokens no tienen valor y la red se reinicia de vez en cuando. No uses la red principal ni envíes dinero real.</p>
+          {modoSolo ? <>
+            <p>Tú eres el <strong>inquilino</strong> y depositas con tu billetera. El dueño es el <strong>{minuscula(DUENO_PRUEBA)}</strong>: por eso no te pedimos su correo.</p>
+            <p>Lockumi firma y confirma por el dueño de prueba: tú tocas el botón en su nombre. El reclamo y el mediador son simulados y no se registran en la red.</p>
+          </> : <>
+            <p>Tú eres el <strong>inquilino</strong>. El dueño es el <strong>{minuscula(DUENO_PRUEBA)}</strong>: por eso no te pedimos su correo.</p>
+            <p>Lockumi firma y confirma por el dueño de prueba. Los reclamos y el mediador son simulados: los haces tú con un botón en nombre del dueño.</p>
+          </>}
+          <p>El nombre del lugar y las fotos se quedan en tu navegador; a la red solo va una huella de las fotos.</p></>}
+        {/* LEGAL: revisar. Hoja «USDC de prueba» 1.5 (borrador): base = ⓘ propuesto por Legal, más billeteras (Cavos o Freighter) y «hasta tu saldo». */}
         {info === 'usdc' && <>
-          <p><strong>USDC de prueba de Lockumi:</strong> USDC de prueba que te da Lockumi, sin valor. Puedes usar hasta {TOPE_USDC} para el depósito.</p>
-          <p><strong>Usar mi propio USDC de prueba:</strong> usas los USDC de prueba de tu cuenta Lockumi o de Freighter. Puedes depositar hasta lo que tengas (máximo {MONTO_MAX_USDC.toLocaleString('es-CR')}).</p>
-          <p>Son USDC de la red de prueba de Stellar: no son dinero real.</p></>}
-        {info === 'fechas' && <p>La entrada es desde hoy en adelante (hasta 1 año), porque el alquiler empieza cuando se paga el depósito. El alquiler dura entre 1 mes y 5 años.</p>}
+          <p>El USDC de prueba no es dinero real y no tiene valor. Tienes dos opciones:</p>
+          <ul>
+            <li><strong>USDC de prueba de Lockumi:</strong> USDC de prueba que te da Lockumi, sin valor, hasta {TOPE_USDC}.</li>
+            <li><strong>Usar mi propio USDC de prueba:</strong> el de tu billetera de Lockumi (Cavos) o de Freighter, hasta tu saldo y como máximo {MONTO_MAX_USDC.toLocaleString('es-CR')}. Lo obtienes con Friendbot y el exchange de la red de prueba.</li>
+          </ul></>}
+        {/* LEGAL: revisar. Texto propuesto por Legal para la ⓘ de «Fechas», palabra por palabra. */}
+        {info === 'fechas' && <p>En esta demo, la fecha de entrada es de hoy en adelante (hasta 1 año) y la duración va de 1 mes a 5 años. Son valores de prueba, no plazos legales.</p>}
       </div>
       <button type="button" className="boton boton--primario boton--ancho na-hoja__listo" onClick={() => setInfo(null)}>Entendido</button>
     </Hoja>
