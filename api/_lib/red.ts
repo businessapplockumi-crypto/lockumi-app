@@ -22,6 +22,10 @@ const fmt = (x: number) => x.toLocaleString('es-CR', { maximumFractionDigits: 7 
 export const mensajeSaldoPropio = (x: number) => `Tu cuenta tiene ${fmt(x)} USDC de prueba. Escribe un monto de ${fmt(x)} o menos, o usa «Obtener USDC de prueba».`
 /** Al depositar: la cuenta propia ya no alcanza (por ejemplo, se gastó después de crear el alquiler). */
 export const mensajeSaldoAlPagar = (x: number, monto: number) => `Tu cuenta tiene ${fmt(x)} USDC de prueba y el depósito es de ${fmt(monto)}. Carga más USDC de prueba en tu cuenta y vuelve a tocar el botón.`
+/** Al depositar desde una pestaña abierta antes de una actualización de Lockumi (no manda de dónde salen los USDC de prueba). */
+export const mensajeSaldoVersionVieja = (x: number, monto: number) => `Tu cuenta tiene ${fmt(x)} USDC de prueba y el depósito es de ${fmt(monto)}. Lockumi se actualizó: recarga esta página y vuelve a tocar «Pagar». Así Lockumi pone los USDC de prueba en tu cuenta antes de crear el depósito.`
+/** Ruta «USDC de prueba de Lockumi»: la tesorería no pudo recargar la cuenta de prueba (texto aprobado por Katherine el 20/10/2026). */
+export const MENSAJE_RECARGA = 'Ahora no pudimos ponerte USDC de prueba. Espera unos minutos y vuelve a tocar «Pagar».'
 /** Máximo de XLM de prueba que se gasta en una compra de USDC de prueba (cubre 20 USDC con margen; hoy ~1,13 XLM por USDC). */
 export const MAX_XLM_COMPRA = 60
 

@@ -105,7 +105,7 @@ export async function depositar(contrato: string, monto: number, avance: (t: str
   avance('Preparando la cuenta del dueño de prueba…')
   const d = await api<{ dueno: string; trustlineTx: string | null }>({ accion: 'dueno', contrato })
   avance('Creando la cuenta segura del depósito…')
-  const e = await api<{ escrow: string; tx: string }>({ accion: 'desplegar', contrato, inquilino: g, monto })
+  const e = await desplegar(contrato, g, monto, prueba ? 'lockumi' : 'propia')
   const pasos: Pasos = { escrow: e.tx, ...(d.trustlineTx && { duenoTrustline: d.trustlineTx }) }
   let deposito: string
   if (prueba) { avance('Depositando desde la cuenta de prueba…'); deposito = (await api<{ tx: string }>({ accion: 'fondear-prueba', escrow: e.escrow, token: tokenPrueba() })).tx }
@@ -127,7 +127,10 @@ export async function reintentarDeposito(escrow: string) {
   return (await api<{ tx: string }>({ accion: 'enviar-deposito', escrow, signedXdr: firmada })).tx
 }
 export const prepararDueno = (contrato: string) => api<{ dueno: string; trustlineTx: string | null }>({ accion: 'dueno', contrato })
-export const desplegar = (contrato: string, inquilino: string, monto: number) => api<{ escrow: string; tx: string; dueno: string }>({ accion: 'desplegar', contrato, inquilino, monto })
+/** Crea la cuenta segura. `origen` dice de dónde salen los USDC de prueba: con 'lockumi' va el token de la cuenta de prueba y el
+ *  servidor la completa hasta el monto justo antes de revisar el saldo (devuelve `compraTx` si envió USDC de prueba). */
+export const desplegar = (contrato: string, inquilino: string, monto: number, origen: 'lockumi' | 'propia') =>
+  api<{ escrow: string; tx: string; dueno: string; trustlineTx?: string | null; compraTx?: string | null }>({ accion: 'desplegar', contrato, inquilino, monto, origen, ...(origen === 'lockumi' && { token: tokenPrueba() }) })
 /** Cuenta propia: el servidor arma la transacción del depósito para la dirección de la persona; su billetera la firma. */
 export const fondearPropio = (escrow: string, inquilino: string) => api<{ unsignedXdr: string }>({ accion: 'fondear', escrow, inquilino })
 export const enviarDeposito = (escrow: string, signedXdr: string) => api<{ tx: string }>({ accion: 'enviar-deposito', escrow, signedXdr })

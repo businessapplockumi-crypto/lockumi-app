@@ -73,7 +73,7 @@ describe('tope de 20 USDC solo para los USDC de Lockumi; con cuenta propia, el s
   it('cuenta propia: desplegar 500 pasa si el saldo real alcanza; si no, mensaje claro; más de 50 000 se rechaza', async () => {
     const s = simular(escrow(), '600'); await ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 500 }, s)
     expect(s.llamadas.find(l => l.url.endsWith('/deployer/single-release'))!.cuerpo!.amount).toBe(500)
-    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 500 }, simular(escrow(), '50'))).rejects.toThrow('Tu cuenta tiene 50 USDC de prueba y el depósito es de 500. Carga más USDC de prueba en tu cuenta y vuelve a tocar el botón.')
+    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 500, origen: 'propia' }, simular(escrow(), '50'))).rejects.toThrow('Tu cuenta tiene 50 USDC de prueba y el depósito es de 500. Carga más USDC de prueba en tu cuenta y vuelve a tocar el botón.')
     await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 50_001 }, simular(escrow(), '60000'))).rejects.toThrow(/máximo 50/)
   })
   it('cuenta propia: fondear arma el depósito de 500 para la dirección de la persona y revisa su saldo', async () => {
@@ -107,6 +107,43 @@ describe('tope de 20 USDC solo para los USDC de Lockumi; con cuenta propia, el s
   it('el cliente no deposita más del máximo y no pide más de 20 a Lockumi', async () => {
     const { depositar, obtenerUsdc } = await import('../solo')
     await expect(depositar(ID, 50_001)).rejects.toThrow(/máximo 50/); await expect(obtenerUsdc(25)).rejects.toThrow(/hasta 20/)
+  })
+})
+
+// Caso del 20/10/2026 (Katherine, con sesión de Google): la pestaña se abrió antes de publicar la recarga automática y su app vieja
+// pidió crear la cuenta segura sin recargar la cuenta de prueba en 0. Ahora el servidor recarga él mismo en la ruta de Lockumi.
+describe('desplegar con «USDC de prueba de Lockumi»: el servidor completa la cuenta de prueba antes de revisar el saldo', () => {
+  const T = 'd'.repeat(64), G = inquilinoPruebaDe(C, T).publicKey()
+  /** Horizon simulado: la cuenta de prueba empieza con `inicial` USDC y sube cuando la tesorería le paga. */
+  function conSaldo(inicial: string) {
+    const s = simular(escrow(), '300'); let saldo = inicial; const pagos: string[] = []
+    const f = (async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/accounts/' + G)) return new Response(JSON.stringify({ id: G, sequence: '1', balances: [{ asset_type: 'credit_alphanum4', asset_code: 'USDC', asset_issuer: USDC.issuer, balance: saldo }] }))
+      if (url.endsWith('/transactions') && init?.body) { const t = TransactionBuilder.fromXDR(decodeURIComponent(String(init.body).slice(3)), Networks.TESTNET) as import('@stellar/stellar-sdk').Transaction
+        const op = t.operations[0] as { type: string; destination?: string; amount?: string }; if (op.type === 'payment' && op.destination === G) { pagos.push(op.amount!); saldo = String(Number(saldo) + Number(op.amount)) } }
+      return s.f(url, init)
+    }) as typeof fetch
+    return { f, s, pagos }
+  }
+  it('cuenta ya usada en 0 USDC: la tesorería envía el monto y se crea la cuenta segura', async () => {
+    const x = conSaldo('0')
+    const r = await atenderSolo(ENV, { accion: 'desplegar', contrato: ID, inquilino: G, monto: 2, origen: 'lockumi', token: T }, 'ip', x.f, { espera: 0 })
+    expect(x.pagos).toEqual(['2.0000000']); expect(r.escrow).toBe(ESC); expect(r.compraTx).toBe('ab'.repeat(32))
+    expect(x.s.llamadas.some(l => l.url.endsWith('/deployer/single-release'))).toBe(true)
+  })
+  it('si ya tiene el monto, no envía nada', async () => {
+    const x = conSaldo('5')
+    const r = await atenderSolo(ENV, { accion: 'desplegar', contrato: ID, inquilino: G, monto: 2, origen: 'lockumi', token: T }, 'ip', x.f, { espera: 0 })
+    expect(x.pagos).toEqual([]); expect(r.compraTx).toBeNull()
+  })
+  it('el token tiene que ser el de esa cuenta de prueba y el monto, de 20 o menos', async () => {
+    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: INQ.publicKey(), monto: 2, origen: 'lockumi', token: T })).rejects.toThrow(/no coincide.*Recarga la página/)
+    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: G, monto: 2, origen: 'lockumi' })).rejects.toThrow(/Recarga la página/)
+    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: G, monto: 25, origen: 'lockumi', token: T })).rejects.toThrow(/máximo 20/)
+  })
+  it('pestaña con la versión vieja (sin «origen») y cuenta en 0: explica que hay que recargar la página', async () => {
+    await expect(ir({ accion: 'desplegar', contrato: ID, inquilino: G, monto: 2 }, simular(escrow(), '0'))).rejects.toThrow(
+      'Tu cuenta tiene 0 USDC de prueba y el depósito es de 2. Lockumi se actualizó: recarga esta página y vuelve a tocar «Pagar». Así Lockumi pone los USDC de prueba en tu cuenta antes de crear el depósito.')
   })
 })
 

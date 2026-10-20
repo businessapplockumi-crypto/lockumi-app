@@ -8,7 +8,7 @@
 import type { Alquiler, PasoRed, RedPrueba } from '../types'
 import { escrowReal } from '../servidor/config'
 import * as solo from './solo'
-import { TOPE_USDC, montoValido } from '../../api/_lib/red'
+import { TOPE_USDC, montoValido, MENSAJE_RECARGA } from '../../api/_lib/red'
 import * as propia from './cuentaPropia'
 
 export type Txs = Partial<Record<PasoRed, string>>
@@ -61,7 +61,7 @@ async function depositarPropio(a: Alquiler, monto: number, guardar: Guardar, ava
       avance('Preparando al dueño de prueba…')
       const d = await solo.prepararDueno(a.id); guardar({ duenoTrustline: d.trustlineTx ?? undefined }, { dueno: d.dueno })
       avance('Creando la cuenta segura del depósito…')
-      const e = await solo.desplegar(a.id, g, monto); escrow = e.escrow; guardar({ escrow: e.tx }, { escrow })
+      const e = await solo.desplegar(a.id, g, monto, 'propia'); escrow = e.escrow; guardar({ escrow: e.tx }, { escrow })
     }
     let xdr: string
     try { xdr = (await solo.fondearPropio(escrow, g)).unsignedXdr }
@@ -74,8 +74,8 @@ async function depositarPropio(a: Alquiler, monto: number, guardar: Guardar, ava
   } catch (x) { throw claro(x) }
 }
 
-/** Texto si la tesorería no pudo recargar la cuenta de prueba (lo aprobó Katherine el 20/10/2026). */
-export const MENSAJE_RECARGA = 'Ahora no pudimos ponerte USDC de prueba. Espera unos minutos y vuelve a tocar «Pagar».'
+/** Texto si la tesorería no pudo recargar la cuenta de prueba (lo aprobó Katherine el 20/10/2026). Lo comparten cliente y servidor. */
+export { MENSAJE_RECARGA }
 /** Recarga la cuenta de prueba hasta `monto`. Si falla, un solo mensaje claro (salvo el de «muchas solicitudes», que ya dice cuánto esperar). */
 export async function recargarCuentaPrueba(monto: number) {
   try { return await solo.prepararCuentaPrueba(monto) }
@@ -105,7 +105,9 @@ const real: EscrowService = {
         avance('Preparando al dueño de prueba…')
         const d = await solo.prepararDueno(a.id); guardar({ duenoTrustline: d.trustlineTx ?? undefined }, { dueno: d.dueno, inquilino: g, inquilinoPrueba: true })
         avance('Creando la cuenta segura del depósito…')
-        const e = await solo.desplegar(a.id, g, monto); escrow = e.escrow; guardar({ escrow: e.tx }, { escrow })
+        // Con «origen: lockumi» el servidor vuelve a completar la cuenta de prueba justo antes de revisar el saldo (no se envía nada si ya alcanza).
+        const e = await solo.desplegar(a.id, g, monto, 'lockumi'); escrow = e.escrow
+        guardar({ trustline: e.trustlineTx ?? undefined, compra: e.compraTx ?? undefined, escrow: e.tx }, { escrow })
       }
       avance('Guardando el depósito en la cuenta segura…')
       try { const f = await solo.fondearPrueba(escrow); guardar({ compra: f.compraTx ?? undefined, deposito: f.tx }) }
