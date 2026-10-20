@@ -24,6 +24,8 @@ Lockumi es una app de **depósito de alquiler protegido** para Costa Rica. Dueñ
 - [Contratos e IDs en testnet](#contratos-e-ids-en-testnet)
 - [Privacidad en la cadena](#privacidad-en-la-cadena)
 - [Qué es real y qué es simulado](#qué-es-real-y-qué-es-simulado)
+- [Correo con Resend (próximamente)](#correo-con-resend-próximamente)
+- [Cambios publicados](#cambios-publicados)
 - [Cómo correrlo localmente](#cómo-correrlo-localmente)
 - [Stack](#stack) · [Enlaces](#enlaces) · [Equipo](#equipo) · [Contribuir](#contribuir) · [Licencia](#licencia)
 
@@ -39,14 +41,19 @@ Esta guía describe lo que hace hoy https://app.lockumi.com (código de `master`
 
 Pasos en https://app.lockumi.com:
 
-1. **Entrar sin billetera.** Toca "Entrar", marca "Acepto los Términos y condiciones" (y el consentimiento de privacidad, si aparece) y elige "Continuar con Google", "Continuar con Apple" o "Continuar con tu correo" (Cavos). No necesitas instalar una billetera ni guardar frases semilla. Freighter es opcional: solo sirve si quieres depositar USDC de prueba desde tu propia cuenta. Los textos legales son de demo y están pendientes de revisión por abogado.
-2. **Contrato y reglas.** Toca "+ Nuevo alquiler" y completa el lugar, el monto del depósito, las fechas (dd/mm/aa; también se acepta el año con 4 cifras) y las reglas. Las reglas son del dueño: el inquilino las lee y las acepta al firmar (en la demo de una persona, las escribes tú en nombre del dueño de prueba). Elige de dónde salen los USDC de prueba:
-   - **"Obtener USDC de prueba de Lockumi"**: Lockumi te da USDC de prueba desde su tesorería, con un **máximo de 20**.
-   - **"De mi cuenta"**: depositas USDC de prueba que ya tienes, con "Usar mi cuenta Lockumi" (Cavos) o "Usar Freighter". El formulario muestra tu saldo real (leído en Horizon testnet); el límite es ese saldo, con un máximo de **50 000 USDC de prueba**.
+1. **Entrar sin billetera.** Toca "Entrar", marca "Acepto los Términos y condiciones" (y el consentimiento de privacidad, si aparece) y elige "Continuar con Google", "Continuar con Apple" o "Continuar con tu correo" (Cavos). No necesitas instalar una billetera ni guardar frases semilla. Freighter es opcional: solo sirve si quieres depositar USDC de prueba desde tu propia cuenta. Los textos legales vigentes son los **Términos y el Aviso de privacidad 1.5-demo (20 de octubre de 2026)**; son de demo y están pendientes de revisión por abogado. Si aceptaste una versión anterior, las casillas vuelven a salir sin marcar.
+2. **Contrato y reglas.** Toca "+ Nuevo alquiler" (pantalla «Nuevo alquiler») y completa:
+   - **Lugar.** Se queda en tu navegador; a la red solo va una huella de las fotos.
+   - **USDC de prueba.** Elige de dónde salen:
+     - **«USDC de prueba de Lockumi»** (opción por defecto): USDC de prueba que te da Lockumi, sin valor, **hasta 20**. Quedan en una cuenta de inquilino de prueba de Lockumi, no en tu billetera.
+     - **«Usar mi propio USDC de prueba»**: depositas USDC de prueba que ya tienes, con tu billetera de Lockumi (Cavos) o con Freighter. El formulario muestra tu saldo real (leído en Horizon testnet); el límite es ese saldo, con un máximo de **50 000 USDC de prueba**.
+   - **Depósito.** Botones − y + (de 1 en 1) o escribe el monto; no pasa el tope de la opción elegida.
+   - **Fechas.** Dos tarjetas, **Entrada** y **Salida**, una al lado de la otra (también en celular, con la etiqueta arriba y la fecha abajo). Cada una abre un calendario: en celular, como hoja desde abajo; en escritorio, como ventanita junto a la tarjeta. Formato dd/mm/aa. La entrada va de hoy a 1 año; la duración, de 1 mes a 5 años; los días que no se pueden elegir salen en gris. Si cambias la entrada y la salida deja de servir, la salida se borra y la app te avisa.
+   - **Reglas.** Son del dueño: el inquilino las lee y las acepta al firmar (en la demo de una persona, las escribes tú en nombre del dueño de prueba).
 
    Toca "Crear alquiler de prueba".
-3. **Firmas.** Lee el contrato y fírmalo. El dueño de prueba firma solo después de ti.
-4. **Depósito.** Toca "Pagar". El servidor crea el escrow *single-release* en Trustless Work y el depósito entra a esa cuenta segura. Si elegiste los USDC de Lockumi, en este paso la tesorería los pone en tu cuenta de inquilino de prueba (máximo 20) y el servidor firma el depósito; si usas tu propia cuenta, Cavos o Freighter te piden confirmar la firma.
+3. **Firmas.** Lee la sección **«Contrato»** (lugar, depósito, entrada y salida, partes, reglas, «7 días para reclamos», mediación y firmas) y fírmalo. El dueño de prueba firma solo después de ti. La sección «Contrato» sigue visible en el detalle del alquiler después de firmar, con la fecha y hora de cada firma, y tiene el botón **«Descargar o imprimir»**: abre la ventana de impresión del navegador con solo el contrato, donde también puedes elegir «Guardar como PDF». Todo sale de los datos de tu navegador; no se envía nada.
+4. **Depósito.** Toca "Pagar". El servidor crea el escrow *single-release* en Trustless Work y el depósito entra a esa cuenta segura. Si elegiste los USDC de Lockumi, en este paso la tesorería **siempre completa tu cuenta de inquilino de prueba hasta el monto del depósito** (máximo 20), aunque ya hayas usado su USDC en otro alquiler, y el servidor firma el depósito. Si la tesorería no puede recargar, la app dice: «Ahora no pudimos ponerte USDC de prueba. Espera unos minutos y vuelve a tocar «Pagar».»; si usas tu propia cuenta, Cavos o Freighter te piden confirmar la firma.
 5. **Fotos de entrada.** Toma una foto de cada espacio y completa la lista de revisión; confirma. El dueño de prueba confirma solo. Si no tienes cámara, puedes usar "Demo: usar una foto de ejemplo".
 6. **Fotos de salida.** Cuando entregues el lugar, toca "Empezar fotos de salida", toma las fotos, completa la lista y confirma. El dueño de prueba confirma solo.
 7. **7 días para reclamos.** Corre el plazo de 7 días. Tienes dos opciones:
@@ -203,7 +210,7 @@ Todo lo que se escribe en un escrow queda público y permanente en Stellar. Por 
 - **Sin datos personales:** nunca se envían a la cadena la dirección del inmueble, nombres, correos ni teléfonos; una última verificación en el servidor bloquea el deploy si algún texto los trae. Las fotos y las actas se quedan en tu navegador y no van a la cadena; la evidencia del hito es un texto fijo.
 - **Siguen en la cadena**, por cómo funciona el escrow: las cuentas G… de dueño e inquilino, el monto y las fechas de las transacciones.
 - **Red principal bloqueada:** la red está fija en el código (`api/_lib/red.ts`). El servidor rechaza cualquier passphrase, Horizon, RPC o API de Trustless Work que no sea de testnet.
-- **Límites de monto:** con "Obtener USDC de prueba", máximo 20 USDC de prueba; con USDC de prueba de tu propia cuenta, hasta tu saldo real y un máximo de 50 000. Se revisa en el cliente y en el servidor.
+- **Límites de monto:** con «USDC de prueba de Lockumi», máximo 20 USDC de prueba; con USDC de prueba de tu propia cuenta, hasta tu saldo real y un máximo de 50 000. Se revisa en el cliente y en el servidor.
 
 ## Qué es real y qué es simulado
 
@@ -211,16 +218,17 @@ Todo lo que se escribe en un escrow queda público y permanente en Stellar. Por 
 |---|---|
 | Login | Real con Cavos (Google, Apple o correo). Sin billetera ni frase semilla. Freighter es opcional, solo para depositar desde tu propia cuenta. |
 | Escrow | Real en testnet: Trustless Work *single-release* con USDC de prueba de Circle en cada paso (creación, depósito, aprobación, devolución, reclamo y reparto), con comprobantes en stellar.expert. |
-| USDC de prueba | "Obtener USDC de prueba" (tesorería de Lockumi, máximo 20) o tu propia cuenta (hasta tu saldo real en Horizon, máximo 50 000). |
+| USDC de prueba | «USDC de prueba de Lockumi» (tesorería de Lockumi, máximo 20; antes de cada depósito recarga la cuenta de prueba hasta el monto) o «Usar mi propio USDC de prueba» (Cavos o Freighter, hasta tu saldo real en Horizon, máximo 50 000). |
 | Dueño | Dueño de prueba, rotulado como cuenta de Lockumi para la demo. Firma y confirma solo; el servidor custodia su llave. |
-| Inquilino | Tú. Con "Obtener USDC de prueba", el depósito sale de un inquilino de prueba que custodia el servidor; con tu propia cuenta, firmas tú con Cavos o Freighter. |
+| Inquilino | Tú. Con «USDC de prueba de Lockumi», el depósito sale de un inquilino de prueba que custodia el servidor; con tu propia cuenta, firmas tú con Cavos o Freighter. |
 | Reclamo | Lo haces tú con "Hacer un reclamo como dueño de prueba"; queda registrado en el escrow (disputa real en testnet). |
 | Mediación | Persona mediadora simulada ("Decidir como persona mediadora"), sin efecto legal. El reparto sí es una transacción real en testnet. |
 | Plazo de reclamos | 7 días. En testnet existe "Solo red de prueba: adelantar el plazo" (bloqueado en el cliente y en el servidor fuera de testnet); con dinero real siempre aplicarían los 7 días. |
+| Contrato | Sección «Contrato» en el detalle del alquiler, antes y después de firmar, con las firmas (fecha y hora) y «Descargar o imprimir» (ventana de impresión del navegador; no genera archivos ni envía datos). Se guarda en el navegador. |
 | Fotos y actas | Cámara de la app con fecha, hora y huella SHA-256; se guardan en el navegador (localStorage), no en la cadena. Ver [`docs/fotos-captura.md`](docs/fotos-captura.md). |
-| Dos personas e invitaciones | **Próximamente.** En desarrollo; todavía no funciona. |
+| Dos personas e invitaciones | **Próximamente.** En desarrollo; todavía no funciona. El correo de invitación saldría con Resend (ver abajo). |
 | Rendimiento con Blend | **No está activo.** Función futura; si llega, el rendimiento sería variable y no garantizado. |
-| Textos legales | `/terminos` y `/privacidad`, versión de demo, pendientes de revisión por abogado. |
+| Textos legales | `/terminos` y `/privacidad`, versión **1.5-demo** (20 de octubre de 2026), pendientes de revisión por abogado. Origen y forma de reemplazarlos: [`src/legal/LEEME.md`](src/legal/LEEME.md). |
 
 El flujo mínimo anterior de 5 pasos (crear, obtener USDC, depositar, aprobar y devolver) sigue en el código solo si se compila con `VITE_FLUJO=solo`. No es el flujo de app.lockumi.com.
 
@@ -233,6 +241,28 @@ El flujo mínimo anterior de 5 pasos (crear, obtener USDC, depositar, aprobar y 
 - correo electrónico con código de un solo uso (9 caracteres).
 
 Sin `VITE_CAVOS_APP_ID` (por ejemplo, en local) la app usa un acceso simulado.
+
+## Correo con Resend (próximamente)
+
+El correo de invitación de la Parte 4 (dos personas) saldrá con **Resend** desde `invitaciones@lockumi.com`, solo para enviar. **La Parte 4 no está activa** en app.lockumi.com: hoy la app no envía correos, y **lockumi.com no recibe correo** (no tiene MX en la raíz). Lo que ya está listo:
+
+- Dominio `lockumi.com` **verificado en Resend**, región **us-east-1**.
+- Registros en el DNS de Vercel: DKIM (`resend._domainkey`), SPF del subdominio `send` (MX y TXT), el CNAME `rsend` y DMARC (`_dmarc`, `p=none`).
+- `RESEND_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY` cargadas en Vercel **solo para Preview**, como variables sensibles.
+
+Detalle en [`docs/correo-resend.md`](docs/correo-resend.md). El tratamiento de datos de ese correo está en el Aviso de privacidad 1.5-demo (sección «Invitar a otra persona», fase 2).
+
+## Cambios publicados
+
+Cada cambio publicado en app.lockumi.com queda en `master` con esta documentación al día (README, guía para jueces, [CONTRIBUTING](CONTRIBUTING.md), [PLAN](PLAN.md) y `docs/`).
+
+**20 de octubre de 2026**
+- **Nuevo alquiler:** pantalla nueva con las tarjetas de USDC de prueba («USDC de prueba de Lockumi» o «Usar mi propio USDC de prueba»), depósito con − y +, y **Entrada y Salida una al lado de la otra**, también en celular, con calendarios estándar (react-day-picker 10, en `<dialog>`: hoja inferior en celular y ventanita en escritorio, alineada a su tarjeta y dentro de la pantalla). Formato dd/mm/aa, mismas reglas de fechas (`src/validacion.ts`).
+- **Términos y Aviso de privacidad 1.5-demo** (20 de octubre de 2026), copia exacta de los textos de Legal. La aceptación de una versión anterior ya no cuenta.
+- **Saldo 0 con el USDC de Lockumi, arreglado:** antes, si tu cuenta de prueba ya existía y había gastado su USDC en otro alquiler, la app no la recargaba y el servidor respondía «Tu cuenta tiene 0 USDC de prueba…». Ahora, antes de crear la cuenta segura, la app **siempre** completa la cuenta de prueba hasta el monto del depósito (si ya lo tiene, no se envía nada). El servidor sigue revisando el saldo. Un alquiler que había fallado así se puede reintentar tocando «Pagar». Código: `src/services/escrow.ts`; prueba: `src/services/__tests__/recarga-prueba.test.ts`.
+- **Sección «Contrato»** siempre visible en el detalle, con «Descargar o imprimir» (`src/screens/ContratoDoc.tsx`). Sus textos nuevos de «7 días para reclamos», «Mediación» y el pie están marcados `// LEGAL: revisar`.
+- **Historial:** el primer evento dice «Alquiler creado» (antes decía que se había enviado una invitación, y no se envía nada).
+- **Resend:** dominio verificado y DNS listos para la Parte 4, que todavía no está activa.
 
 ## Cómo correrlo localmente
 
@@ -260,7 +290,8 @@ Variables de entorno (ver `.env.example`; **nunca subas `.env`**, está en `.git
 | `TRUSTLESS_WORK_API_KEY` | Servidor | Llave de la API de testnet de Trustless Work. Nunca con prefijo `VITE_`. |
 | `LOCKUMI_TW_PLATAFORMA_SECRET` | Servidor | Clave secreta de la cuenta de la plataforma (platformAddress, serviceProvider, releaseSigner y disputeResolver). |
 | `LOCKUMI_DEMO_SEED` | Servidor | Semilla (32 caracteres o más) de la que se derivan las cuentas del dueño de prueba y del inquilino de prueba. |
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `LOCKUMI_TW_MEDIADOR_PUBLICA`, `TRUSTLESS_WORK_BASE_URL`, `TRUSTLESS_WORK_TRUSTLINE` | Cliente / Servidor | Para la versión con servidor compartido y dos personas (`api/tw.ts`). **Próximamente**; no se usan en app.lockumi.com. |
+| `RESEND_API_KEY` | Servidor | Llave de Resend para el correo de invitación (Parte 4). En Vercel solo en **Preview**, marcada como sensible. **Próximamente**; no se usa en app.lockumi.com. |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `LOCKUMI_TW_MEDIADOR_PUBLICA`, `TRUSTLESS_WORK_BASE_URL`, `TRUSTLESS_WORK_TRUSTLINE` | Cliente / Servidor | Para la versión con servidor compartido y dos personas (`api/tw.ts`). **Próximamente**; no se usan en app.lockumi.com. `SUPABASE_SERVICE_ROLE_KEY` está en Vercel solo en **Preview**, marcada como sensible. |
 
 ## Stack
 

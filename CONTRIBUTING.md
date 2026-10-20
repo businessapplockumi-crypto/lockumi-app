@@ -6,6 +6,17 @@ Gracias por tu interés. Lockumi es una demo en la **red de prueba de Stellar (t
 
 Antes de cambiar código o documentación, lee la [guía para jueces del README](README.md#prueba-el-flujo-en-5-minutos-guía-para-jueces): describe lo que hace app.lockumi.com (testnet, una persona, flujo completo de 8 pasos con escrow real de Trustless Work). Si tu cambio modifica ese comportamiento, actualiza también el README en el mismo *pull request*. Lo que todavía no funciona (dos personas reales, invitaciones por correo o link) se escribe como «Próximamente».
 
+## Regla: lo publicado se documenta en el mismo trabajo
+
+Desde el 20 de octubre de 2026, **todo cambio publicado en app.lockumi.com tiene que quedar en `master` con la documentación al día, en el mismo trabajo** (mismo *pull request* o mismo merge). Revisa y actualiza lo que corresponda:
+
+- `README.md`, incluida la [guía para jueces](README.md#prueba-el-flujo-en-5-minutos-guía-para-jueces) y la sección [Cambios publicados](README.md#cambios-publicados) (una línea por cambio, con la fecha).
+- `CONTRIBUTING.md` (este archivo), si cambia el proceso.
+- `PLAN.md` (sección «Estado actual»).
+- `docs/` (por ejemplo, [`docs/correo-resend.md`](docs/correo-resend.md)) y `src/legal/LEEME.md` si cambian los textos legales.
+
+Nunca pongas valores de secretos en la documentación: solo el nombre de la variable y dónde está (por ejemplo, «Vercel, solo Preview, sensible»).
+
 ## Proponer cambios
 
 1. Abre un *issue* con el problema o la idea, o comenta en uno existente.
@@ -42,4 +53,5 @@ Si agregas lógica nueva, agrega su prueba en `src/**/__tests__/`.
 - Nombres, textos de la interfaz y comentarios en español neutro.
 - Sigue el estilo de los archivos vecinos: funciones cortas, sin dependencias nuevas si no hacen falta.
 - `npm run lint` no debe dar errores.
-- Los textos legales de `src/legal/` no se editan a mano: se reemplazan como indica `src/legal/LEEME.md`.
+- Los textos legales de `src/legal/` no se editan a mano: se reemplazan como indica `src/legal/LEEME.md`. Hoy son la versión 1.5-demo.
+- Todo texto nuevo con implicación legal (fuera de `src/legal/`) lleva el comentario `// LEGAL: revisar` y se lista en el *pull request* para que Legal lo revise.
