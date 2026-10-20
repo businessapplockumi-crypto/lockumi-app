@@ -7,8 +7,8 @@ describe('notas internas para Legal', () => {
     const h = aHtml('a) uno\n<!-- CAMBIO · antes: «x» -->\nb) dos\n<!-- FIN -->\n')
     expect(h).not.toMatch(/CAMBIO|FIN|&lt;!--/); expect(h).toMatch(/uno[\s\S]*dos/)
   })
-  it('términos 2.2 d): el tope de 20 es solo para los USDC del botón de Lockumi', () => {
+  it('términos 1.5 2.2 d): 50 000 con USDC propio y 20 con el USDC que da Lockumi', () => {
     const h = aHtml(terminos)
-    expect(h).toContain('cuando los USDC de prueba se obtienen con el botón «Obtener USDC de prueba» de Lockumi'); expect(h).not.toMatch(/CAMBIO|REVISIÓN DE LEGAL/)
+    expect(h).toContain('<strong>máximo técnico de 50 000 USDC de prueba</strong> por contrato'); expect(h).toContain('el máximo es de <strong>20 USDC de prueba</strong> (cláusula 5.5)'); expect(h).not.toMatch(/CAMBIO|REVISIÓN DE LEGAL/)
   })
 })
