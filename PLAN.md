@@ -7,6 +7,7 @@
 - **Nuevo alquiler** rediseñado: tarjetas de USDC de prueba («USDC de prueba de Lockumi», hasta 20, o «Usar mi propio USDC de prueba», hasta el saldo y como máximo 50 000), depósito con − y +, y **Entrada y Salida lado a lado** (también en celular) con calendarios de react-day-picker 10 en `<dialog>` (hoja inferior en celular, ventanita en escritorio).
 - **Términos y Aviso de privacidad 1.5-demo** (20 oct 2026).
 - **Depósito con el USDC de Lockumi:** antes de crear la cuenta segura, la cuenta de prueba se recarga siempre hasta el monto (arreglo del error «Tu cuenta tiene 0 USDC de prueba…»).
+- **Pendiente de publicar (rama `arreglo-saldo-0-login`):** el error «Tu cuenta tiene 0 USDC de prueba…» que seguía saliendo con sesión de Google venía de una pestaña abierta antes de publicar la recarga (versión vieja de la app). Ahora el servidor completa la cuenta de prueba al crear la cuenta segura (`origen: 'lockumi'` + identificador) y, a una pestaña vieja, le pide recargar la página. Probado en testnet con sesión de Cavos simulada: cuenta nueva y cuenta reutilizada en 0 llegan al depósito; sin sesión sigue funcionando.
 - **Sección «Contrato»** siempre visible en el detalle, con firmas (fecha y hora) y «Descargar o imprimir».
 - **Historial:** «Alquiler creado» (ya no dice que se envió una invitación).
 - **Resend:** dominio `lockumi.com` verificado y DNS listos para el correo de invitación de la Parte 4, que **no está activa**. Ver [`docs/correo-resend.md`](docs/correo-resend.md).
