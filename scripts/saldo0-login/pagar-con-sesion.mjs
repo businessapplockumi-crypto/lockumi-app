@@ -3,7 +3,6 @@
 //   app compilada con VITE_CAVOS_APP_ID (modoReal). El perfil del navegador persiste entre corridas (misma cuenta de prueba).
 // Uso: VITE_CAVOS_APP_ID=… BASE=http://localhost:5173/ PERFIL=dir OUT=ruta.png [ANCHO=390|1280] [SESION=0] [NUEVA=1] [MONTO=2] [CHROME=…] node pagar-con-sesion.mjs
 import { chromium } from 'playwright'
-import fs from 'node:fs'
 const base = process.env.BASE || 'http://localhost:5173/', MONTO = process.env.MONTO || '2', ANCHO = Number(process.env.ANCHO || 390)
 const APP_ID = (process.env.VITE_CAVOS_APP_ID || '').trim()   // App ID público de Cavos (el mismo con el que corre Vite)
 const movil = ANCHO < 600
