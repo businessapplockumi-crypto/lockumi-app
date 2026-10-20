@@ -566,3 +566,40 @@ html.sin-scroll{overflow:hidden}
 .na-hoja .rdp-selected{font-size:inherit}
 .na-hoja .rdp-selected .rdp-day_button{background:var(--accion);color:#fff;font-weight:700;box-shadow:0 4px 10px rgba(219,59,0,.28)}
 .na-hoja .rdp-day_button:focus-visible{box-shadow:var(--foco)}
+/* Contrato (detalle del alquiler): documento sobrio con la paleta de la marca; versión de impresión con window.print() */
+.ct{background:#fff;border:1px solid var(--linea);border-radius:var(--r-tarjeta);padding:20px;color:var(--cafe)}
+.ct__cab{padding-bottom:14px;border-bottom:2px solid var(--accion)}
+.ct__marca{font:700 13px/18px var(--f-texto);letter-spacing:.06em;text-transform:uppercase;color:var(--accion)}
+.ct__titulo{margin-top:4px;font:800 26px/32px var(--f-titulo)}
+.ct__estado{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:8px}
+.ct__sello{display:inline-flex;align-items:center;min-height:28px;padding:0 12px;border-radius:var(--r-pildora);background:var(--alterna);color:var(--cafe);font:600 14px/18px var(--f-texto)}
+.ct__sello--ok{background:#E3F2E8;color:var(--exito)}
+.ct__ref{font-size:14px;color:var(--cafe-suave);font-variant-numeric:tabular-nums}
+.ct__sec{padding:14px 0;border-bottom:1px solid var(--linea)}
+.ct__sec h3{font:700 13px/18px var(--f-texto);letter-spacing:.06em;text-transform:uppercase;color:var(--cafe-suave);margin-bottom:8px}
+.ct__datos{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:0}
+.ct__datos>div{min-width:0}.ct__ancho{grid-column:1/-1}
+.ct__datos--partes{grid-template-columns:1fr}
+.ct__firma-quien small{overflow-wrap:anywhere}
+.ct__datos dt{font-size:14px;line-height:18px;color:var(--cafe-suave)}
+.ct__datos dd{margin:2px 0 0;font:700 17px/23px var(--f-titulo);overflow-wrap:anywhere}
+.ct__reglas{margin:0;padding-left:20px;display:grid;gap:6px;font-size:16px;line-height:23px}
+.ct__texto{font-size:16px;line-height:24px}
+.ct__firmas{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.ct__firmas li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;padding:10px 12px;border-radius:14px;background:var(--fondo)}
+.ct__firma-quien{display:grid;font-weight:700;min-width:0}.ct__firma-quien small{font-weight:400;font-size:14px;color:var(--cafe-suave)}
+.ct__firma-ok{color:var(--exito);font-weight:600;font-size:15px}
+.ct__firma-pend{color:var(--cafe-suave);font-weight:600;font-size:15px}
+.ct__pie{padding-top:12px;display:grid;gap:4px;font-size:14px;line-height:20px;color:var(--cafe-suave)}
+@media (min-width:720px){.ct{padding:28px 32px}.ct__datos{grid-template-columns:repeat(3,1fr)}.ct__datos--partes{grid-template-columns:1fr 1fr}}
+.impresion{display:none}
+@media print{
+  html.imprimiendo body>*:not(.impresion){display:none!important}
+  html.imprimiendo .impresion{display:block}
+  html.imprimiendo,html.imprimiendo body{background:#fff!important}
+  .ct--impresion{border:0;border-radius:0;padding:0;max-width:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .ct--impresion .ct__datos{grid-template-columns:repeat(3,1fr)}
+  .ct--impresion .ct__datos--partes{grid-template-columns:1fr 1fr}
+  .ct--impresion .ct__sec{break-inside:avoid}
+  @page{margin:18mm 16mm}
+}

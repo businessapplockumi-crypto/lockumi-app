@@ -49,7 +49,7 @@ export const store = {
   sinEspacio: () => avisoEspacio,
   crear(a: Pick<Alquiler,'direccion'|'monto'|'inicio'|'fin'|'reglas'|'duenoEmail'|'inquilinoEmail'>) {
     const n: Alquiler = { ...a, moneda: escrowReal ? 'USDC' : 'USD', id: escrowReal ? crypto.randomUUID() : 'a' + Date.now().toString(36), estado:'firmas', rendimiento:false, contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados: 0,
-      historial:[{fecha:ahoraReal(),texto:'Alquiler creado e invitación enviada al inquilino'}] }
+      historial:[{fecha:ahoraReal(),texto:'Alquiler creado'}] }
     recargar(); datos = [n, ...datos]; guardar(); return n
   },
   /** Aplica un cambio inmutable y, si se indica, agrega un evento al historial. */
