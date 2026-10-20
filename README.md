@@ -13,7 +13,7 @@ Lockumi es una app de **depósito de alquiler protegido** para Costa Rica. Dueñ
 - App: https://app.lockumi.com
 - Sitio: https://lockumi.com
 
-> **Red de prueba.** Todo lo que toca Stellar ocurre en **testnet**, con USDC de prueba de Circle que **no tiene valor**. La red principal está bloqueada en el código del servidor.
+> **Red de prueba.** Todo lo que toca Stellar ocurre en **testnet**, con USDC de prueba de Circle que **no tiene valor**. No hay dinero real. La red principal está bloqueada en el código del cliente y del servidor.
 
 ## Contenido
 
@@ -29,25 +29,39 @@ Lockumi es una app de **depósito de alquiler protegido** para Costa Rica. Dueñ
 
 ## Prueba el flujo en 5 minutos (guía para jueces)
 
-Esta guía describe la versión con flujo real en testnet. Antes de empezar:
+Esta guía describe lo que hace hoy https://app.lockumi.com (código de `master`). Antes de empezar:
 
-- **Es la red de prueba de Stellar (testnet).** Los USDC y XLM que vas a usar son tokens de prueba **sin valor**.
-- **En esta versión el servidor firma con cuentas de prueba rotuladas** ("dueño de prueba" e "inquilino de prueba"), para que una sola persona pueda recorrer todo el flujo. Sus llaves viven solo en el servidor; el navegador nunca las recibe.
-- **El mediador es simulado.** En el camino feliz no hace falta: no hay reclamo.
-- Tope de **20 USDC** por contrato de prueba.
+- **Es la red de prueba de Stellar (testnet).** Los USDC y XLM que vas a usar son tokens de prueba **sin valor**. No hay dinero real ni red principal (mainnet).
+- **Lo recorre una sola persona.** Tú eres el **inquilino**. El dueño es un **dueño de prueba**, rotulado en pantalla como "cuenta de Lockumi para la demo": firma y confirma solo, unos segundos después de ti. Sus llaves viven solo en el servidor; el navegador nunca las recibe.
+- **En cada pantalla aparece una línea "Ahora te toca…"** (o "Ahora le toca al dueño de prueba…") que dice qué sigue y quién lo hace.
+- **La persona mediadora es simulada**: decides tú el reparto, pero la transacción del reparto sí es real en testnet.
+- **Cada paso mueve el escrow de verdad** en Trustless Work (testnet) con USDC de prueba de Circle, y muestra "Ver comprobante en la red de prueba" (stellar.expert).
 
 Pasos en https://app.lockumi.com:
 
-1. **Entrar.** Elige "Continuar con Google", "Continuar con Apple" o "Continuar con tu correo" (Cavos). No necesitas instalar una billetera ni guardar frases semilla. <!-- AJUSTAR_UI -->
-2. **Aceptar los términos.** Marca "Acepto los Términos y condiciones" (y el consentimiento de privacidad, si aparece) y toca "Entrar". Son textos de demo, pendientes de revisión por abogado. <!-- AJUSTAR_UI -->
-3. **Crear el alquiler.** Completa inmueble, monto (hasta 20 USDC), fechas y reglas, y toca "Crear alquiler e invitar". <!-- AJUSTAR_UI -->
-4. **Obtener USDC de prueba.** Toca "Obtener USDC de prueba". La app prepara la cuenta de testnet y le carga USDC de prueba de Circle (sin valor). <!-- AJUSTAR_UI -->
-5. **Depositar en el escrow.** Toca "Depositar". El servidor crea el escrow *single-release* en Trustless Work y el inquilino deposita los USDC en ese contrato. <!-- AJUSTAR_UI -->
-6. **El dueño de prueba aprueba.** Al terminar el alquiler, toca "Todo está bien: aprobar la devolución". La plataforma deja la evidencia en el hito y el dueño de prueba aprueba en la cadena. <!-- AJUSTAR_UI -->
-7. **Liberar.** Toca "Liberar el depósito". La plataforma (releaseSigner) libera los fondos al inquilino; Trustless Work descuenta su comisión de 0,3 %. <!-- AJUSTAR_UI -->
-8. **Abrir cada comprobante en stellar.expert.** Cada paso muestra "Ver comprobante en la red de prueba", que abre la transacción en `stellar.expert/explorer/testnet`. Ahí se ve el contrato del escrow, el depósito y la liberación. <!-- AJUSTAR_UI -->
+1. **Entrar sin billetera.** Toca "Entrar", marca "Acepto los Términos y condiciones" (y el consentimiento de privacidad, si aparece) y elige "Continuar con Google", "Continuar con Apple" o "Continuar con tu correo" (Cavos). No necesitas instalar una billetera ni guardar frases semilla. Freighter es opcional: solo sirve si quieres depositar USDC de prueba desde tu propia cuenta. Los textos legales son de demo y están pendientes de revisión por abogado.
+2. **Contrato y reglas.** Toca "+ Nuevo alquiler" y completa el lugar, el monto del depósito, las fechas (dd/mm/aa; también se acepta el año con 4 cifras) y las reglas. Las reglas son del dueño: el inquilino las lee y las acepta al firmar (en la demo de una persona, las escribes tú en nombre del dueño de prueba). Elige de dónde salen los USDC de prueba:
+   - **"Obtener USDC de prueba de Lockumi"**: Lockumi te da USDC de prueba desde su tesorería, con un **máximo de 20**.
+   - **"De mi cuenta"**: depositas USDC de prueba que ya tienes, con "Usar mi cuenta Lockumi" (Cavos) o "Usar Freighter". El formulario muestra tu saldo real (leído en Horizon testnet); el límite es ese saldo, con un máximo de **50 000 USDC de prueba**.
 
-¿No quieres crear nada? Abajo están las transacciones de una corrida real del mismo camino feliz: [Contratos e IDs en testnet](#contratos-e-ids-en-testnet).
+   Toca "Crear alquiler de prueba".
+3. **Firmas.** Lee el contrato y fírmalo. El dueño de prueba firma solo después de ti.
+4. **Depósito.** Toca "Pagar". El servidor crea el escrow *single-release* en Trustless Work y el depósito entra a esa cuenta segura. Si elegiste los USDC de Lockumi, en este paso la tesorería los pone en tu cuenta de inquilino de prueba (máximo 20) y el servidor firma el depósito; si usas tu propia cuenta, Cavos o Freighter te piden confirmar la firma.
+5. **Fotos de entrada.** Toma una foto de cada espacio y completa la lista de revisión; confirma. El dueño de prueba confirma solo. Si no tienes cámara, puedes usar "Demo: usar una foto de ejemplo".
+6. **Fotos de salida.** Cuando entregues el lugar, toca "Empezar fotos de salida", toma las fotos, completa la lista y confirma. El dueño de prueba confirma solo.
+7. **7 días para reclamos.** Corre el plazo de 7 días. Tienes dos opciones:
+   - **"Solo red de prueba: adelantar el plazo"**: termina el plazo ahora; el dueño de prueba aprueba en la cadena y Lockumi te devuelve el depósito (Trustless Work descuenta su comisión de 0,3 %). Este botón existe solo en testnet: está bloqueado en el cliente y en el servidor. Con dinero real siempre aplicarían los 7 días.
+   - **"Hacer un reclamo como dueño de prueba"**: escribes el monto, el motivo y una foto del daño en nombre del dueño de prueba. El reclamo queda registrado en el escrow (disputa).
+8. **Reclamo y mediador.** Como inquilino, toca "Aceptar reclamo" (se reparte según el reclamo) o "No estoy de acuerdo". En ese caso toca "Decidir como persona mediadora", elige el reparto y toca "Confirmar el reparto": el escrow reparte el saldo en la cadena.
+
+Abre cada "Ver comprobante en la red de prueba" para ver la transacción en `stellar.expert/explorer/testnet`: creación del escrow, depósito, aprobación, devolución, reclamo y reparto.
+
+¿No quieres crear nada? Abajo están las transacciones de una corrida real del camino feliz: [Contratos e IDs en testnet](#contratos-e-ids-en-testnet).
+
+### Próximamente
+
+- **Dos personas reales** (dueño e inquilino, cada uno en su aparato) con **invitación por correo o por link**. Está en desarrollo y **todavía no funciona** en app.lockumi.com.
+- **Rendimiento con Blend**: no está activo. Si llega, el rendimiento sería variable y **no garantizado**.
 
 ## El problema
 
@@ -55,21 +69,22 @@ En muchos alquileres el depósito de garantía queda retenido al terminar el con
 
 ## Cómo funciona
 
-1. **Contrato:** el dueño crea el alquiler (inmueble, monto, fechas y reglas), invita al inquilino y ambos firman.
-2. **Depósito protegido:** el inquilino deposita; nadie puede liberar el dinero por su cuenta.
-3. **Fotos de entrada:** se hace el acta de entrada con inventario y fotos con fecha y hora.
-4. **Fotos de salida:** al terminar se hace el acta de salida.
-5. **7 días para reclamos:** el dueño tiene 7 días para abrir un reclamo con pruebas.
-6. **Devolución automática:** si no hay reclamo en ese plazo, el depósito vuelve al inquilino.
-7. **Mediador:** si el inquilino no acepta el reclamo, el caso pasa a una persona mediadora que decide el reparto (en la demo, la mediación es simulada).
+1. **Contrato y reglas:** el dueño define el alquiler (lugar, monto, fechas y reglas). El inquilino lee las reglas y las acepta.
+2. **Firmas:** los dos firman el contrato.
+3. **Depósito protegido:** el inquilino deposita en un escrow; nadie puede liberar el dinero por su cuenta.
+4. **Fotos de entrada:** acta de entrada con fotos (con fecha y hora) y lista de revisión de cada espacio.
+5. **Fotos de salida:** al terminar, acta de salida con fotos y lista.
+6. **7 días para reclamos:** el dueño tiene 7 días para abrir un reclamo con pruebas. Si no reclama, el depósito vuelve al inquilino.
+7. **Reclamo:** el inquilino acepta el reclamo o no está de acuerdo.
+8. **Mediador:** si no hay acuerdo, una persona mediadora decide el reparto (en la demo, la mediación es simulada y no tiene efecto legal).
 
 ## Arquitectura
 
 ```mermaid
 flowchart LR
   U["Navegador<br/>React 19 + Vite"]
-  CV["Cavos<br/>login y billetera Stellar"]
-  API["Funciones serverless de Vercel<br/>/api/tw"]
+  CV["Cavos (o Freighter, opcional)<br/>login y billetera Stellar"]
+  API["Funciones serverless de Vercel<br/>/api/solo"]
   TW["API de Trustless Work<br/>dev.api.trustlesswork.com"]
   ST["Stellar testnet<br/>Soroban / Horizon"]
   SE["stellar.expert<br/>explorador de testnet"]
@@ -78,14 +93,15 @@ flowchart LR
   U -- "acciones del escrow" --> API
   API -- "x-api-key (solo en el servidor)" --> TW
   TW -- "XDR sin firmar / send-transaction" --> ST
-  U -- "saldo y Friendbot" --> ST
+  U -- "saldo (Horizon)" --> ST
   U -- "enlaces a los comprobantes" --> SE
   SE -. "lee" .-> ST
 ```
 
-- La llave de Trustless Work (`TRUSTLESS_WORK_API_KEY`) y la clave de la cuenta de la plataforma solo existen en el servidor. Un build del cliente no las contiene.
-- Trustless Work arma cada transacción y devuelve la XDR sin firmar. La firma quien tiene el rol (la plataforma en el servidor, o la billetera de Cavos del participante) y se envía con `POST /helper/send-transaction`.
-- El proxy solo trabaja con la API de testnet y solo permite cinco acciones: `desplegar`, `fondear`, `aprobar`, `enviar` y `liberar` (`api/_lib/tw.ts`).
+- La llave de Trustless Work (`TRUSTLESS_WORK_API_KEY`), la clave de la cuenta de la plataforma y la semilla de las cuentas de prueba (`LOCKUMI_DEMO_SEED`) solo existen en el servidor. Un build del cliente no las contiene.
+- Trustless Work arma cada transacción y devuelve la XDR sin firmar. La firma quien tiene el rol: la plataforma o el dueño de prueba (en el servidor), o el inquilino (en el servidor si es el inquilino de prueba, o en Cavos `signXdr` o Freighter si deposita desde su propia cuenta).
+- `api/solo.ts` (`api/_lib/solo.ts`) atiende los pasos del flujo de una persona: preparar las cuentas, obtener USDC de prueba, `desplegar`, `fondear`, `aprobar`, `liberar`, `disputar` y `resolver`. Solo trabaja con la API de testnet de Trustless Work y con Horizon de testnet; cada acción se valida contra el escrow que reporta Trustless Work.
+- `api/tw.ts` es el proxy para la versión con servidor compartido (Supabase, dos personas). No está activo en app.lockumi.com.
 
 Flujo del camino feliz (sin reclamo):
 
@@ -132,22 +148,22 @@ sequenceDiagram
   T->>S: USDC al inquilino, menos 0,3 % de Trustless Work
 ```
 
-En la versión con flujo real para una sola persona, el dueño de prueba es una cuenta que custodia el servidor, y firma ahí en lugar de en Cavos (ver la guía de arriba).
+En app.lockumi.com (una persona), el dueño de prueba es una cuenta que custodia el servidor, y firma ahí en lugar de en Cavos. Si no hay reclamo, la aprobación y la devolución corren al terminar el plazo (o al tocar "Solo red de prueba: adelantar el plazo"). Con reclamo, el dueño de prueba abre la disputa (`dispute-escrow`) y la plataforma, como `disputeResolver`, hace el reparto (`resolve-dispute`).
 
 ## Roles del escrow
 
-Escrow *single-release* de Trustless Work (API REST v1). Asignación según `api/_lib/tw.ts` (rama `testnet-e2e`):
+Escrow *single-release* de Trustless Work (API REST v1). Asignación según `api/_lib/solo.ts` (lo que corre en app.lockumi.com):
 
 | Rol de Trustless Work | Quién lo tiene | Para qué |
 |---|---|---|
-| `approver` | Dueño | Aprueba la devolución ("entrega sin daños") o abre un reclamo (disputa). |
+| `approver` | Dueño (en la demo, el dueño de prueba) | Aprueba la devolución ("entrega sin daños") o abre un reclamo (disputa). |
 | `serviceProvider` | Plataforma Lockumi | Deja la evidencia del acta de salida (cambia el hito a "Completed"). |
 | `platformAddress` | Plataforma Lockumi | Cuenta de la plataforma; comisión de plataforma 0 (`platformFee: 0`). |
 | `releaseSigner` | Plataforma Lockumi | Libera el depósito desde el servidor después del plazo. |
-| `disputeResolver` | Plataforma Lockumi (mediación) | Reparte el saldo en un reclamo. Por defecto es la plataforma; se puede cambiar con `LOCKUMI_TW_MEDIADOR_PUBLICA`. |
+| `disputeResolver` | Plataforma Lockumi (mediación) | Reparte el saldo en un reclamo (acuerdo o decisión de la persona mediadora simulada). |
 | `receiver` | Inquilino | El depósito vuelve a su cuenta. |
 
-El depósito (`fund-escrow`) lo firma el inquilino. El proxy exige que las cuentas del dueño, del inquilino y de la plataforma sean distintas.
+El depósito (`fund-escrow`) lo firma el inquilino. El servidor exige que las cuentas del dueño, del inquilino y de la plataforma sean distintas.
 
 ## Contratos e IDs en testnet
 
@@ -164,7 +180,7 @@ Verificados en Horizon testnet (`horizon-testnet.stellar.org`) y Soroban RPC de 
 
 ### Prueba real: 2 USDC depositados, 1,994 USDC devueltos
 
-Corrida completa del camino feliz con `node scripts/e2e-testnet-tw.mjs` (rama `testnet-e2e`) el 16/10/2026 a las 11:56 p. m. (hora de Costa Rica), contra la API real de testnet de Trustless Work y con cuentas desechables: dueño `GD57OCAF…UIEX` e inquilino `GBMFMIUF…AQBY` (Cavos), plataforma `GCTLNUBV…TJ4G`.
+Corrida de referencia, anterior a la versión actual de la app: corrida completa del camino feliz con `node scripts/e2e-testnet-tw.mjs` (rama `testnet-e2e`) el 16/10/2026 a las 11:56 p. m. (hora de Costa Rica), contra la API real de testnet de Trustless Work y con cuentas desechables: dueño `GD57OCAF…UIEX` e inquilino `GBMFMIUF…AQBY` (Cavos), plataforma `GCTLNUBV…TJ4G`.
 
 | # | Paso | Transacción |
 |---|---|---|
@@ -177,32 +193,36 @@ Corrida completa del camino feliz con `node scripts/e2e-testnet-tw.mjs` (rama `t
 | 7 | Aprobación del dueño (Cavos `signXdr`) | [d98d3d39…9c9d](https://stellar.expert/explorer/testnet/tx/d98d3d3979faae4079023d7f2fad6801bf71d8c10be40f372ee3d5830ca09c9d) |
 | 8 | Liberación (plataforma): 1,994 USDC al inquilino y 0,006 a `GA6KH5VW…CK7G` | [49fb34d0…635c](https://stellar.expert/explorer/testnet/tx/49fb34d0b510cd0a7b62ca5f9a66a82297ff0a240a1563498934c0b3ff51635c) |
 
-Trustless Work cobra 0,3 % también en testnet, aunque `platformFee` sea 0: el inquilino recibe el 99,7 %. Detalle completo en `docs/testnet-e2e.md` (rama `testnet-e2e`).
+Trustless Work cobra 0,3 % también en testnet, aunque `platformFee` sea 0: el inquilino recibe el 99,7 %. Detalle completo en [`docs/testnet-e2e.md`](docs/testnet-e2e.md).
 
 ## Privacidad en la cadena
 
 Todo lo que se escribe en un escrow queda público y permanente en Stellar. Por eso:
 
-- **Título fijo:** el escrow lleva un texto genérico fijo ("Depósito de alquiler Lockumi") y el id opaco del contrato como `engagementId` (en la versión con flujo real).
-- **Sin datos personales:** nunca se envían a la cadena la dirección del inmueble, nombres, correos ni teléfonos; una última verificación en el servidor bloquea el deploy si algún texto los trae (en la versión con flujo real). Las fotos y las actas no van a la cadena; la evidencia del hito es un texto fijo (en la versión con flujo real).
-- **Red principal bloqueada:** el proxy rechaza cualquier API de Trustless Work que no sea la de testnet (`dev.api.trustlesswork.com`) y lee y firma las transacciones solo con el passphrase de testnet (rama `testnet-e2e`). En la versión con flujo real, además, rechaza cualquier passphrase, Horizon o RPC que no sea de testnet.
-- **Tope de 20 USDC** por contrato de prueba, en el cliente y en el servidor (en la versión con flujo real).
-
-En `master`, app.lockumi.com no escribe nada en la cadena: el depósito es simulado.
+- **Título fijo:** el escrow lleva un texto genérico fijo ("Depósito de alquiler Lockumi") y el id opaco del contrato como `engagementId`.
+- **Sin datos personales:** nunca se envían a la cadena la dirección del inmueble, nombres, correos ni teléfonos; una última verificación en el servidor bloquea el deploy si algún texto los trae. Las fotos y las actas se quedan en tu navegador y no van a la cadena; la evidencia del hito es un texto fijo.
+- **Siguen en la cadena**, por cómo funciona el escrow: las cuentas G… de dueño e inquilino, el monto y las fechas de las transacciones.
+- **Red principal bloqueada:** la red está fija en el código (`api/_lib/red.ts`). El servidor rechaza cualquier passphrase, Horizon, RPC o API de Trustless Work que no sea de testnet.
+- **Límites de monto:** con "Obtener USDC de prueba", máximo 20 USDC de prueba; con USDC de prueba de tu propia cuenta, hasta tu saldo real y un máximo de 50 000. Se revisa en el cliente y en el servidor.
 
 ## Qué es real y qué es simulado
 
-| Parte | En `master` | En la versión con flujo real |
-|---|---|---|
-| Login | Real con Cavos si `VITE_CAVOS_APP_ID` está definido; si no, simulado (sin red; sirve cualquier código de 6 dígitos). | Real con Cavos. |
-| Billetera | Billetera Stellar de testnet creada por Cavos; activación con Friendbot y saldo leído en Horizon testnet. | Igual, más la trustline de USDC de prueba. |
-| Escrow | Simulado (`src/services/escrow.ts`); en pantalla se marca como "Pago simulado". | Real en testnet: Trustless Work single-release con USDC de prueba. |
-| Firmas del dueño e inquilino | No hay firmas en la cadena. | El servidor firma con cuentas de prueba rotuladas (dueño e inquilino de prueba). En la rama `testnet-e2e` firman las billeteras de Cavos (`signXdr`). |
-| Mediación | Simulada, sin efecto legal. | Simulada, sin efecto legal. |
-| Plazo de reclamos | 7 días, con un botón de demo para adelantarlos. | Configurable para la prueba con `VITE_VENTANA_SEGUNDOS` (rama `testnet-e2e`). |
-| Rendimiento con Blend (40/40/20) | Simulado (`src/services/yield.ts`). Es una **función futura, no disponible**: el reparto sería 40 % inquilino, 40 % dueño y 20 % Lockumi, con rendimiento variable y no garantizado. | Igual. |
-| Datos | En el navegador (localStorage). | El servidor compartido con Supabase está en la rama `testnet-e2e`. |
-| Textos legales | `/terminos` y `/privacidad`, versión de demo, pendientes de revisión por abogado. | Igual. |
+| Parte | En app.lockumi.com (testnet, una persona) |
+|---|---|
+| Login | Real con Cavos (Google, Apple o correo). Sin billetera ni frase semilla. Freighter es opcional, solo para depositar desde tu propia cuenta. |
+| Escrow | Real en testnet: Trustless Work *single-release* con USDC de prueba de Circle en cada paso (creación, depósito, aprobación, devolución, reclamo y reparto), con comprobantes en stellar.expert. |
+| USDC de prueba | "Obtener USDC de prueba" (tesorería de Lockumi, máximo 20) o tu propia cuenta (hasta tu saldo real en Horizon, máximo 50 000). |
+| Dueño | Dueño de prueba, rotulado como cuenta de Lockumi para la demo. Firma y confirma solo; el servidor custodia su llave. |
+| Inquilino | Tú. Con "Obtener USDC de prueba", el depósito sale de un inquilino de prueba que custodia el servidor; con tu propia cuenta, firmas tú con Cavos o Freighter. |
+| Reclamo | Lo haces tú con "Hacer un reclamo como dueño de prueba"; queda registrado en el escrow (disputa real en testnet). |
+| Mediación | Persona mediadora simulada ("Decidir como persona mediadora"), sin efecto legal. El reparto sí es una transacción real en testnet. |
+| Plazo de reclamos | 7 días. En testnet existe "Solo red de prueba: adelantar el plazo" (bloqueado en el cliente y en el servidor fuera de testnet); con dinero real siempre aplicarían los 7 días. |
+| Fotos y actas | Cámara de la app con fecha, hora y huella SHA-256; se guardan en el navegador (localStorage), no en la cadena. Ver [`docs/fotos-captura.md`](docs/fotos-captura.md). |
+| Dos personas e invitaciones | **Próximamente.** En desarrollo; todavía no funciona. |
+| Rendimiento con Blend | **No está activo.** Función futura; si llega, el rendimiento sería variable y no garantizado. |
+| Textos legales | `/terminos` y `/privacidad`, versión de demo, pendientes de revisión por abogado. |
+
+El flujo mínimo anterior de 5 pasos (crear, obtener USDC, depositar, aprobar y devolver) sigue en el código solo si se compila con `VITE_FLUJO=solo`. No es el flujo de app.lockumi.com.
 
 ### Login sin billetera con Cavos
 
@@ -211,6 +231,8 @@ En `master`, app.lockumi.com no escribe nada en la cadena: el depósito es simul
 - Google (redirección OAuth);
 - Apple (redirección OAuth);
 - correo electrónico con código de un solo uso (9 caracteres).
+
+Sin `VITE_CAVOS_APP_ID` (por ejemplo, en local) la app usa un acceso simulado.
 
 ## Cómo correrlo localmente
 
@@ -225,38 +247,37 @@ npm test
 
 Otros comandos: `npm run build`, `npm run lint`, `npm run preview`.
 
+Sin variables, la app corre como demo local: escrow simulado y datos en el navegador.
+
 Variables de entorno (ver `.env.example`; **nunca subas `.env`**, está en `.gitignore`):
 
 | Variable | Dónde | Qué hace |
 |---|---|---|
 | `VITE_CAVOS_APP_ID` | Cliente | App ID público de Cavos. Sin esta variable la app usa el acceso simulado. |
-| `VITE_SUPABASE_URL` | Cliente | URL del proyecto de Supabase (servidor compartido). Sin las variables `VITE_SUPABASE_*` la app guarda los datos en el navegador. *(rama `testnet-e2e`)* |
-| `VITE_SUPABASE_ANON_KEY` | Cliente | Clave pública (publishable/anon) de Supabase. *(rama `testnet-e2e`)* |
-| `VITE_TRUSTLESS` | Cliente | `1` activa el escrow real de Trustless Work por `/api/tw`. *(rama `testnet-e2e`)* |
-| `VITE_VENTANA_SEGUNDOS` | Cliente | Plazo de reclamos para la prueba, en segundos (mínimo 60; por defecto 7 días). *(rama `testnet-e2e`)* |
-| `TRUSTLESS_WORK_API_KEY` | Servidor | Llave de la API de testnet de Trustless Work. Nunca con prefijo `VITE_`. *(rama `testnet-e2e`)* |
-| `LOCKUMI_TW_PLATAFORMA_SECRET` | Servidor | Clave secreta de la cuenta de la plataforma (platformAddress, serviceProvider, releaseSigner y disputeResolver). *(rama `testnet-e2e`)* |
-| `LOCKUMI_TW_MEDIADOR_PUBLICA` | Servidor | Opcional: otra cuenta G… como disputeResolver (por defecto, la plataforma). *(rama `testnet-e2e`)* |
-| `TRUSTLESS_WORK_BASE_URL` | Servidor | Opcional: URL de la API de Trustless Work; solo se acepta la de testnet. *(rama `testnet-e2e`)* |
-| `TRUSTLESS_WORK_TRUSTLINE` | Servidor | Opcional: emisor del activo del escrow (por defecto, el emisor de USDC de prueba). *(rama `testnet-e2e`)* |
-| `SUPABASE_URL` | Servidor | URL del proyecto de Supabase para el proxy. *(rama `testnet-e2e`)* |
-| `SUPABASE_ANON_KEY` | Servidor | Clave anon de Supabase, para validar la sesión del usuario. *(rama `testnet-e2e`)* |
-| `SUPABASE_SERVICE_ROLE_KEY` | Servidor | Clave de servicio de Supabase (lectura y registro de eventos desde el proxy). *(rama `testnet-e2e`)* |
-
-En `master` solo se usa `VITE_CAVOS_APP_ID`.
+| `VITE_TRUSTLESS` | Cliente | `1` activa la red de prueba con escrow real de Trustless Work. Sin Supabase, es el flujo de una persona por `/api/solo` (lo que corre en app.lockumi.com). |
+| `VITE_FLUJO` | Cliente | `solo` vuelve al flujo mínimo anterior de 5 pasos. Sin definir: flujo completo de 8 pasos. |
+| `VITE_VENTANA_SEGUNDOS` | Cliente | Plazo de reclamos al crear, en segundos (mínimo 60; por defecto 7 días). |
+| `TRUSTLESS_WORK_API_KEY` | Servidor | Llave de la API de testnet de Trustless Work. Nunca con prefijo `VITE_`. |
+| `LOCKUMI_TW_PLATAFORMA_SECRET` | Servidor | Clave secreta de la cuenta de la plataforma (platformAddress, serviceProvider, releaseSigner y disputeResolver). |
+| `LOCKUMI_DEMO_SEED` | Servidor | Semilla (32 caracteres o más) de la que se derivan las cuentas del dueño de prueba y del inquilino de prueba. |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `LOCKUMI_TW_MEDIADOR_PUBLICA`, `TRUSTLESS_WORK_BASE_URL`, `TRUSTLESS_WORK_TRUSTLINE` | Cliente / Servidor | Para la versión con servidor compartido y dos personas (`api/tw.ts`). **Próximamente**; no se usan en app.lockumi.com. |
 
 ## Stack
 
 - React 19 + TypeScript 6 + Vite 8 (`@vitejs/plugin-react`)
-- `@cavos/kit` 0.4.2 (login y billetera Stellar) y `@stellar/stellar-sdk` 16.3.1
+- `@cavos/kit` 0.4.2 (login y billetera Stellar), `@stellar/freighter-api` (opcional) y `@stellar/stellar-sdk` 16.3.1
 - Vitest 5 (pruebas), Oxlint (lint), Playwright (pruebas en el navegador)
 - Despliegue en Vercel (funciones serverless en `api/`)
-- Trustless Work (API REST v1 de testnet), Stellar testnet (Soroban y Horizon), USDC de prueba de Circle y Supabase (ramas `testnet-e2e` y flujo real)
+- Trustless Work (API REST v1 de testnet), Stellar testnet (Soroban y Horizon) y USDC de prueba de Circle
+- Supabase: solo para la versión de dos personas (**próximamente**)
 
 ## Enlaces
 
 - App: https://app.lockumi.com
 - Sitio: https://lockumi.com
+- Video demo: [docs/demo/lockumi-demo.mp4](docs/demo/lockumi-demo.mp4)
+- Términos y condiciones: https://app.lockumi.com/terminos
+- Privacidad: https://app.lockumi.com/privacidad
 - Trustless Work: https://www.trustlesswork.com
 - Explorador de testnet: https://stellar.expert/explorer/testnet
 

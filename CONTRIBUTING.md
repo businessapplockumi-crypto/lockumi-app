@@ -2,6 +2,10 @@
 
 Gracias por tu interés. Lockumi es una demo en la **red de prueba de Stellar (testnet)**: no uses cuentas ni fondos de la red principal.
 
+## Qué hace la app hoy
+
+Antes de cambiar código o documentación, lee la [guía para jueces del README](README.md#prueba-el-flujo-en-5-minutos-guía-para-jueces): describe lo que hace app.lockumi.com (testnet, una persona, flujo completo de 8 pasos con escrow real de Trustless Work). Si tu cambio modifica ese comportamiento, actualiza también el README en el mismo *pull request*. Lo que todavía no funciona (dos personas reales, invitaciones por correo o link) se escribe como «Próximamente».
+
 ## Proponer cambios
 
 1. Abre un *issue* con el problema o la idea, o comenta en uno existente.
@@ -20,6 +24,8 @@ npm run lint    # Oxlint
 npm test        # Vitest (vitest run)
 npm run build   # TypeScript + Vite
 ```
+
+Para probar el flujo de la red de prueba en local hacen falta las variables del servidor (ver la tabla del README); sin ellas, la app corre como demo local con el escrow simulado. `VITE_FLUJO=solo` activa el flujo mínimo anterior de 5 pasos.
 
 Si agregas lógica nueva, agrega su prueba en `src/**/__tests__/`.
 

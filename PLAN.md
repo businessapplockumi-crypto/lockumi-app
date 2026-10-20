@@ -1,5 +1,8 @@
 # Lockumi · Demo de la app web — Plan
 
+> **Documento histórico (fases 1 y 2, 16 oct 2026).** No describe lo que hace hoy app.lockumi.com. Hoy la app corre en la red de prueba de Stellar (testnet) con escrow real de Trustless Work y USDC de prueba en cada paso, login real con Cavos, una sola persona (tú eres el inquilino y el dueño es un dueño de prueba de Lockumi) y sin selector «Ver la demo como». Las fechas se escriben dd/mm/aa (también dd/mm/aaaa). El rendimiento con Blend **no está activo** y nunca sería garantizado. Las invitaciones por correo o link y el modo de dos personas son **próximamente**. El estado actual está en el [README](README.md).
+
+
 Demo navegable (no se publica en lockumi.com). Vite + React + TypeScript, estado en localStorage con datos de ejemplo ficticios, rutas con hash (`#/…`) para desplegar como sitio estático. Estilo y tokens "Terracota viva" copiados de la landing (Inter para texto, Nunito para títulos, glass, chips verdes).
 
 ## Pantallas
