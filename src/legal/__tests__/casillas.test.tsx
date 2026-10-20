@@ -65,21 +65,21 @@ describe('casillas obligatorias de Términos y Privacidad', () => {
 })
 
 describe('textos legales', () => {
-  it('carga Términos y Privacidad 1.4-demo con su fecha, tomadas del texto', () => {
-    for (const d of [TERMINOS, PRIVACIDAD!]) { expect(d.version).toBe('1.4-demo'); expect(d.fecha).toBe('18 de octubre de 2026'); expect(d.metaEnTexto).toBe(true) }
+  it('carga Términos y Privacidad 1.5-demo con su fecha, tomadas del texto', () => {
+    for (const d of [TERMINOS, PRIVACIDAD!]) { expect(d.version).toBe('1.5-demo'); expect(d.fecha).toBe('20 de octubre de 2026'); expect(d.metaEnTexto).toBe(true) }
     expect(Object.keys(DOCS).sort()).toEqual(['privacidad', 'terminos'])
   })
   it('la página muestra la versión y la fecha una sola vez, y el aviso de una línea de arriba', () => {
     for (const slug of ['terminos', 'privacidad']) {
       const html = renderToStaticMarkup(<PaginaLegal slug={slug} />)
-      expect(html.split('1.4-demo').length - 1).toBe(1); expect(html).not.toContain('1.3-demo'); expect(html).not.toContain('1.2-demo'); expect(html).not.toContain('1.1-demo')
-      expect(html.split('18 de octubre de 2026').length - 1).toBe(1)
+      expect(html.split('1.5-demo').length - 1).toBe(1); expect(html).not.toContain('1.4-demo'); expect(html).not.toContain('1.3-demo'); expect(html).not.toContain('1.2-demo'); expect(html).not.toContain('1.1-demo')
+      expect(html.split('20 de octubre de 2026').length - 1).toBe(1)
       expect(html).toMatch(/<blockquote><p>Versión demo[^<]*\. Este texto puede actualizarse; te avisaremos de los cambios importantes\.<\/p><\/blockquote>/)
       expect(html).toContain('Pendiente de revisión por abogado')
     }
   })
   it('la nota interna no se publica', () => { for (const d of [TERMINOS, PRIVACIDAD!]) expect(d.html).not.toMatch(/nota interna/i) })
-  it('los textos 1.4-demo no traen corchetes ni repiten la línea de versión', () => {
+  it('los textos 1.5-demo no traen corchetes ni repiten la línea de versión', () => {
     for (const d of [TERMINOS, PRIVACIDAD!]) {
       const crudo = renderToStaticMarkup(<PaginaLegal slug={d.slug} />).replace(/<[^>]+>/g, '')
       expect(crudo).not.toMatch(/[\[\]]/)
@@ -96,11 +96,11 @@ describe('textos legales', () => {
     const html = renderToStaticMarkup(<Login onOk={() => {}} />)
     expect(html).not.toMatch(/id="acepto-terminos"[^>]*checked/); expect(html).not.toMatch(/id="acepto-privacidad"[^>]*checked/)
   })
-  it('las dos casillas guardan { version: "1.4-demo", fecha }', () => {
+  it('las dos casillas guardan { version: "1.5-demo", fecha }', () => {
     const ahora = new Date('2026-10-18T18:00:00Z')
-    expect(guardarAceptacion('terminos', TERMINOS.version, ahora)).toEqual({ version: '1.4-demo', fecha: '2026-10-18T18:00:00.000Z' })
-    expect(guardarAceptacion('privacidad', PRIVACIDAD!.version, ahora)).toEqual({ version: '1.4-demo', fecha: '2026-10-18T18:00:00.000Z' })
-    expect(JSON.parse(localStorage.getItem('lockumi.privacidad.consentimiento')!)).toEqual({ version: '1.4-demo', fecha: '2026-10-18T18:00:00.000Z' })
+    expect(guardarAceptacion('terminos', TERMINOS.version, ahora)).toEqual({ version: '1.5-demo', fecha: '2026-10-18T18:00:00.000Z' })
+    expect(guardarAceptacion('privacidad', PRIVACIDAD!.version, ahora)).toEqual({ version: '1.5-demo', fecha: '2026-10-18T18:00:00.000Z' })
+    expect(JSON.parse(localStorage.getItem('lockumi.privacidad.consentimiento')!)).toEqual({ version: '1.5-demo', fecha: '2026-10-18T18:00:00.000Z' })
     expect(aceptoVersion('terminos', TERMINOS.version)).toBe(true)
   })
   it('una aceptación de la versión 1.2-demo no cuenta: las casillas salen sin marcar', () => {

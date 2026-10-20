@@ -483,13 +483,22 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .na-paso__valor input::placeholder{color:#C9B3A8}
 .na-paso__valor small{display:block;font-size:15px;line-height:20px;color:var(--cafe-suave)}
 /* Fechas */
-.na-fechas2{display:grid;gap:10px}
+.na-fechas2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.na-fecha{min-width:0}
 .na-entrada{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:0 16px;border:1.5px solid var(--borde);border-radius:var(--r-campo);background:#fff;color:var(--cafe);font:inherit;text-align:left;cursor:pointer}
 .na-entrada>.ico{color:var(--accion);width:20px;height:20px}
 .na-entrada small{font-size:15px;color:var(--cafe-suave)}
 .na-entrada strong{margin-left:auto;font:800 20px/26px var(--f-titulo)}
 .na-entrada .na-entrada__ir{margin-left:2px;color:var(--cafe-suave);width:18px;height:18px}
 .na-entrada.is-abierta{border-color:var(--accion);box-shadow:0 0 0 3px rgba(219,59,0,.18)}
+/* Celular: Entrada y Salida en una fila; dentro de cada tarjeta, etiqueta arriba y fecha abajo */
+@media (max-width:559px){
+  .na-entrada{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"ico et ir" "fe fe fe";align-items:center;column-gap:8px;row-gap:2px;min-height:76px;padding:10px 12px}
+  .na-entrada>.ico:first-child{grid-area:ico;width:18px;height:18px}
+  .na-entrada small{grid-area:et;line-height:20px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .na-entrada strong{grid-area:fe;margin-left:0;font-size:20px;line-height:26px;white-space:nowrap}
+  .na-entrada .na-entrada__ir{grid-area:ir;margin-left:0;width:16px;height:16px}
+}
 /* Reglas */
 .na-reglas{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .na-reglas li{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 6px 6px 12px;border-radius:16px;background:rgba(255,232,218,.55)}

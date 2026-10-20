@@ -47,7 +47,7 @@ const deTexto = (t: string) => {
 const INICIAL_SEMANA = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
 
 /** Hoja con <dialog> nativo: en celular entra desde abajo; en escritorio (ancla) se abre como ventanita junto al campo. */
-function Hoja({ id, titulo, abierta, onCerrar, ancla, children }: { id: string; titulo: string; abierta: boolean; onCerrar: () => void; ancla?: RefObject<HTMLElement | null>; children: ReactNode }) {
+function Hoja({ id, titulo, abierta, onCerrar, ancla, alDerecha, children }: { id: string; titulo: string; abierta: boolean; onCerrar: () => void; ancla?: RefObject<HTMLElement | null>; alDerecha?: boolean; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const d = ref.current; if (!d) return
@@ -55,14 +55,19 @@ function Hoja({ id, titulo, abierta, onCerrar, ancla, children }: { id: string; 
       d.showModal(); document.documentElement.classList.add('sin-scroll')
       const a = ancla?.current
       if (a && matchMedia('(min-width: 720px)').matches) {
-        const r = a.getBoundingClientRect(), w = d.offsetWidth, h = d.offsetHeight
-        let top = r.bottom + 8; if (top + h > innerHeight - 12) top = Math.max(12, r.top - h - 8)
-        d.style.top = top + 'px'; d.style.left = Math.min(Math.max(12, r.left), innerWidth - w - 12) + 'px'
+        let r = a.getBoundingClientRect(); const w = d.offsetWidth, h = d.offsetHeight
+        // Si no cabe ni abajo ni arriba del campo, sube la página lo necesario para que quepa abajo (sin tapar el campo).
+        if (r.bottom + 8 + h > innerHeight - 12 && r.top - h - 8 < 12) { scrollBy(0, r.bottom + 8 + h - (innerHeight - 12)); r = a.getBoundingClientRect() }
+        let top = r.bottom + 8; if (top + h > innerHeight - 12 && r.top - h - 8 >= 12) top = r.top - h - 8
+        top = Math.max(12, Math.min(top, innerHeight - h - 12))
+        // Tarjeta de la izquierda: alinea por la izquierda. Tarjeta de la derecha (alDerecha) o si no cabe: alinea con su borde derecho.
+        let left = alDerecha ? r.right - w : r.left; if (left + w > innerWidth - 12) left = r.right - w
+        d.style.top = top + 'px'; d.style.left = Math.max(12, Math.min(left, innerWidth - w - 12)) + 'px'
       } else { d.style.top = ''; d.style.left = '' }
     }
     if (!abierta && d.open) d.close()
     if (!abierta) document.documentElement.classList.remove('sin-scroll')
-  }, [abierta, ancla])
+  }, [abierta, ancla, alDerecha])
   useEffect(() => () => document.documentElement.classList.remove('sin-scroll'), [])
   return <dialog ref={ref} className={'na-hoja' + (ancla ? ' na-hoja--pop' : '')} aria-labelledby={id + '-t'}
     onCancel={e => { e.preventDefault(); onCerrar() }} onClick={e => { if (e.target === ref.current) onCerrar() }}>
@@ -75,8 +80,8 @@ function Hoja({ id, titulo, abierta, onCerrar, ancla, children }: { id: string; 
 }
 
 /** Campo de fecha: botón que muestra dd/mm/aa y abre un calendario de un solo día (react-day-picker). */
-function CampoCalendario({ id, etiqueta, valor, min, max, error, contexto, onElegir, onAbrir, onCerrar }: {
-  id: string; etiqueta: string; valor: string; min: string; max: string; error?: string; contexto?: ReactNode
+function CampoCalendario({ id, etiqueta, valor, min, max, error, contexto, alDerecha, onElegir, onAbrir, onCerrar }: {
+  id: string; etiqueta: string; valor: string; min: string; max: string; error?: string; contexto?: ReactNode; alDerecha?: boolean
   onElegir: (iso: string) => void; onAbrir?: () => boolean; onCerrar: () => void }) {
   const [abierta, setAbierta] = useState(false); const boton = useRef<HTMLButtonElement>(null)
   const sel = valor ? aFecha(valor) : undefined
@@ -90,7 +95,7 @@ function CampoCalendario({ id, etiqueta, valor, min, max, error, contexto, onEle
     {/* Compatibilidad: los recorridos automáticos escriben la fecha aquí (dd/mm/aa o ddmmaaaa). No recibe foco con Tab. */}
     <input id={id} className="sr" tabIndex={-1} aria-hidden="true" autoComplete="off" defaultValue="" onChange={e => { const iso = deTexto(e.target.value); if (iso) onElegir(iso) }} />
     {error && <small id={id + '-err'} className="campo__error" role="alert">{error}</small>}
-    <Hoja id={id + '-hoja'} titulo={etiqueta} abierta={abierta} onCerrar={cerrar} ancla={boton}>
+    <Hoja id={id + '-hoja'} titulo={etiqueta} abierta={abierta} onCerrar={cerrar} ancla={boton} alDerecha={alDerecha}>
       {contexto}
       <DayPicker mode="single" locale={es} captionLayout="dropdown" startMonth={aFecha(min)} endMonth={aFecha(max)} defaultMonth={sel ?? aFecha(min)}
         selected={sel} onSelect={d => { if (d) onElegir(aISO(d)) }} disabled={[{ before: aFecha(min) }, { after: aFecha(max) }]}
@@ -227,7 +232,7 @@ export function Crear({ u }: { u: Usuario }) {
         <div className="na-et"><Ico n="cal" />Fechas<span className="na-et__der"><Info et="Reglas de las fechas" onClick={() => setInfo('fechas')} /></span></div>
         <div className="na-fechas2">
           <CampoCalendario id="f-inicio" etiqueta="Entrada" valor={f.inicio} min={le.min} max={le.max} error={ver('inicio')} onElegir={elegirInicio} onCerrar={tocar('inicio')} />
-          <CampoCalendario id="f-fin" etiqueta="Salida" valor={f.fin} min={ls?.min ?? le.min} max={ls?.max ?? le.max} error={errFin} onElegir={elegirFin} onCerrar={tocar('fin')}
+          <CampoCalendario id="f-fin" etiqueta="Salida" valor={f.fin} min={ls?.min ?? le.min} max={ls?.max ?? le.max} error={errFin} alDerecha onElegir={elegirFin} onCerrar={tocar('fin')}
             onAbrir={() => { if (f.inicio) return true; setAvisoFin('Primero elige la fecha de entrada.'); return false }}
             contexto={f.inicio && <div className="na-hoja__ctx"><span className="na-ctx"><Ico n="cal" />Entrada <strong>{ddmmaa(f.inicio)}</strong></span>{f.fin && <span className="na-ctx na-ctx--sel">Salida <strong>{ddmmaa(f.fin)}</strong></span>}</div>} />
         </div>
