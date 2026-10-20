@@ -33,11 +33,11 @@ export const hoyISO = (ahora = new Date()) => new Date(ahora.getTime() - ahora.g
 
 export function validarFechas(inicio: string, fin: string, hoy: string): Pick<Errores, 'inicio' | 'fin'> {
   const e: Pick<Errores, 'inicio' | 'fin'> = {}
-  if (!inicio) e.inicio = 'Escribe la fecha de entrada (dd/mm/aa).'
+  if (!inicio) e.inicio = 'Elige la fecha de entrada.'
   else if (!fechaValida(inicio)) e.inicio = 'Esa fecha no existe. Revisa el día y el mes.'
   else if (inicio < hoy) e.inicio = 'La fecha de entrada no puede ser anterior a hoy. Elige hoy o una fecha futura.'
   else if (aUTC(inicio) > aUTC(hoy) + MAX_ANTICIPO_DIAS * DIA) e.inicio = 'La entrada debe ser dentro del próximo año.'
-  if (!fin) e.fin = 'Escribe la fecha de salida (dd/mm/aa).'
+  if (!fin) e.fin = 'Elige la fecha de salida.'
   else if (!fechaValida(fin)) e.fin = 'Esa fecha no existe. Revisa el día y el mes.'
   else if (!e.inicio && inicio) {
     if (fin <= inicio) e.fin = 'La salida tiene que ser después de la entrada.'
@@ -47,6 +47,19 @@ export function validarFechas(inicio: string, fin: string, hoy: string): Pick<Er
   return e
 }
 const fmt = (iso: string) => iso.split('-').reverse().join('/')
+/** "aaaa-mm-dd" → "dd/mm/aa" (como se muestra en Nuevo alquiler). */
+export const ddmmaa = (iso: string) => { const [a, m, d] = iso.split('-'); return iso ? `${d}/${m}/${a.slice(2)}` : '' }
+const sumarDias = (iso: string, n: number) => new Date(aUTC(iso) + n * DIA).toISOString().slice(0, 10)
+/** Días que se pueden elegir en el calendario de entrada: desde hoy hasta MAX_ANTICIPO_DIAS después (igual que validarFechas). */
+export const limitesEntrada = (hoy: string) => ({ min: hoy, max: sumarDias(hoy, MAX_ANTICIPO_DIAS) })
+/** Días que se pueden elegir en el calendario de salida: de 1 mes a 5 años después de la entrada (con sumarMeses). */
+export const limitesSalida = (inicio: string) => ({ min: sumarMeses(inicio, MIN_MESES), max: sumarMeses(inicio, MAX_ANIOS * 12) })
+/** Al cambiar la entrada: la salida se conserva si sigue dentro de sus límites; si no, se borra (''). */
+export function salidaTrasCambiarEntrada(inicio: string, fin: string): string {
+  if (!fin || !inicio) return fin
+  const { min, max } = limitesSalida(inicio)
+  return fin >= min && fin <= max ? fin : ''
+}
 
 export function validarMonto(s: string): string | undefined {
   const t = s.trim().replace(',', '.')

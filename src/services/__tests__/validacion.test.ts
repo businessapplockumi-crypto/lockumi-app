@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fechaValida, sumarMeses, validarFechas, validarMonto, validarAlquiler, hoyISO } from '../../validacion'
+import { fechaValida, sumarMeses, validarFechas, validarMonto, validarAlquiler, hoyISO, limitesEntrada, limitesSalida, salidaTrasCambiarEntrada, ddmmaa } from '../../validacion'
 const HOY = '2026-10-16'
 describe('fechas imposibles', () => {
   it('rechaza 31/02, 30/02, 29/02 no bisiesto, mes 13, día 0', () => {
@@ -10,7 +10,7 @@ describe('fechas imposibles', () => {
 })
 describe('entrada', () => {
   it('vacía o imposible', () => {
-    expect(validarFechas('', '2027-01-01', HOY).inicio).toMatch(/Escribe/)
+    expect(validarFechas('', '2027-01-01', HOY).inicio).toMatch(/Elige/)
     expect(validarFechas('2026-02-30', '2027-01-01', HOY).inicio).toMatch(/no existe/)
   })
   it('rechaza ayer y cualquier fecha pasada', () => {
@@ -61,4 +61,28 @@ describe('monto y obligatorios', () => {
     expect(e.email).toMatch(/tu correo/)
     expect(validarAlquiler({ ...ok, email: 'ana@gmail' }, HOY).email).toMatch(/no parece válido/)
   })
+})
+
+describe('calendarios de Nuevo alquiler', () => {
+  it('entrada: desde hoy hasta 365 días, y los bordes pasan la validación', () => {
+    const { min, max } = limitesEntrada(HOY)
+    expect(min).toBe(HOY); expect(max).toBe('2027-10-16')
+    expect(validarFechas(min, sumarMeses(min, 1), HOY).inicio).toBeUndefined()
+    expect(validarFechas(max, sumarMeses(max, 1), HOY).inicio).toBeUndefined()
+    expect(validarFechas('2027-10-17', '2027-11-17', HOY).inicio).toBeDefined()
+  })
+  it('salida: de sumarMeses(entrada, 1) a sumarMeses(entrada, 60), incluso a fin de mes', () => {
+    expect(limitesSalida('2026-10-19')).toEqual({ min: '2026-11-19', max: '2031-10-19' })
+    expect(limitesSalida('2027-01-31')).toEqual({ min: '2027-02-28', max: '2032-01-31' })
+    const { min, max } = limitesSalida('2027-01-31')
+    expect(validarFechas('2027-01-31', min, HOY)).toEqual({}); expect(validarFechas('2027-01-31', max, HOY)).toEqual({})
+  })
+  it('al cambiar la entrada se borra la salida que deja de valer y se conserva la que sigue valiendo', () => {
+    expect(salidaTrasCambiarEntrada('2026-12-01', '2027-04-19')).toBe('2027-04-19')
+    expect(salidaTrasCambiarEntrada('2027-04-01', '2027-04-19')).toBe('')     // menos de 1 mes
+    expect(salidaTrasCambiarEntrada('2027-05-01', '2027-04-19')).toBe('')     // antes de la entrada
+    expect(salidaTrasCambiarEntrada('2026-10-19', '2031-10-20')).toBe('')     // más de 5 años
+    expect(salidaTrasCambiarEntrada('2026-10-19', '')).toBe('')
+  })
+  it('formato dd/mm/aa', () => { expect(ddmmaa('2027-04-19')).toBe('19/04/27'); expect(ddmmaa('')).toBe('') })
 })
