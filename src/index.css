@@ -592,6 +592,8 @@ html.sin-scroll{overflow:hidden}
 .ct__firma-pend{color:var(--cafe-suave);font-weight:600;font-size:15px}
 .ct__pie{padding-top:12px;display:grid;gap:4px;font-size:14px;line-height:20px;color:var(--cafe-suave)}
 @media (min-width:720px){.ct{padding:28px 32px}.ct__datos{grid-template-columns:repeat(3,1fr)}.ct__datos--partes{grid-template-columns:1fr 1fr}}
+/* En la columna lateral del escritorio (angosta) el contrato usa el diseño de celular */
+.detalle__lado .ct{padding:20px}.detalle__lado .ct__datos{grid-template-columns:1fr 1fr}.detalle__lado .ct__datos--partes{grid-template-columns:1fr}
 .impresion{display:none}
 @media print{
   html.imprimiendo body>*:not(.impresion){display:none!important}
