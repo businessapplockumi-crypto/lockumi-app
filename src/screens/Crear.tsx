@@ -17,7 +17,6 @@ import { validarAlquiler, hoyISO, montoNumero, fechaValida, ddmmaa, limitesEntra
 // ---------- Íconos de línea (mismo trazo que .ico) ----------
 const TRAZOS = {
   lugar: <><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></>,
-  regalo: <><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5" /></>,
   billetera: <><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></>,
   moneda: <><circle cx="12" cy="12" r="9" /><path d="M14.8 9.4c-.5-.9-1.5-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2 0 2.8 5.6 1.4 5.6 4.1 0 1.2-1.2 1.9-2.8 1.9-1.3 0-2.4-.5-2.9-1.4M12 6.5V8M12 16v1.5" /></>,
   candado: <><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>,
@@ -107,7 +106,7 @@ export function Crear({ u }: { u: Usuario }) {
   const [tocado, setTocado] = useState<Partial<Record<Campo, boolean>>>({}); const [enviado, setEnviado] = useState(false)
   const [reglas, setReglas] = useState<string[]>(['No se permiten mascotas']); const [regla, setRegla] = useState(''); const [ocupado, setOcupado] = useState(false); const [errSrv, setErrSrv] = useState('')
   // Red de prueba: tú eres el inquilino y el dueño es una cuenta de prueba de Lockumi.
-  // Origen de los USDC de prueba: «Usar USDC de regalo» (Lockumi, tope de 20) o tu propia cuenta (el límite es tu saldo real, máximo 50 000).
+  // Origen de los USDC de prueba: «USDC de prueba de Lockumi» (sin valor, tope de 20) o tu propia cuenta (el límite es tu saldo real, máximo 50 000).
   const [origen, setOrigen] = useState<'lockumi' | 'propia'>('lockumi')
   const [propia, setPropia] = useState<{ g: string; firma: Firma; saldo: number | null } | null>(null)
   const [conectando, setConectando] = useState<Firma | null>(null); const [errCuenta, setErrCuenta] = useState('')
@@ -124,7 +123,7 @@ export function Crear({ u }: { u: Usuario }) {
   const errores: Errores = modoPrueba ? (() => {
     const e = validarAlquiler({ ...f, email: 'inquilino@ejemplo.com' }, hoyISO()); delete e.email
     const m = montoNumero(f.monto)
-    if (escrowReal && !e.monto && origen === 'lockumi' && !montoValido(m, TOPE_USDC)) e.monto = `Con «Usar USDC de regalo» el depósito es de máximo ${TOPE_USDC} USDC de prueba (no es dinero real). Baja el monto a ${TOPE_USDC} o menos, o elige «Usar mi propio USDC de prueba».`
+    if (escrowReal && !e.monto && origen === 'lockumi' && !montoValido(m, TOPE_USDC)) e.monto = `Con «USDC de prueba de Lockumi» el depósito es de máximo ${TOPE_USDC} USDC de prueba (no es dinero real). Baja el monto a ${TOPE_USDC} o menos, o elige «Usar mi propio USDC de prueba».`
     if (escrowReal && !e.monto && origen === 'propia') {
       if (!propia) e.monto = 'Primero conecta tu cuenta para ver cuántos USDC de prueba tienes.'
       else if ((propia.saldo ?? 0) < m) e.monto = mensajeSaldoPropio(propia.saldo ?? 0)
@@ -190,9 +189,9 @@ export function Crear({ u }: { u: Usuario }) {
       {escrowReal && <section className="na-sec">
         <div className="na-et" id="et-origen"><Ico n="moneda" />USDC de prueba<span className="na-et__der"><Info et="De dónde salen los USDC de prueba" onClick={() => setInfo('usdc')} /></span></div>
         <div role="radiogroup" aria-labelledby="et-origen">
-          <button type="button" role="radio" aria-checked={origen === 'lockumi'} className={'na-regalo' + (origen === 'lockumi' ? ' is-sel' : '')} onClick={() => setOrigen('lockumi')}>
-            <span className="na-regalo__ico"><Ico n="regalo" /></span>
-            <span className="na-regalo__txt">Usar USDC de regalo (hasta {TOPE_USDC})<small>Te los da Lockumi</small></span>
+          <button type="button" role="radio" aria-checked={origen === 'lockumi'} className={'na-lockumi' + (origen === 'lockumi' ? ' is-sel' : '')} onClick={() => setOrigen('lockumi')}>
+            <span className="na-lockumi__ico"><Ico n="moneda" /></span>
+            <span className="na-lockumi__txt">USDC de prueba de Lockumi<small>Sin valor · hasta {TOPE_USDC}</small></span>
             <span className="na-marca"><Ico n="check" /></span>
           </button>
           <button type="button" role="radio" aria-checked={origen === 'propia'} className={'na-propio' + (origen === 'propia' ? ' is-sel' : '')} onClick={() => setOrigen('propia')}>
@@ -201,7 +200,7 @@ export function Crear({ u }: { u: Usuario }) {
         </div>
         {origen === 'propia' && (propia
           ? <p className="na-saldo" id="saldo-propio" role="status"><Ico n="check" />{propia.saldo === null
-              ? <span>Tu cuenta ({abreviar(propia.g)}) todavía no tiene USDC de prueba. Carga USDC de prueba o elige «Usar USDC de regalo».</span>
+              ? <span>Tu cuenta ({abreviar(propia.g)}) todavía no tiene USDC de prueba. Carga USDC de prueba o elige «USDC de prueba de Lockumi».</span>
               : <span>Cuenta {abreviar(propia.g)} · {NOMBRE_FIRMA[propia.firma]}: <strong>{propia.saldo.toLocaleString('es-CR', { maximumFractionDigits: 7 })} USDC de prueba</strong></span>}</p>
           : <div className="na-conectar">
               {hayCavos() && <button type="button" className="boton boton--secundario boton--ancho" disabled={!!conectando} onClick={() => void usar('cavos')}>{conectando === 'cavos' ? 'Conectando…' : 'Usar mi cuenta Lockumi'}</button>}
@@ -247,8 +246,8 @@ export function Crear({ u }: { u: Usuario }) {
       {enviado && cuantos > 0 && <p className="error na-error" role="alert">Revisa {cuantos === 1 ? 'el campo marcado' : `los ${cuantos} campos marcados`} y vuelve a intentarlo.</p>}
       {errSrv && <p className="error na-error" role="alert">{errSrv}</p>}
       <button type="submit" className="boton boton--primario boton--ancho boton--grande na-crear" disabled={ocupado}>{ocupado ? 'Creando…' : modoPrueba ? 'Crear alquiler de prueba' : 'Crear alquiler e invitar'}</button>
-      {/* LEGAL: revisar. Versión corta de «El nombre del lugar y las fotos se quedan en tu navegador: no van a la red.» (completa en la hoja «Red de prueba»). */}
-      {modoPrueba ? <p className="na-priv"><Ico n="escudo" />Lugar y fotos: solo en tu navegador</p>
+      {/* LEGAL: revisar. Línea aprobada por Katherine (20-oct-2026): «Lugar y fotos: se quedan en tu navegador; a la red solo va una huella de las fotos». La hoja «Red de prueba» conserva el texto anterior. */}
+      {modoPrueba ? <p className="na-priv"><Ico n="escudo" />Lugar y fotos: se quedan en tu navegador; a la red solo va una huella de las fotos</p>
         : <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>}
     </form>
 
@@ -260,7 +259,7 @@ export function Crear({ u }: { u: Usuario }) {
           : <p>Prueba en la red de prueba de Stellar, sin dinero real: el depósito son USDC de prueba que te da Lockumi. Tú eres el <strong>inquilino</strong>. El dueño es el <strong>{DUENO_PRUEBA.toLowerCase()}</strong>: por eso no te pedimos el correo del dueño. Firma y confirma solo; los reclamos los haces tú con un botón en su nombre. El nombre del lugar y las fotos se quedan en tu navegador: no van a la red.</p>)}
         {/* LEGAL: revisar. Texto nuevo que explica los dos orígenes (antes eran las etiquetas «Obtener USDC de prueba de Lockumi (máximo 20)» y «De mi cuenta (cualquier monto que tenga)»). */}
         {info === 'usdc' && <>
-          <p><strong>Usar USDC de regalo:</strong> Lockumi te da hasta {TOPE_USDC} USDC de prueba para el depósito.</p>
+          <p><strong>USDC de prueba de Lockumi:</strong> USDC de prueba que te da Lockumi, sin valor. Puedes usar hasta {TOPE_USDC} para el depósito.</p>
           <p><strong>Usar mi propio USDC de prueba:</strong> usas los USDC de prueba de tu cuenta Lockumi o de Freighter. Puedes depositar hasta lo que tengas (máximo {MONTO_MAX_USDC.toLocaleString('es-CR')}).</p>
           <p>Son USDC de la red de prueba de Stellar: no son dinero real.</p></>}
         {info === 'fechas' && <p>La entrada es desde hoy en adelante (hasta 1 año), porque el alquiler empieza cuando se paga el depósito. El alquiler dura entre 1 mes y 5 años.</p>}
