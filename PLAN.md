@@ -4,7 +4,7 @@
 
 ## Estado actual (20 oct 2026)
 
-- **Pendiente de publicar (rama `tus-alquileres-estados`):** «Tus alquileres» con un color por estado (pendiente miel, en curso salvia, reclamo o mediador terracota, terminado arena; solo tonos que ya existían), «qué te toca» en cada tarjeta, los 3 pasos arriba y «Tu cuenta para el depósito» con los mismos colores (misma lógica). Probado con 4 alquileres reales en testnet.
+- **Publicado el 20 oct 2026 (código `d42e91b`, rama `tus-alquileres-estados`):** «Tus alquileres» con un color por estado (pendiente miel, en curso salvia, reclamo o mediador terracota, terminado arena; solo tonos que ya existían), «qué te toca» en cada tarjeta, los 3 pasos arriba y «Tu cuenta para el depósito» con los mismos colores (misma lógica). Probado con 4 alquileres reales en testnet.
 - **Nuevo alquiler** rediseñado: tarjetas de USDC de prueba («USDC de prueba de Lockumi», hasta 20, o «Usar mi propio USDC de prueba», hasta el saldo y como máximo 50 000), depósito con − y +, y **Entrada y Salida lado a lado** (también en celular) con calendarios de react-day-picker 10 en `<dialog>` (hoja inferior en celular, ventanita en escritorio).
 - **Términos y Aviso de privacidad 1.5-demo** (20 oct 2026).
 - **Depósito con el USDC de Lockumi:** antes de crear la cuenta segura, la cuenta de prueba se recarga siempre hasta el monto (arreglo del error «Tu cuenta tiene 0 USDC de prueba…»).
@@ -19,7 +19,7 @@ Demo navegable (no se publica en lockumi.com). Vite + React + TypeScript, estado
 
 ## Pantallas
 1. **Entrar** (`#/` sin sesión) — pantalla con logo, 3 beneficios y botón «Entrar»; hoja de acceso con Google, Apple o correo + código de 6 dígitos (simulado, Cavos). Sin billetera ni frase semilla. El rol sale de cada alquiler (quien crea = dueño; invitado = inquilino). ✅ v3
-2. **Tus alquileres** (`#/`) — lista de alquileres con estado, monto y fechas; selector de rol en la barra. ✅ Fase 1 · *Pendiente de publicar:* un color por estado (`src/estados.ts`), «qué te toca», 3 pasos arriba y la tarjeta «Tu cuenta para el depósito» con los mismos colores.
+2. **Tus alquileres** (`#/`) — lista de alquileres con estado, monto y fechas; selector de rol en la barra. ✅ Fase 1 · Desde el 20 oct 2026: un color por estado (`src/estados.ts`), «qué te toca», 3 pasos arriba y la tarjeta «Tu cuenta para el depósito» con los mismos colores.
 3. **Nuevo alquiler** (`#/crear`) — monto del depósito, fechas de entrada y salida, reglas (lista), correo del inquilino. ✅ Fase 1
 4. **Detalle / línea de tiempo** (`#/alquiler/:id`) — datos, reglas e historial. ✅ Fase 2 (línea de tiempo con todos los estados, datos e historial)
 5. **Acta de entrada** — fotos + checklist por cuarto, de ambas partes; firmas simuladas con fecha y hora. ✅ Fase 2
