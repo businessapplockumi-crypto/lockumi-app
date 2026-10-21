@@ -25,6 +25,15 @@ Cuando se publica, el servidor cambia al instante, pero una pestaña que ya esta
 - Lo importante (por ejemplo, recargar la cuenta de prueba antes de crear la cuenta segura) va también en el servidor, no solo en el navegador.
 - Para reproducir con sesión de Cavos sin hacer login real: `scripts/saldo0-login/` (Vite en localhost:5173 con `VITE_CAVOS_APP_ID`, sesión simulada en localStorage tal como la guarda el login y `/api/solo` a una vista previa con `vercel curl`). Ver [`docs/testnet-e2e.md`](docs/testnet-e2e.md#8-saldo-0-con-sesión-de-cavos-20-oct-2026-rama-arreglo-saldo-0-login).
 
+## Agregar un estado del alquiler y su color
+
+«Tus alquileres» pinta cada tarjeta según el **grupo** de su estado: `pendiente` (amarillo miel), `curso` (verde salvia), `reclamo` (terracota) o `terminado` (arena). Para agregar un estado:
+
+1. Súmalo a `Estado` y a `ETIQUETA_ESTADO` en `src/types.ts`, y a `turno()` en `src/flujo.ts` (la línea «qué te toca»).
+2. Dale su grupo en `GRUPO_ESTADO` y su ícono en `ICONO_ESTADO` (`src/estados.ts`). TypeScript avisa si falta.
+3. Agrega el caso a `src/services/__tests__/estados.test.ts`.
+4. **No inventes colores.** Los tonos de cada grupo están en las variables `--estado-<grupo>-{fondo,borde,texto,sello}` al final de `src/index.css` y solo reutilizan valores que ya existían más arriba en ese archivo. La prueba falla si aparece un HEX nuevo. Si hace falta un grupo nuevo, usa tonos existentes y revisa el contraste del texto (mínimo 4,5:1).
+
 ## Proponer cambios
 
 1. Abre un *issue* con el problema o la idea, o comenta en uno existente.

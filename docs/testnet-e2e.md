@@ -156,3 +156,20 @@ Hallazgos:
 | Servidor solo: `desplegar` con `origen: 'lockumi'` y la cuenta en 0, **sin** `cuenta-prueba` antes | dueno → desplegar 200 | la tesorería puso 2 USDC (0 → 2) y se creó el escrow `CBFBTMMVR6YRSOLMNSKVGCQRB6QDMZ7UKGU7AQXQ6CY4I7T2JOFVZKQP` (sin depositar; es solo la prueba del servidor) | USDC `3b8c8af98006a701e2db0bfbe3e582200602c74e7a15ee4d0360b9740c38d610`, escrow `ddb0c7ea4eb94f51fbf28f989b78cb162f448ac5324e9c13322ef9d0f3cb091a` |
 
 Capturas: `/workspace/lockumi/capturas/saldo0-login-*.png` (antes, después con cuenta nueva y reutilizada en 0, celular de 390 px y escritorio) y copias JPEG en `/workspace/lockumi/diseno/envio/saldo0/`.
+
+## 9. «Tus alquileres» con un color por estado (20 oct 2026, rama `tus-alquileres-estados`)
+
+**Pendiente de publicar.** Para revisar la pantalla con datos reales se crearon 4 alquileres **reales** en testnet, uno por grupo de color, con el flujo normal de la app: crear, firmar, «Pagar», fotos, «Empezar fotos de salida», «Hacer un reclamo como dueño de prueba» o «Solo red de prueba: adelantar el plazo».
+
+**Cómo.** El login de Cavos no funciona en las vistas previas. Por eso la app de esta rama corrió en `http://localhost:5173` con `VITE_TRUSTLESS=1` (`scripts/saldo0-login/vite.repro.config.ts`) y una sesión simulada por correo en localStorage. `/api/solo` fue a la vista previa de la rama (`dpl_3Nsjh5mgsXjRbYPtXjwjNzMVoMKh`) con `scripts/saldo0-login/proxy-api.mjs` (`vercel curl`). Los pasos se automatizaron con `scripts/tus-alquileres/real.mjs` y las capturas con `scripts/tus-alquileres/capturar.mjs`. La tarjeta «Tu cuenta para el depósito» se mostró con el gancho de desarrollo `lockumi.billetera.prueba`, que solo existe en Vite dev. Se le pasó la cuenta de prueba real del inquilino que pagó los 4 depósitos (`GBJVMMRHLCO4AZBDSOEYAUAUQDXQ3SC3IT5QURZESSUPD7CGB23J7AX6`), y la dirección y el saldo se leen de Horizon testnet. Con login real de Cavos, la tarjeta muestra la billetera de Cavos de la persona. No se usó `VITE_VENTANA_SEGUNDOS`: «adelantar el plazo» basta para llegar a «Terminado».
+
+**Resultados** (20/10/2026, entre las 6:33 y las 6:46 p. m., hora de Costa Rica; tx en `https://stellar.expert/explorer/testnet/tx/<hash>`, todas con `successful: true` en Horizon):
+
+| Alquiler | Estado (grupo) | Escrow | Tx |
+|---|---|---|---|
+| Apartamento en Barreal de Heredia, 3 USDC | Fotos de entrada (pendiente, miel) | `CCZP57ON3Y4J7SSY32G3X2GQ2KWOHBXVP6MX3KLZJBAZJIWLUV2WP5IA` | escrow `f2dfcdbf2aebd4766115ac8dd46bb784aedcef6b636aec874469442108c040da`, depósito `2ac985609ddc4e49a00409ed9c11da447443b8c194ab3a0fefe622a927d3b3da` |
+| Casa en Escazú, 2 USDC | Alquiler en curso (salvia) | `CB2J2S2AXBLQKQ3BI4ZVEZM2ON3INDSU75KN7EIT7ECVE4DKFFWJT2WZ` | escrow `3b957f16e0d01aec57423788440ddfea765eb1993f97835317c2bcb186e83df1`, depósito `1e42b3a7ac5bcdf12a0d1fb19e6360dce21d3766ad3792cf03be1cb3a2d29c29` |
+| Casa de playa en Tamarindo, 2,5 USDC | Reclamo abierto (terracota) | `CDJBV6PFRRB6ZC2VWAXD6V4ZRK2OKSZNDFY4MKY7NSHDPU5VKPLMXAPD` | escrow `cf9d4b816a5a5b29bf86f7c61ee6f6218569ba977e6f8ede15e0b9bfcf21456f`, depósito `0776cccbaf1b8cfa1919403b30a45928253e5fa0cea4e48ad8fde9e3dc3802fc`, reclamo (disputa) `82307efd87f889f7b1a29a3a9312b26d713f26f031debb1d1c71e5d4910e173b` |
+| Estudio en San Pedro, 1,5 USDC | Terminado (arena) | `CDHPY7XOTEEIJ7H7UUL53YU3M3BYCJLC3V3HKBBLRMCZYCSE7GN3UNGP` | escrow `080d4d2fd2b890e973d1d38967520e17995476ad8b34fe3b30f15638bf400bd7`, depósito `99b9bcc359abb8baa3d6c8dffb3f9e1f063319730139f2be57ccb0b29ac6cbfb`, evidencia `b9343f4e1b477ab2c8e5ae745ebe9c3ae457fbee5c7037ab9927011c088267b1`, aprobación `d175dac0ea6d213169334e71dbabc9fbb25a90a1edf4f50b72867e5605725df6`, devolución `784a1e49eaf6c8643c20043d08bc3d810eebc4f9f9cb580de5e57e07fa4b5eb5` |
+
+Capturas: `/workspace/lockumi/capturas/tus-alquileres-preview-{movil,escritorio}{,-detalles}.png` (390 px y 1280 px; «-detalles» con «Detalles» abierto). Copias JPEG en `/workspace/lockumi/diseno/envio/tus-alquileres-preview/`.
