@@ -1,6 +1,6 @@
 # Prueba e2e en Stellar testnet: dos personas, dos aparatos, USDC real de testnet en un escrow de Trustless Work
 
-> **Documento histórico de la rama `testnet-e2e` (16 y 17 oct 2026).** Sirve como registro de la prueba con dos personas, Supabase y `api/tw.ts`, que **no** es lo que corre en app.lockumi.com. Hoy la app usa el flujo de una persona por `api/solo.ts`, sin base de datos: tú eres el inquilino, el dueño es un dueño de prueba de Lockumi y el escrow de Trustless Work es real en testnet en cada paso. El modo de dos personas y las invitaciones por correo o link son **próximamente**: todavía no funcionan. Solo testnet, sin dinero real. El estado actual está en el [README](../README.md). El correo de invitación de la Parte 4 usará Resend: ver [`correo-resend.md`](correo-resend.md). La sección [8](#8-saldo-0-con-sesión-de-cavos-20-oct-2026-rama-arreglo-saldo-0-login) sí es del flujo actual: prueba en testnet del arreglo del saldo 0 con sesión de Cavos (pendiente de publicar).
+> **Documento histórico de la rama `testnet-e2e` (16 y 17 oct 2026).** Sirve como registro de la prueba con dos personas, Supabase y `api/tw.ts`, que **no** es lo que corre en app.lockumi.com. Hoy la app usa el flujo de una persona por `api/solo.ts`, sin base de datos: tú eres el inquilino, el dueño es un dueño de prueba de Lockumi y el escrow de Trustless Work es real en testnet en cada paso. El modo de dos personas y las invitaciones por correo o link son **próximamente**: todavía no funcionan. Solo testnet, sin dinero real. El estado actual está en el [README](../README.md). El correo de invitación de la Parte 4 usará Resend: ver [`correo-resend.md`](correo-resend.md). La sección [8](#8-saldo-0-con-sesión-de-cavos-20-oct-2026-rama-arreglo-saldo-0-login) sí es del flujo actual: prueba en testnet del arreglo del saldo 0 con sesión de Cavos (publicado el 20 oct 2026).
 
 
 Rama `testnet-e2e` (sale de 76b66e8). No se publicó nada: sin push, sin deploy, sin tocar app.lockumi.com ni lockumi.com, sin merge a master.
@@ -131,7 +131,7 @@ Hallazgos:
 
 ## 8. Saldo 0 con sesión de Cavos (20 oct 2026, rama `arreglo-saldo-0-login`)
 
-**Pendiente de publicar.** Con sesión de Google (Cavos), un alquiler de 2 USDC con «USDC de prueba de Lockumi» seguía mostrando «Tu cuenta tiene 0 USDC de prueba y el depósito es de 2…», aunque la recarga automática ya estaba publicada (6d6b5c9).
+**Publicado el 20 oct 2026** (commit `1483e31`; `master` en `4e6245a`). Con sesión de Google (Cavos), un alquiler de 2 USDC con «USDC de prueba de Lockumi» seguía mostrando «Tu cuenta tiene 0 USDC de prueba y el depósito es de 2…», aunque la recarga automática ya estaba publicada (6d6b5c9).
 
 **Causa.** Los registros de Vercel de app.lockumi.com muestran que la pestaña cargó la app a las 12:13 p. m. (hora de Costa Rica), durante el regreso del login con Google, con la versión anterior a la recarga (ebbec5e). Al tocar «Pagar» a la 1:51 p. m. no volvió a cargar la página: solo hubo dos llamadas a `/api/solo` (`dueno` 200 y `desplegar` 409). La versión con la recarga hace cuatro (`cuenta-prueba`, `dueno`, `desplegar`, `fondear-prueba`). La app vieja no recarga una cuenta de prueba que ya existe, y el servidor nuevo solo revisaba el saldo. La sesión en sí no cambia el camino del pago: la prueba sin sesión funcionó porque cargó la página nueva.
 
