@@ -131,7 +131,7 @@ Hallazgos:
 
 ## 8. Saldo 0 con sesión de Cavos (20 oct 2026, rama `arreglo-saldo-0-login`)
 
-**Publicado el 20 oct 2026** (commit `1483e31`; `master` en `4e6245a`). Con sesión de Google (Cavos), un alquiler de 2 USDC con «USDC de prueba de Lockumi» seguía mostrando «Tu cuenta tiene 0 USDC de prueba y el depósito es de 2…», aunque la recarga automática ya estaba publicada (6d6b5c9).
+**Publicado el 20 oct 2026** (commit `1483e31`; `master` en `4e6245a`; deploy de producción `dpl_8Vcp5XCRTfb9nw2pVpafeJrXfBiz`). Con sesión de Google (Cavos), un alquiler de 2 USDC con «USDC de prueba de Lockumi» seguía mostrando «Tu cuenta tiene 0 USDC de prueba y el depósito es de 2…», aunque la recarga automática ya estaba publicada (6d6b5c9).
 
 **Causa.** Los registros de Vercel de app.lockumi.com muestran que la pestaña cargó la app a las 12:13 p. m. (hora de Costa Rica), durante el regreso del login con Google, con la versión anterior a la recarga (ebbec5e). Al tocar «Pagar» a la 1:51 p. m. no volvió a cargar la página: solo hubo dos llamadas a `/api/solo` (`dueno` 200 y `desplegar` 409). La versión con la recarga hace cuatro (`cuenta-prueba`, `dueno`, `desplegar`, `fondear-prueba`). La app vieja no recarga una cuenta de prueba que ya existe, y el servidor nuevo solo revisaba el saldo. La sesión en sí no cambia el camino del pago: la prueba sin sesión funcionó porque cargó la página nueva.
 
