@@ -4,7 +4,7 @@
 
 ## Estado actual (20 oct 2026)
 
-- **Publicado el 20 oct 2026 (código `d42e91b`, rama `tus-alquileres-estados`):** «Tus alquileres» con un color por estado (pendiente miel, en curso salvia, reclamo o mediador terracota, terminado arena; solo tonos que ya existían), «qué te toca» en cada tarjeta, los 3 pasos arriba y «Tu cuenta para el depósito» con los mismos colores (misma lógica). Probado con 4 alquileres reales en testnet.
+- **Publicado el 20 oct 2026 (código `d42e91b`, `master` en `3e044e4`; deploy `dpl_2831CmooXSLZpsH9yKhFTh5quDCe`):** «Tus alquileres» con un color por estado (pendiente miel, en curso salvia, reclamo o mediador terracota, terminado arena; solo tonos que ya existían), «qué te toca» en cada tarjeta, los 3 pasos arriba y «Tu cuenta para el depósito» con los mismos colores (misma lógica). Probado con 4 alquileres reales en testnet.
 - **Nuevo alquiler** rediseñado: tarjetas de USDC de prueba («USDC de prueba de Lockumi», hasta 20, o «Usar mi propio USDC de prueba», hasta el saldo y como máximo 50 000), depósito con − y +, y **Entrada y Salida lado a lado** (también en celular) con calendarios de react-day-picker 10 en `<dialog>` (hoja inferior en celular, ventanita en escritorio).
 - **Términos y Aviso de privacidad 1.5-demo** (20 oct 2026).
 - **Depósito con el USDC de Lockumi:** antes de crear la cuenta segura, la cuenta de prueba se recarga siempre hasta el monto (arreglo del error «Tu cuenta tiene 0 USDC de prueba…»).
