@@ -605,3 +605,93 @@ html.sin-scroll{overflow:hidden}
   .ct--impresion .ct__sec{break-inside:avoid}
   @page{margin:18mm 16mm}
 }
+
+/* ===== Tus alquileres: un color por estado (maqueta 04-estados, aprobada el 20/10/2026) =====
+   SOLO tonos que ya existían arriba en este archivo (lo revisa services/__tests__/estados.test.ts). Grupos en src/estados.ts. */
+:root{
+  /* Pendiente (falta firma, depósito o fotos): miel suave de .demo / .aviso / .aviso-red */
+  --estado-pendiente-fondo:#FFF1B8;--estado-pendiente-borde:#9A7B00;--estado-pendiente-texto:#5C4A00;--estado-pendiente-sello:#5C4A00;
+  /* En curso (depósito guardado): salvia. Fondo de .ct__sello--ok, borde --salvia, texto --exito */
+  --estado-curso-fondo:#E3F2E8;--estado-curso-borde:#6FBF8A;--estado-curso-texto:#2E7347;--estado-curso-sello:#2E7347;
+  /* Reclamo o mediador: terracota. Fondo --alterna, borde --coral, texto --accion-activo, sello --accion */
+  --estado-reclamo-fondo:#FFE8DA;--estado-reclamo-borde:#FF6B35;--estado-reclamo-texto:#9E2E00;--estado-reclamo-sello:#DB3B00;
+  /* Terminado: café claro / arena. Fondo de .chip--neutro (café al 7 %), borde --borde, texto --cafe-suave */
+  --estado-terminado-fondo:rgba(61,42,34,.07);--estado-terminado-borde:#A88A7D;--estado-terminado-texto:#7A5446;--estado-terminado-sello:#7A5446;
+}
+.estado--pendiente{--ef:var(--estado-pendiente-fondo);--eb:var(--estado-pendiente-borde);--et:var(--estado-pendiente-texto);--es:var(--estado-pendiente-sello)}
+.estado--curso{--ef:var(--estado-curso-fondo);--eb:var(--estado-curso-borde);--et:var(--estado-curso-texto);--es:var(--estado-curso-sello)}
+.estado--reclamo{--ef:var(--estado-reclamo-fondo);--eb:var(--estado-reclamo-borde);--et:var(--estado-reclamo-texto);--es:var(--estado-reclamo-sello)}
+.estado--terminado{--ef:var(--estado-terminado-fondo);--eb:var(--estado-terminado-borde);--et:var(--estado-terminado-texto);--es:var(--estado-terminado-sello)}
+
+/* Portada con los 3 pasos (alternativa C) */
+.ta-hero{background:linear-gradient(160deg,rgba(255,255,255,.75),var(--alterna) 140%)}
+.hero>.ta-hero__txt{max-width:none;align-self:stretch}
+.ta-hero h1{margin-top:2px}
+.ta-pasos{order:3;list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:1fr;gap:8px;width:100%;position:relative;z-index:1}
+.ta-pasos li{display:grid;grid-template-columns:38px 1fr;column-gap:12px;align-items:center;padding:10px 14px;border-radius:18px;background:rgba(255,255,255,.85);box-shadow:inset 3px 0 0 var(--linea),inset 0 0 0 1px var(--linea);min-width:0}
+.ta-pasos__ico{grid-row:span 2;width:38px;height:38px;border-radius:12px;display:grid;place-items:center}
+.ta-pasos__ico .ico{width:21px;height:21px;vertical-align:0}
+.ta-pasos li:nth-child(1){box-shadow:inset 3px 0 0 var(--coral),inset 0 0 0 1px var(--linea)}
+.ta-pasos li:nth-child(3){box-shadow:inset 3px 0 0 var(--salvia),inset 0 0 0 1px var(--linea)}
+.ta-pasos li:nth-child(1) .ta-pasos__ico{background:var(--coral);color:#fff}
+.ta-pasos li:nth-child(2) .ta-pasos__ico{background:var(--alterna);color:var(--accion)}
+.ta-pasos li:nth-child(3) .ta-pasos__ico{background:var(--salvia);color:#fff}
+.ta-pasos strong{font:700 15px/19px var(--f-titulo)}
+.ta-pasos li>span:last-child{font-size:15px;line-height:19px;color:var(--cafe-suave)}
+@media (max-width:480px){.hero>div.ta-hero__txt:first-child{padding-right:0}.ta-cab{padding-right:62px}}
+@media (min-width:760px){.ta-hero{flex-wrap:wrap}.ta-hero .ta-hero__txt{flex:1;align-self:auto}
+  .ta-pasos{grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
+  .ta-pasos li{display:flex;flex-wrap:wrap;align-items:center;column-gap:12px;padding:14px 16px}
+  .ta-pasos li:nth-child(1){box-shadow:inset 0 3px 0 var(--coral),inset 0 0 0 1px var(--linea)}
+  .ta-pasos li:nth-child(2){box-shadow:inset 0 3px 0 var(--linea),inset 0 0 0 1px var(--linea)}
+  .ta-pasos li:nth-child(3){box-shadow:inset 0 3px 0 var(--salvia),inset 0 0 0 1px var(--linea)}
+  .ta-pasos li>span:last-child{flex-basis:100%;padding-left:50px;margin-top:-8px}}
+
+/* Sello y píldora del estado */
+.ta-sello{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--ef);color:var(--es);box-shadow:inset 0 0 0 2px var(--eb)}
+.ta-sello .ico{width:24px;height:24px;vertical-align:0}
+.ta-estado{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:4px 12px 4px 9px;border-radius:var(--r-pildora);background:var(--ef);color:var(--et);box-shadow:inset 0 0 0 1px var(--eb);font:600 15px/20px var(--f-texto);white-space:nowrap}
+.ta-estado .ico{width:16px;height:16px;vertical-align:0}
+.estado--reclamo .ta-estado{background:var(--estado-reclamo-sello);color:#fff;box-shadow:none}
+
+/* Tarjeta de alquiler */
+.ta-tar{gap:14px;position:relative;overflow:hidden;box-shadow:var(--glass-sombra),inset 0 4px 0 var(--eb)}
+.ta-tar:hover{box-shadow:var(--sombra-2),inset 0 4px 0 var(--eb)}
+.ta-tar__top{display:flex;align-items:flex-start;gap:12px}
+.ta-tar__tit{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ta-tar__tit .h3{overflow-wrap:anywhere}
+.ta-ir{flex:none;color:var(--borde);width:20px;height:20px;margin-top:2px}
+.ta-turno{display:flex;align-items:flex-start;gap:8px;font:600 15px/21px var(--f-texto);color:var(--cafe)}
+.ta-turno::before{content:"";flex:none;width:8px;height:8px;margin-top:7px;border-radius:50%;background:var(--eb)}
+.ta-datos{display:grid;grid-template-columns:1fr;border-radius:16px;background:var(--ef);overflow:hidden}
+.ta-datos>div{display:flex;flex-direction:column;gap:2px;padding:10px 14px;min-width:0}
+.ta-datos>div+div{border-top:1px solid rgba(255,255,255,.7)}
+.ta-datos small{font-size:15px;line-height:20px;color:var(--et);font-weight:600}
+.ta-datos strong{font:800 24px/30px var(--f-titulo);color:var(--cafe);overflow-wrap:anywhere}
+.ta-fechas{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font:600 16px/22px var(--f-texto);color:var(--cafe)}
+.ta-fechas .ico{width:17px;height:17px;color:var(--et);vertical-align:0}
+.ta-rol{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:15px;line-height:21px}
+.ta-rol .chip{font-size:15px;padding:3px 10px}
+.ta-rol .chip .ico{width:15px;height:15px;vertical-align:0}
+.ta-rol>span:last-child{overflow-wrap:anywhere;min-width:0}
+@media (min-width:760px){.ta-datos{grid-template-columns:auto 1fr}.ta-datos>div+div{border-top:0;border-left:1px solid rgba(255,255,255,.7)}.ta-datos>div:first-child{padding-right:20px}}
+
+/* Tu cuenta para el depósito (Billetera.tsx): mismo contenido, colores de «en curso» (lista) */
+.ta-cuenta{flex-direction:row;align-items:flex-start;gap:14px;box-shadow:var(--glass-sombra),inset 0 4px 0 var(--eb)}
+.ta-cuenta__cuerpo{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.ta-cuenta__lista{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.ta-cuenta__lista strong{display:inline-flex;align-items:center;padding:3px 12px;border-radius:var(--r-pildora);background:var(--ef);color:var(--et);box-shadow:inset 0 0 0 1px var(--eb);font:700 15px/20px var(--f-texto)}
+.ta-cuenta__lista .nota{font-size:15px;line-height:21px}
+.ta-cuenta .billetera__detalle{opacity:1;font-size:15px}
+.ta-cuenta .billetera__detalle summary{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px 0 12px;border-radius:var(--r-pildora);color:var(--cafe);font-weight:600;box-shadow:inset 0 0 0 1.5px var(--linea);background:rgba(255,255,255,.7);list-style:none}
+.ta-cuenta .billetera__detalle summary::-webkit-details-marker{display:none}
+.ta-cuenta .billetera__detalle summary .ico{width:16px;height:16px;color:var(--et);vertical-align:0;transition:transform var(--t-micro) var(--ease)}
+.ta-cuenta .billetera__detalle[open] summary .ico{transform:rotate(90deg)}
+.ta-cuenta .billetera__detalle[open]>*:not(summary){margin-top:10px}
+.ta-cuenta .billetera__dir code{display:inline-block;margin:0;padding:8px 12px;font-size:14px}
+.ta-cuenta .billetera__saldo{font-size:16px}
+.ta-cuenta .billetera__detalle .nota{font-size:14px}
+@media (min-width:760px){.ta-cuenta{align-items:center}.ta-cuenta:has(.billetera__detalle[open]){align-items:flex-start}
+  .ta-cuenta__cuerpo{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:20px}
+  .ta-cuenta__cuerpo>.etiqueta{flex-basis:100%;margin-bottom:-4px}
+  .ta-cuenta .billetera__detalle{margin-left:auto}.ta-cuenta .billetera__detalle[open]{flex-basis:100%;margin-left:0}}

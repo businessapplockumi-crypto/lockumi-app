@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { modoTrustless } from '../servidor/config'
+import { Dibujo } from './dibujos'
 import { abrirTrustlineUsdc, consultarUsdc, mensajeFirma, olvidarBilletera, abreviar, conectarBilletera, detalleError, consultarSaldo, enlaceExplorer, fondear, formatoXlm, type Billetera as B } from '../services/billetera'
 
 type Saldo = { t: 'cargando' } | { t: 'ok'; xlm: string } | { t: 'sin-cuenta' } | { t: 'error' }
@@ -32,21 +33,23 @@ export function Billetera() {
   useEffect(() => { if (b) void leer(b.direccion) }, [b, leer])
 
   if (fase === 'oculta') return null
-  if (!b) return <section className="glass tarjeta billetera" aria-label="Tu cuenta para el depósito" aria-busy="true">
+  if (!b) return <section className="glass tarjeta billetera ta-cuenta estado--pendiente" aria-label="Tu cuenta para el depósito" aria-busy="true">
+    <span className="ta-sello"><Dibujo n="reloj" /></span><div className="ta-cuenta__cuerpo">
     <p className="etiqueta">Tu cuenta para el depósito</p>
     <p className="nota" role="status">Preparando tu cuenta…</p>
     {fase === 'lenta' && <p className="nota">Esto está tardando más de lo normal. Puedes seguir usando la app; si en unos minutos sigue igual, cierra sesión y vuelve a entrar.</p>}
-  </section>
+  </div></section>
 
   const copiar = async () => { try { await navigator.clipboard.writeText(b.direccion); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { /* sin permiso de portapapeles */ } }
   const pedirFondos = async () => {
     setFondeando(true)
     try { await fondear(b.direccion); olvidarBilletera(); await leer(b.direccion) } catch { setSaldo({ t: 'error' }) } finally { setFondeando(false) }
   }
-  return <section className="glass tarjeta billetera" aria-label="Tu cuenta para el depósito">
+  return <section className="glass tarjeta billetera ta-cuenta estado--curso" aria-label="Tu cuenta para el depósito">
+    <span className="ta-sello"><Dibujo n="escudo" /></span><div className="ta-cuenta__cuerpo">
     <p className="etiqueta">Tu cuenta para el depósito</p>
-    <p><strong>Lista ✓</strong> <span className="nota">Aquí se guarda y se devuelve el depósito.</span></p>
-    <details className="billetera__detalle"><summary>Detalles</summary>
+    <p className="ta-cuenta__lista"><strong>Lista ✓</strong> <span className="nota">Aquí se guarda y se devuelve el depósito.</span></p>
+    <details className="billetera__detalle"><summary><Dibujo n="der" />Detalles</summary>
       <p className="nota">Cuenta de prueba (sin dinero real).</p>
       <p className="billetera__dir"><code title={b.direccion}>{abreviar(b.direccion)}</code>
         <button type="button" className="boton boton--secundario boton--chico" onClick={copiar} aria-label="Copiar dirección completa">{copiado ? 'Copiada' : 'Copiar'}</button>
@@ -62,7 +65,7 @@ export function Billetera() {
       </div>}
       {modoTrustless && saldo.t === 'ok' && <Usdc g={b.direccion} />}
     </details>
-  </section>
+  </div></section>
 }
 
 /** Prueba con Trustless Work: habilitar USDC de testnet (trustline) y cargarlo desde el faucet de Circle.
