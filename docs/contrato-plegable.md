@@ -1,6 +1,6 @@
 # Contrato plegable (22 oct 2026, rama `contrato-plegable`)
 
-**Pendiente de publicar.** Solo está en la rama `contrato-plegable` (desde `master` en `ad1578f`) y en su vista previa protegida de Vercel. app.lockumi.com y `master` no cambian.
+**Publicado el 23 oct 2026** en app.lockumi.com: rama `contrato-plegable` (desde `master` en `ad1578f`) unida a `master` por avance rápido en `abdfd9b`; deploy de producción `dpl_ARoWYrXEBftUcz1L4NoRiQNA9N6v`.
 
 Maqueta aprobada: `/workspace/lockumi/producto/contrato-plegable/` (`LEEME.md`, `contrato-plegable.css`, `construir.mjs` y las capturas `firma-*` y `detalle-*`).
 
@@ -42,4 +42,3 @@ Capturas: `/workspace/lockumi/capturas/contrato-plegable-preview-{firma,detalle}
 ## Pendiente
 
 - Preguntas para Legal de la maqueta (§5 de su `LEEME.md`): casilla con el contrato cerrado, reglas y cláusulas plegadas, pie plegado y versión del texto.
-- Publicar: unir a `master` solo cuando Katherine lo apruebe (un push a `master` publica en app.lockumi.com) y pasar la entrada de «Pendiente de publicar» del README a «Cambios publicados».

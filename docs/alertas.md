@@ -1,6 +1,6 @@
 # Avisos después de cada paso
 
-Rama `contrato-plegable` (22 oct 2026), **pendiente de publicar**: solo vista previa protegida de Vercel. app.lockumi.com (`master` en `ad1578f`) no cambia.
+**Publicado el 23 oct 2026** en app.lockumi.com: rama `contrato-plegable` unida a `master` por avance rápido desde `ad1578f` en `abdfd9b` (código `afe15ae` y `abdfd9b`, docs `2312401`); deploy de producción `dpl_ARoWYrXEBftUcz1L4NoRiQNA9N6v`. Pruebas antes de publicar: 163/163 unitarias y 855/855 del recorrido en navegador.
 
 ## Avisos v2 (23 oct 2026)
 
