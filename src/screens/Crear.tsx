@@ -14,6 +14,7 @@ const minuscula = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 import { TOPE_USDC, MONTO_MAX_USDC, montoValido, mensajeSaldoPropio } from '../services/solo'
 import { conectar, saldoPropio, hayFreighter, hayCavos, NOMBRE_FIRMA, type Firma } from '../services/cuentaPropia'
 import { abreviar } from '../services/billetera'
+import { avisar, alertaCreado } from '../alertas'
 import { validarAlquiler, hoyISO, montoNumero, fechaValida, ddmmaa, limitesEntrada, limitesSalida, salidaTrasCambiarEntrada, MONTO_MAX, type Campo, type Errores } from '../validacion'
 
 // ---------- Íconos de línea (mismo trazo que .ico) ----------
@@ -162,6 +163,7 @@ export function Crear({ u }: { u: Usuario }) {
       const r = modoPrueba
         ? await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: u.email, ...(escrowReal && origen === 'propia' && propia && { propia: { g: propia.g, firma: propia.firma } }) }, DUENO_PRUEBA)
         : await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: f.email.trim() }, u.email, await cuentaPropia())
+      avisar(alertaCreado({ direccion: f.direccion.trim(), monto: m }))
       ir('/alquiler/' + r.id)
     } catch (e) { setOcupado(false); setErrSrv(e instanceof Error ? e.message : 'No pudimos crear el alquiler. Intenta de nuevo.') }
   }

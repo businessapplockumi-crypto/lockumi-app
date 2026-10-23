@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LogoAnimado } from '../LogoAnimado'
 import { store, useAlquileres, obtener, ahoraDe, DIA, vistaDe, rolDe, fijarVista } from '../store'
 import { acciones, plazoMs, textoPlazo } from '../acciones'
@@ -17,6 +17,7 @@ import { ContratoDoc } from './ContratoDoc'
 import { TomarFoto } from '../Camara'
 import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE, ahoraPrueba } from '../flujo'
 import { adelantoPermitido } from '../../api/_lib/red'
+import { avisar, alertaPorCambio, instantanea, type Instantanea } from '../alertas'
 
 type P = { a: Alquiler; rol: Rol }
 const ahoraISO = (a: Alquiler) => new Date(ahoraDe(a)).toISOString()
@@ -275,6 +276,12 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
     const t = setTimeout(() => { void acciones.duenoPruebaAuto?.(obtener(id)!).catch(() => {}) }, 900)
     return () => clearTimeout(t)
   }, [pendienteDueno, id, a?.estado])
+  // Aviso emergente después de cada paso (también cuando el dueño de prueba firma o confirma solo).
+  const antes = useRef<Instantanea | null>(null)
+  useEffect(() => {
+    const x = antes.current; antes.current = a ? instantanea(a) : null
+    if (x && a) avisar(alertaPorCambio(x, a, rol))
+  })
   if (!a) return <main id="contenido" tabIndex={-1} className="cont"><div className="glass tarjeta">No encontramos ese alquiler. <a href="#/">Volver a tus alquileres</a></div></main>
   if (modoSolo) return <DetalleSolo a={a} />
   const p = { a, rol }; const t = turno(a, rol); const etapa = etapaDe(a)
