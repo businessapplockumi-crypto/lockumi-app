@@ -25,6 +25,16 @@ Cuando se publica, el servidor cambia al instante, pero una pestaña que ya esta
 - Lo importante (por ejemplo, recargar la cuenta de prueba antes de crear la cuenta segura) va también en el servidor, no solo en el navegador.
 - Para reproducir con sesión de Cavos sin hacer login real: `scripts/saldo0-login/` (Vite en localhost:5173 con `VITE_CAVOS_APP_ID`, sesión simulada en localStorage tal como la guarda el login y `/api/solo` a una vista previa con `vercel curl`). Ver [`docs/testnet-e2e.md`](docs/testnet-e2e.md#8-saldo-0-con-sesión-de-cavos-20-oct-2026-rama-arreglo-saldo-0-login).
 
+## Contrato plegable (`src/screens/ContratoDoc.tsx`)
+
+El contrato tiene dos partes (rama `contrato-plegable`, pendiente de publicar):
+
+- **Siempre a la vista:** cabecera (estado y referencia), «El alquiler», «Partes», el botón «Ver contrato completo», el pie y «Descargar o imprimir». La casilla «Leí el contrato y estoy de acuerdo.» y «Firma como inquilino» (`Firma` en `src/screens/Acta.tsx`) no dependen del plegado.
+- **Plegado por defecto:** Reglas, El depósito, 7 días para reclamos, Mediación y Firmas. El estado vive en `ContratoDoc` y empieza cerrado cada vez; no lo guardes en localStorage.
+- Una sección nueva va dentro de `completo` (plegada) salvo que Producto y Legal pidan que se vea siempre. No cambies textos legales al moverla.
+- **La impresión siempre es completa.** «Descargar o imprimir» usa `Documento` con `impresion` (sin botón ni partes ocultas); con el menú del navegador, `@media print` muestra `.cp-completo[hidden]` y oculta el botón, y `beforeprint`/`afterprint` lo abren y lo dejan como estaba. Si tocas esto, corre `src/screens/__tests__/contrato-plegable.test.tsx` y `scripts/contrato-plegable/capturar.mjs` (genera los PDF y los revisa con `pdftotext`).
+- Accesibilidad: `<button type="button">` con `aria-expanded` y `aria-controls`; el bloque es `role="region"` con `hidden`. Letra de 14 px o más, 56 px de alto como mínimo y solo variables de `src/index.css`.
+
 ## Agregar un estado del alquiler y su color
 
 «Tus alquileres» pinta cada tarjeta según el **grupo** de su estado: `pendiente` (amarillo miel), `curso` (verde salvia), `reclamo` (terracota) o `terminado` (arena). Para agregar un estado:

@@ -25,6 +25,7 @@ Lockumi es una app de **depósito de alquiler protegido** para Costa Rica. Dueñ
 - [Privacidad en la cadena](#privacidad-en-la-cadena)
 - [Qué es real y qué es simulado](#qué-es-real-y-qué-es-simulado)
 - [Correo con Resend (próximamente)](#correo-con-resend-próximamente)
+- [Pendiente de publicar](#pendiente-de-publicar)
 - [Cambios publicados](#cambios-publicados)
 - [Cómo correrlo localmente](#cómo-correrlo-localmente)
 - [Stack](#stack) · [Enlaces](#enlaces) · [Equipo](#equipo) · [Contribuir](#contribuir) · [Licencia](#licencia)
@@ -53,7 +54,7 @@ Pasos en https://app.lockumi.com:
    - **Reglas.** Son del dueño: el inquilino las lee y las acepta al firmar (en la demo de una persona, las escribes tú en nombre del dueño de prueba).
 
    Toca "Crear alquiler de prueba".
-3. **Firmas.** Lee la sección **«Contrato»** (lugar, depósito, entrada y salida, partes, reglas, «7 días para reclamos», mediación y firmas) y fírmalo. El dueño de prueba firma solo después de ti. La sección «Contrato» sigue visible en el detalle del alquiler después de firmar, con la fecha y hora de cada firma, y tiene el botón **«Descargar o imprimir»**: abre la ventana de impresión del navegador con solo el contrato, donde también puedes elegir «Guardar como PDF». Todo sale de los datos de tu navegador; no se envía nada.
+3. **Firmas.** Lee la sección **«Contrato»** y fírmalo. Arriba siempre se ven el estado, la referencia, **«El alquiler»** (lugar, depósito, entrada y salida) y **«Partes»**. Toca **«Ver contrato completo»** para leer las reglas, «El depósito», «7 días para reclamos», «Mediación» y las firmas; se cierra con «Ocultar contrato completo». El contrato empieza cerrado cada vez que entras. La casilla «Leí el contrato y estoy de acuerdo.» y el botón «Firma como inquilino» están siempre a la vista. El dueño de prueba firma solo después de ti. La sección «Contrato» sigue en el detalle del alquiler después de firmar (también cerrada al entrar), con la fecha y hora de cada firma, y tiene el botón **«Descargar o imprimir»**: abre la ventana de impresión del navegador con solo el contrato, **siempre completo** aunque esté cerrado en la pantalla, donde también puedes elegir «Guardar como PDF». Todo sale de los datos de tu navegador; no se envía nada. *(El contrato plegable está **pendiente de publicar**: hasta que se publique, app.lockumi.com muestra el contrato completo a la vista. Ver [Pendiente de publicar](#pendiente-de-publicar).)*
 4. **Depósito.** Toca "Pagar". El servidor crea el escrow *single-release* en Trustless Work y el depósito entra a esa cuenta segura. Si elegiste los USDC de Lockumi, en este paso la tesorería **siempre completa tu cuenta de inquilino de prueba hasta el monto del depósito** (máximo 20), aunque ya hayas usado su USDC en otro alquiler, y el servidor firma el depósito. Si la tesorería no puede recargar, la app dice: «Ahora no pudimos ponerte USDC de prueba. Espera unos minutos y vuelve a tocar «Pagar».»; si usas tu propia cuenta, Cavos o Freighter te piden confirmar la firma. El servidor también completa la cuenta de prueba justo antes de crear la cuenta segura, con o sin sesión de Google, Apple o correo. Si dejaste la pestaña abierta desde antes de una actualización de Lockumi y ves «Tu cuenta tiene 0 USDC de prueba… Lockumi se actualizó: recarga esta página y vuelve a tocar «Pagar»», recarga la página y vuelve a tocar «Pagar».
 5. **Fotos de entrada.** Toma una foto de cada espacio y completa la lista de revisión; confirma. El dueño de prueba confirma solo. Si no tienes cámara, puedes usar "Demo: usar una foto de ejemplo".
 6. **Fotos de salida.** Cuando entregues el lugar, toca "Empezar fotos de salida", toma las fotos, completa la lista y confirma. El dueño de prueba confirma solo.
@@ -225,7 +226,7 @@ Todo lo que se escribe en un escrow queda público y permanente en Stellar. Por 
 | Reclamo | Lo haces tú con "Hacer un reclamo como dueño de prueba"; queda registrado en el escrow (disputa real en testnet). |
 | Mediación | Persona mediadora simulada ("Decidir como persona mediadora"), sin efecto legal. El reparto sí es una transacción real en testnet. |
 | Plazo de reclamos | 7 días. En testnet existe "Solo red de prueba: adelantar el plazo" (bloqueado en el cliente y en el servidor fuera de testnet); con dinero real siempre aplicarían los 7 días. |
-| Contrato | Sección «Contrato» en el detalle del alquiler, antes y después de firmar, con las firmas (fecha y hora) y «Descargar o imprimir» (ventana de impresión del navegador; no genera archivos ni envía datos). Se guarda en el navegador. |
+| Contrato | Sección «Contrato» en el detalle del alquiler, antes y después de firmar, con las firmas (fecha y hora) y «Descargar o imprimir» (ventana de impresión del navegador, siempre con el contrato completo; no genera archivos ni envía datos). Se guarda en el navegador. Pendiente de publicar: resumen siempre visible y el resto tras «Ver contrato completo». |
 | Fotos y actas | Cámara de la app con fecha, hora y huella SHA-256; se guardan en el navegador (localStorage), no en la cadena. Ver [`docs/fotos-captura.md`](docs/fotos-captura.md). |
 | Dos personas e invitaciones | **Próximamente.** En desarrollo; todavía no funciona. El correo de invitación saldría con Resend (ver abajo). |
 | Rendimiento con Blend | **No está activo.** Función futura; si llega, el rendimiento sería variable y no garantizado. |
@@ -252,6 +253,12 @@ El correo de invitación de la Parte 4 (dos personas) saldrá con **Resend** des
 - `RESEND_API_KEY` y `SUPABASE_SERVICE_ROLE_KEY` cargadas en Vercel **solo para Preview**, como variables sensibles.
 
 Detalle en [`docs/correo-resend.md`](docs/correo-resend.md). El tratamiento de datos de ese correo está en el Aviso de privacidad 1.5-demo (sección «Invitar a otra persona», fase 2).
+
+## Pendiente de publicar
+
+Cambios listos en una rama, con vista previa, que **todavía no están** en app.lockumi.com ni en `master`.
+
+- **Contrato plegable** (22 oct 2026; rama `contrato-plegable` desde `master` en `ad1578f`, solo vista previa protegida de Vercel): el contrato ocupaba demasiado y obligaba a bajar mucho. Ahora, en la pantalla **Firma** (justo después de «Crear alquiler de prueba») y en la columna lateral del **detalle del alquiler**, siempre se ven la cabecera (estado y referencia), «El alquiler», «Partes», el pie del contrato y «Descargar o imprimir»; **Reglas, El depósito, 7 días para reclamos, Mediación y Firmas** quedan plegados tras el botón «Ver contrato completo» («Reglas, depósito, reclamos, mediación y firmas»). Empieza cerrado cada vez (no se recuerda). La casilla «Leí el contrato y estoy de acuerdo.» funciona igual que hoy aunque el contrato esté cerrado (opción a de la maqueta, pendiente de Legal) y el botón «Firma como inquilino» se ve siempre. **Imprimir o guardar como PDF siempre da el contrato completo** (con «Descargar o imprimir» y con el menú del navegador). No cambia ningún texto legal. Botón nativo con `aria-expanded` y `aria-controls`; lo plegado usa `hidden` (no recibe foco). Código: `src/screens/ContratoDoc.tsx`, estilos `cp-` en `src/index.css`, ícono `i-chevron` en `index.html`; pruebas: `src/screens/__tests__/contrato-plegable.test.tsx` y `scripts/contrato-plegable/capturar.mjs`. Detalle: [`docs/contrato-plegable.md`](docs/contrato-plegable.md).
 
 ## Cambios publicados
 
