@@ -28,13 +28,33 @@ Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama. Reemplaza el estilo del
   - **ya no es un diálogo**: `<Alertas />` deja siempre en la página dos zonas, `role="status"` con `aria-live="polite"` (pasos y logros) y `role="alert"` (errores), y el aviso aparece dentro de la que corresponde, así el lector de pantalla lo anuncia sin mover el foco;
   - **no roba el foco**. La tarjeta se puede enfocar con Tab (`tabindex="0"`, nombre «Aviso. Toca para cerrar», título y texto con `aria-describedby`): enfocada se pausa y Enter, Espacio o Esc la cierran; al cerrarla el foco vuelve a donde estaba (o a `#contenido`);
   - con «reducir movimiento»: solo un fundido al aparecer, sin animación de salida ni de la llave, y la línea del tiempo queda quieta;
-  - límite: la tarjeta va al final de la página, así que llegar con Tab antes de 5 s puede costar; casi todo lo que dice también queda en la pantalla (líneas del paso e historial), salvo el error del ingreso (ver «Decisiones pendientes»);
+  - límite: la tarjeta va al final de la página, así que llegar con Tab antes de 5 s puede costar; casi todo lo que dice también queda en la pantalla (líneas del paso e historial), y el error del ingreso queda escrito en Entrar (ver «Error del ingreso en Entrar»);
   - contraste AA en todos los textos (el más justo, verde `#2E7347` sobre `#E3F2E8`, 4,95:1).
 - **«Tomar foto»** (`src/Camara.tsx`): el emoji 📷 se cambió por el ícono de cámara de la app (`i-camara`).
 
 Capturas reales (localhost, sesión simulada): `capturas/alertas-v2-*.png`. Imágenes livianas y GIF de la llave: `diseno/envio/alertas-v2-implementado/`. GIF del cierre solo (celular y computadora): `diseno/envio/alertas-v2-autocierre/aviso-se-esconde-solo.gif`.
 
-**Decisiones pendientes (Katherine):** 1) el error «El ingreso no terminó» (regreso de Google o Apple) **solo se ve en el aviso**: a los 5 s desaparece y no queda nada en la pantalla (es el único aviso de error); 2) el enlace «Entrar con mi correo» de la maqueta no se agregó (tocar el aviso lo cierra; un enlace dentro chocaría con eso); 3) se quitó «en esta misma pestaña» del texto (decisión de Producto según Legal); 4) llegar con Tab antes de 5 s.
+**Decisiones pendientes (Katherine):** 1) ~~el error del ingreso solo se ve en el aviso~~ **resuelto el 23 oct** (queda escrito en Entrar, ver abajo); 2) el enlace «Entrar con mi correo» de la maqueta no se agregó (tocar el aviso lo cierra; un enlace dentro chocaría con eso); 3) se quitó «en esta misma pestaña» del texto (decisión de Producto según Legal); 4) llegar con Tab antes de 5 s.
+
+### Error del ingreso en Entrar (aprobado por Katherine, 23 oct, 11:49 a. m.)
+
+Si el regreso de Google o Apple no termina, además del aviso de 5 s (igual que antes), la pantalla **Entrar** muestra el mismo texto escrito, arriba del botón «Entrar»: **«El ingreso no terminó» · «Toca Entrar y elige tu cuenta.»** (textos de Legal). **No se va solo:** se borra cuando la persona vuelve a tocar «Entrar» o cuando entra bien. Accesible: el recuadro (`#error-ingreso`) está enlazado al botón con `aria-describedby`, así el lector lo lee al llegar al botón; no lleva `role="alert"` propio porque el aviso ya se anuncia desde la zona `role="alert"` (se evita leerlo dos veces). Código: `src/screens/Login.tsx` (`error`, `onReintento`), `src/App.tsx` (estado `regreso`), `.entrada-app__error` en `src/index.css`. Pruebas: `alertas.test.tsx` («error del ingreso escrito en Entrar») y el recorrido `capturar.mjs` (el texto sigue después de que el aviso se va, y desaparece al tocar Entrar).
+
+### Ingreso más rápido: pantalla «Entrando a tu cuenta…» (23 oct)
+
+Katherine notó que la pantalla Entrar tardaba en irse y «¡Ingresaste correctamente!» salía tarde. **Causa (medida):** al volver de Google o Apple, la app mostraba **Entrar** (con sus botones) mientras cargaba el módulo de ingreso de Cavos (unos 620 KB) y luego confirmaba la sesión con Cavos (`/api/oauth/callback/exchange`, 0,34–0,54 s reales). Recién entonces cambiaba de pantalla y salía el aviso (los dos a la vez). El saldo y la recarga de la cuenta **no frenan** el cambio: se cargan después, ya en Inicio. **Arreglo (sin tocar la lógica de cuentas ni del servidor):** si la dirección trae la vuelta de Google o Apple (`hayRegreso()` en `src/services/auth.ts`), desde el primer cuadro se ve **«Entrando a tu cuenta…»** con la casita y la llave (`Entrando` en `Login.tsx`, `aria-busy="true"`, texto en `role="status"`; con «reducir movimiento» la llave queda quieta). El aviso sigue saliendo apenas se confirma la sesión, junto con Inicio. Si falla, vuelve a Entrar con el error escrito.
+
+Medido con Playwright y `performance` (build de producción, intercambio simulado de 5 ms; «lento» = CPU ×4 y red 3G rápida; promedio de 3), en ms desde que empieza la carga:
+
+| Paso | Antes, rápido | Después, rápido | Antes, lento | Después, lento |
+|---|---|---|---|---|
+| Primera pantalla | Entrar ~200 | «Entrando…» ~75 | Entrar ~700 | «Entrando…» ~635 |
+| Módulo de Cavos cargado | ~300 | ~130 | ~1295 | ~1190 |
+| Empieza la confirmación de la sesión | ~350 | ~210 | ~1560 | ~1440 |
+| Sesión confirmada → Inicio y aviso | ~380 | ~240 | ~1585 | ~1520 |
+| Tiempo con **Entrar** a la vista | ~180 (+0,34–0,54 s reales) | **0** | ~885 (+0,4–0,5 s reales) | **0** |
+
+Con la confirmación real se suman 0,34–0,54 s a las dos últimas filas. Lo que queda (cargar el módulo de Cavos y confirmar con Cavos) no se acorta sin tocar la lógica del ingreso; está fuera de este cambio. Scripts: `diseno/ingreso-tiempos/` (fuera del repo).
 
 ## Por qué no se veían
 

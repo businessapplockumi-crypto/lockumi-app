@@ -26,6 +26,9 @@ export const formatoCodigo = modoReal
  *  (no hace falta reescritura en Vercel). Debe registrarse EXACTA en Cavos → App → Callback URLs. */
 export const urlRegreso = () => window.location.origin + '/'
 
+/** ¿La página abrió con el regreso de Google o Apple (?cavos_auth_code=… o ?auth_data=…)? Solo en modo real. */
+export const hayRegreso = (search = window.location.search) => { const q = new URLSearchParams(search); return modoReal && (q.has('cavos_auth_code') || q.has('auth_data')) }
+
 const espera = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 /** Proveedor simulado: no hay red ni billetera; cualquier código de 6 dígitos es válido. */

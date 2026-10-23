@@ -29,7 +29,7 @@ export function Aviso({ tono = 'paso', titulo, children, onCerrar }:
   const [saliendo, setSaliendo] = useState(false)
   const [lugar, setLugar] = useState<{ top?: number }>({})
   const [pausa, setPausa] = useState(false)
-  const ref = useRef<HTMLDivElement>(null); const id = useId()
+  const ref = useRef<HTMLDivElement>(null), capa = useRef<HTMLDivElement>(null); const id = useId()
   const saliendoRef = useRef(false); const onCerrarRef = useRef(onCerrar)
   const antesDelFoco = useRef<HTMLElement | null>(null)
   useEffect(() => { onCerrarRef.current = onCerrar })
@@ -54,21 +54,35 @@ export function Aviso({ tono = 'paso', titulo, children, onCerrar }:
   const revisarRef = useRef(revisar); useEffect(() => { revisarRef.current = revisar })
   useEffect(() => { revisarRef.current(); return () => { clearTimeout(reloj.current); reloj.current = 0 } }, [])   // (en StrictMode el efecto corre dos veces)
   useLayoutEffect(() => {
-    const poner = () => setLugar(lugarEnCelular())
+    // Se escribe también directo en la tarjeta para que el cuadro que se dibuja ya la tenga en su lugar
+    // (por ejemplo, cuando la página salta arriba al cambiar de paso); el estado queda igual para React.
+    const poner = () => { const n = lugarEnCelular(), c = capa.current
+      if (c) { if (n.top != null) { c.style.top = n.top + 'px'; c.style.bottom = 'auto' } else c.removeAttribute('style') }
+      setLugar(v => v.top === n.top ? v : n) }
     // Otra vez cuando la pantalla nueva ya está dibujada (por ejemplo, al pasar de «Nuevo alquiler» al alquiler creado)
     // y cuando la página se desplaza (la app sube al paso nuevo): el aviso acompaña al título sin taparlo.
     let cuadro = 0
     const luego = () => { cancelAnimationFrame(cuadro); cuadro = requestAnimationFrame(poner) }
     poner(); luego(); const t = setTimeout(poner, 350)
-    addEventListener('resize', luego); addEventListener('hashchange', luego); addEventListener('scroll', luego, { passive: true })
-    return () => { cancelAnimationFrame(cuadro); clearTimeout(t); removeEventListener('resize', luego); removeEventListener('hashchange', luego); removeEventListener('scroll', luego) }
+    addEventListener('resize', luego); addEventListener('hashchange', luego); addEventListener('scroll', poner, { passive: true })
+    // También cuando el contenido cambia de tamaño o se agrega algo encima del título (por ejemplo, una línea
+    // «El dueño de prueba confirmó…»): el título baja y el aviso baja con él.
+    const tam = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(poner)
+    const vigilar = () => { if (!tam) return; tam.disconnect()
+      for (const e of [document.querySelector('.aviso-red'), document.querySelector('header.barra'), document.getElementById('contenido'),
+        document.querySelector('#contenido h1, main h1')?.closest('.cab') ?? document.querySelector('#contenido h1, main h1'), document.querySelector('.entrada-app__titulo')]) if (e) tam.observe(e) }
+    vigilar()
+    const cambios = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => { vigilar(); luego() })
+    cambios?.observe(document.getElementById('contenido') ?? document.body, { childList: true, subtree: true, characterData: true })
+    return () => { cancelAnimationFrame(cuadro); clearTimeout(t); tam?.disconnect(); cambios?.disconnect()
+      removeEventListener('resize', luego); removeEventListener('hashchange', luego); removeEventListener('scroll', poner) }
   }, [])
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrarRef.current() }
     addEventListener('keydown', k); return () => removeEventListener('keydown', k)
   }, [])
   const poner = (campo: typeof encima, v: boolean) => { campo.current = v; revisar() }
-  return <div className={'aviso-capa' + (saliendo ? ' aviso-capa--sale' : '')} style={lugar.top != null ? { top: lugar.top, bottom: 'auto' } : undefined}>
+  return <div ref={capa} className={'aviso-capa' + (saliendo ? ' aviso-capa--sale' : '')} style={lugar.top != null ? { top: lugar.top, bottom: 'auto' } : undefined}>
     <div ref={ref} className={'aviso-pop aviso-pop--' + tono + (pausa ? ' aviso-pop--pausa' : '')} role="group" tabIndex={0}
       aria-label="Aviso. Toca para cerrar" aria-describedby={id + 't ' + id + 'd'}
       onClick={cerrar}

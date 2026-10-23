@@ -3,6 +3,7 @@ import { auth, formatoCodigo as F, modoReal } from '../services/auth'
 import type { Usuario } from '../types'
 import { Demo, Icono } from '../ui'
 import { LogoAnimado } from '../LogoAnimado'
+import { alertaIngresoFallo } from '../alertas'
 import { WORDMARK_SVG } from '../wordmark'
 import { CasillaLegal } from '../legal/CasillaLegal'
 import { CONSENTIMIENTO_PRIVACIDAD as cons, PRIVACIDAD, TERMINOS } from '../legal/documentos'
@@ -75,7 +76,19 @@ function Hoja({ onCerrar, onOk }: { onCerrar: () => void; onOk: (u: Usuario) => 
   </div>
 }
 
-export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
+/** Mientras se confirma el regreso de Google o Apple: la casita con la llave y una línea, sin la pantalla Entrar.
+ *  `aria-busy` y un `role="status"`; con «reducir movimiento» la casita queda quieta (regla global de index.css). */
+export function Entrando() {
+  return <main id="contenido" tabIndex={-1} className="cont cont--form entrada-app ingreso-cargando" aria-busy="true">
+    <LogoAnimado className="entrada-app__arte marca-c__arte" />
+    <p className="entrada-app__titulo" role="status">Entrando a tu cuenta…</p>
+  </main>
+}
+
+/** Texto aprobado por Legal (23 oct 2026): el mismo del aviso `ingreso-fallo`. */
+const ERROR_INGRESO = alertaIngresoFallo()
+
+export function Login({ onOk, error = false, onReintento }: { onOk: (u: Usuario) => void; error?: boolean; onReintento?: () => void }) {
   const [abierta, setAbierta] = useState(false)
   // Dos casillas obligatorias y separadas: Términos, y Aviso de privacidad con transferencia de datos.
   const pidePrivacidad = !!PRIVACIDAD
@@ -88,7 +101,7 @@ export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
     if (e.terminos) return refT.current?.focus()
     if (e.privacidad) return refP.current?.focus()
     for (const c of ['terminos', 'privacidad'] as const) if (VERSION[c] && (c === 'terminos' || pidePrivacidad) && !aceptoVersion(c, VERSION[c])) guardarAceptacion(c, VERSION[c])
-    setAbierta(true)
+    onReintento?.(); setAbierta(true)
   }
   const cambiar = (c: ClaveLegal) => (v: boolean) => {
     setMarcas(m => ({ ...m, [c]: v })); setErrores(e => erroresTrasCambio(e, c, v))
@@ -111,7 +124,8 @@ export function Login({ onOk }: { onOk: (u: Usuario) => void }) {
       {pidePrivacidad && <CasillaLegal id="acepto-privacidad" ref={refP} marcada={marcas.privacidad} onCambio={cambiar('privacidad')} error={errores.privacidad}>
         {cons.antes}<a href="/privacidad" target="_blank" rel="noopener">{cons.enlace}</a>{cons.despues}</CasillaLegal>}
     </div>
-    <button type="button" className="boton boton--primario boton--ancho" onClick={entrar} aria-haspopup="dialog">Entrar</button>
+    {error && <div id="error-ingreso" className="entrada-app__error"><strong>{ERROR_INGRESO.titulo}</strong> <span>{ERROR_INGRESO.hecho}</span></div>}
+    <button type="button" className="boton boton--primario boton--ancho" onClick={entrar} aria-haspopup="dialog" aria-describedby={error ? 'error-ingreso' : undefined}>Entrar</button>
     <p className="nota centro">Con Google, Apple o tu correo. Sin contraseñas.</p>
     <p className="centro"><Demo /></p>
     {abierta && <Hoja onCerrar={() => setAbierta(false)} onOk={onOk} />}

@@ -736,3 +736,8 @@ html.sin-scroll{overflow:hidden}
   .ta-cuenta__cuerpo{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:20px}
   .ta-cuenta__cuerpo>.etiqueta{flex-basis:100%;margin-bottom:-4px}
   .ta-cuenta .billetera__detalle{margin-left:auto}.ta-cuenta .billetera__detalle[open]{flex-basis:100%;margin-left:0}}
+/* Entrar: error del regreso de Google o Apple, escrito en la pantalla (no se va solo). Y «Entrando…» mientras se confirma. */
+.entrada-app__error{display:flex;flex-direction:column;gap:2px;margin:0 0 12px;padding:12px 14px;border-radius:14px;border:1px solid var(--error);background:#fff;color:var(--error);font-size:15px;line-height:1.4}
+.entrada-app__error strong{font-family:Nunito,var(--fuente,inherit);font-weight:800}
+.ingreso-cargando{min-height:60vh;justify-content:center}
+.ingreso-cargando .entrada-app__titulo{text-align:center}

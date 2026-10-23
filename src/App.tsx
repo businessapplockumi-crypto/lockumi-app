@@ -8,10 +8,10 @@ import { Pie } from './legal/Pie'
 import { olvidarBilletera } from './services/billetera'
 import { Alertas } from './Alertas'
 import { avisar, alertaIngreso, alertaIngresoFallo } from './alertas'
-import { modoReal } from './services/auth'
+import { modoReal, hayRegreso } from './services/auth'
 import { useHash } from './router'
 import { Barra, Fondo } from './ui'
-import { Login } from './screens/Login'
+import { Login, Entrando } from './screens/Login'
 import { Inicio } from './screens/Inicio'
 import { Crear } from './screens/Crear'
 import { Detalle } from './screens/Detalle'
@@ -19,17 +19,21 @@ import { Invitacion } from './screens/Invitacion'
 const volver = () => { const v = sessionStorage.getItem('lockumi.regreso'); sessionStorage.removeItem('lockumi.regreso'); return v ?? '/' }
 export default function App() {
   const [u, setU] = useState(auth.actual()); const r = useHash()
+  // Regreso de Google o Apple: mientras se confirma la sesión se ve «Entrando…» (no la pantalla Entrar);
+  // si no termina, el error queda escrito en Entrar hasta que la persona vuelve a intentar o entra bien.
+  const [regreso, setRegreso] = useState<'esperando' | 'fallo' | null>(() => !auth.actual() && hayRegreso() ? 'esperando' : null)
   // Al entrar, la aceptación de los Términos (guardada al marcar la casilla) se copia al usuario.
-  const entro = (x: Usuario) => { setU(guardarUsuario(conAceptacion(x))); avisar(alertaIngreso(modoReal)); location.hash = volver() }
+  const entro = (x: Usuario) => { setRegreso(null); setU(guardarUsuario(conAceptacion(x))); avisar(alertaIngreso(modoReal)); location.hash = volver() }
   // Regreso del login con Google/Apple (solo en modo real con VITE_CAVOS_APP_ID). Si falla, se avisa (antes no se veía nada).
-  useEffect(() => { auth.completarRegreso().then(x => { if (x) entro(x) }).catch(() => avisar(alertaIngresoFallo())) }, [])
+  useEffect(() => { auth.completarRegreso().then(x => { if (x) entro(x); else setRegreso(null) }).catch(() => { setRegreso('fallo'); avisar(alertaIngresoFallo()) }) }, [])
   const skip = <a className="skip" href="#contenido" onClick={e => { e.preventDefault(); document.getElementById('contenido')?.focus() }}>Saltar al contenido</a>
   // Textos legales: /terminos (ruta real, con reescritura en vercel.json) o #/terminos. Se ven con o sin sesión.
   const legal = rutaLegal(location.pathname) ?? rutaLegal(r)
   if (legal) return <Fondo>{skip}<PaginaLegal slug={legal} /><Pie /></Fondo>
   // Si llegó por un link de invitación, se vuelve ahí después de entrar (también tras el regreso de Google o Apple).
   if (!u && r.startsWith('/invitacion/')) sessionStorage.setItem('lockumi.regreso', r)
-  if (!u) return <Fondo>{skip}<Login onOk={entro} /><Pie /><Alertas /></Fondo>
+  if (!u && regreso === 'esperando') return <Fondo>{skip}<Entrando /><Alertas /></Fondo>
+  if (!u) return <Fondo>{skip}<Login onOk={entro} error={regreso === 'fallo'} onReintento={() => setRegreso(null)} /><Pie /><Alertas /></Fondo>
   const m = r.match(/^\/alquiler\/(.+)$/)
   const inv = r.match(/^\/invitacion\/([0-9a-f-]{36})\/([0-9a-f]{64})$/)
   return <Fondo>{skip}

@@ -45,6 +45,7 @@ describe('Aviso v2 (componente)', () => {
     expect(c).toContain('export const DURACION_AVISO = 5000')
     for (const x of ['onClick={cerrar}', "e.key === 'Enter' || e.key === ' ' || e.key === 'Escape'", 'onPointerEnter', 'onPointerLeave', 'onPointerDown', 'onFocus', 'onBlur', "e.key === 'Escape') cerrarRef.current()"]) expect(c).toContain(x)
     expect(c).not.toMatch(/\.focus\(\)[^\n]*aviso-pop/)   // no roba el foco al aparecer
+    for (const x of ['new ResizeObserver(poner)', "addEventListener('scroll', poner", 'new MutationObserver(', 'tam?.disconnect()', 'cambios?.disconnect()']) expect(c).toContain(x)   // sigue al título si el contenido cambia; limpia al desmontar
     expect(css).toContain('.aviso-pop--pausa .aviso-pop__tiempo{animation-play-state:paused}')
   })
   it('zonas fijas para lectores de pantalla: status (amable) en pasos y logros, alert en errores', () => {
@@ -140,8 +141,8 @@ describe('cada paso del flujo dispara su aviso', () => {
     expect(leer('../screens/Detalle.tsx')).toContain('avisar(alertaPorCambio(x, a, rol))')
     expect(leer('../screens/Crear.tsx')).toContain("avisar(alertaCreado({ direccion: f.direccion.trim(), monto: m }))\n      ir('/alquiler/' + r.id)")
     const app = leer('../App.tsx')
-    expect(app).toContain('avisar(alertaIngreso(modoReal))'); expect(app).toContain('.catch(() => avisar(alertaIngresoFallo()))')
-    expect(app.match(/<Alertas \/>/g)).toHaveLength(2)
+    expect(app).toContain('avisar(alertaIngreso(modoReal))'); expect(app).toContain("setRegreso('fallo'); avisar(alertaIngresoFallo())")
+    expect(app.match(/<Alertas \/>/g)).toHaveLength(3)   // Entrar, «Entrando…» y con sesión
   })
 })
 
@@ -185,5 +186,25 @@ describe('textos de los avisos', () => {
   })
   it('los textos con sentido legal están marcados para Legal', () => {
     expect(leer('../alertas.ts').match(/\/\/ LEGAL: revisar/g)!.length).toBeGreaterThanOrEqual(8)
+  })
+})
+
+describe('error del ingreso escrito en Entrar', () => {
+  it('Login con error: texto de Legal, asociado al botón Entrar; sin error no aparece', async () => {
+    const { Login, Entrando } = await import('../screens/Login')
+    const con = renderToStaticMarkup(<Login onOk={() => {}} error />), sin = renderToStaticMarkup(<Login onOk={() => {}} />)
+    expect(con).toContain('<div id="error-ingreso" class="entrada-app__error"><strong>El ingreso no terminó</strong> <span>Toca Entrar y elige tu cuenta.</span></div>')
+    expect(con).toMatch(/<button[^>]*aria-describedby="error-ingreso"[^>]*>Entrar<\/button>/)
+    expect(sin).not.toContain('error-ingreso')
+    const e = renderToStaticMarkup(<Entrando />)
+    expect(e).toContain('aria-busy="true"'); expect(e).toContain('role="status"'); expect(e).toContain('Entrando a tu cuenta…'); expect(e).not.toContain('<button')
+  })
+  it('App: «Entrando…» mientras se confirma el regreso; el error queda hasta volver a intentar o entrar', () => {
+    const a = leer('../App.tsx')
+    expect(a).toContain("if (!u && regreso === 'esperando') return <Fondo>{skip}<Entrando /><Alertas /></Fondo>")
+    expect(a).toContain(".catch(() => { setRegreso('fallo'); avisar(alertaIngresoFallo()) })")
+    expect(a).toContain("error={regreso === 'fallo'} onReintento={() => setRegreso(null)}")
+    expect(a).toContain('const entro = (x: Usuario) => { setRegreso(null);')
+    expect(leer('../screens/Login.tsx')).toContain('onReintento?.(); setAbierta(true)')
   })
 })

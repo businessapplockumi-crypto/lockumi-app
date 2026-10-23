@@ -38,7 +38,8 @@ async function contexto(w, { sesion = true, reducir = false } = {}) {
 let modo = 0
 async function alerta(p, n, paso, titulo, { capturar = true } = {}) {
   const pop = p.locator('.aviso-pop'); await pop.waitFor({ timeout: 30000 }); const visto = Date.now(); await p.waitForTimeout(900)
-  const m = await pop.evaluate(e => {
+  // Se mide en un cuadro de dibujo (requestAnimationFrame): lo que la persona ve en la pantalla.
+  const m = await pop.evaluate(e => new Promise(listo => requestAnimationFrame(() => listo((() => {
     const [t, d] = (e.getAttribute('aria-describedby') || '').split(' ').map(x => document.getElementById(x))
     const r = e.getBoundingClientRect(), zona = e.closest('.aviso-zona')
     return { rol: e.getAttribute('role'), zona: zona?.getAttribute('role'), vivo: zona?.getAttribute('aria-live'), nombre: e.getAttribute('aria-label'), tab: e.tabIndex,
@@ -47,7 +48,7 @@ async function alerta(p, n, paso, titulo, { capturar = true } = {}) {
       logo: (() => { const s = e.querySelector('.aviso-pop__logo svg'); return !!s && s.getAttribute('viewBox') === '419.5 65.25 420.25 408.25' && getComputedStyle(s).overflow === 'visible' && getComputedStyle(e.querySelector('.aviso-pop__esquina')).overflow === 'visible' })(),
       cabe: r.left >= 0 && r.right <= innerWidth + .5 && r.top >= -.5 && r.bottom <= innerHeight + .5, letra: Math.min(...[...e.querySelectorAll('p,h2,strong')].map(x => parseFloat(getComputedStyle(x).fontSize))),
       emoji: /\p{Extended_Pictographic}/u.test(e.textContent), tono: e.className.replace('aviso-pop aviso-pop--', '').split(' ')[0] }
-  })
+  })()))))
   const et = `${paso} (${n})`
   ok(m.titulo === titulo, `${et}: título «${m.titulo}»`)
   ok(m.rol === 'group' && (m.tono === 'error' ? m.zona === 'alert' : m.zona === 'status' && m.vivo === 'polite'), `${et}: sin diálogo; zona ${m.zona}${m.vivo ? ' ' + m.vivo : ''} (${m.tono})`)
@@ -141,10 +142,21 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
 
   // Ingreso que no terminó (regreso de Google con un código que no sirve; Cavos bloqueado) + movimiento reducido
   const f = await contexto(w, { sesion: false, reducir: true })
+  // Qué se ve mientras se confirma el regreso: «Entrando…» (aria-busy), nunca la pantalla Entrar antes del resultado.
+  await f.ctx.addInitScript(() => { const v = window.__vio = []; new MutationObserver(() => { const c = document.querySelector('.ingreso-cargando'), e = document.querySelector('.entrada-app:not(.ingreso-cargando)')
+    const k = c ? 'cargando:' + c.getAttribute('aria-busy') : e ? (document.querySelector('.aviso-pop') ? 'entrar+aviso' : 'entrar') : ''; if (k && v[v.length - 1] !== k) v.push(k) }).observe(document, { childList: true, subtree: true }) })
   await f.p.goto(B + '?cavos_auth_code=simulado-invalido#/')
   ok(await f.p.locator('.aviso-pop').evaluate(e => getComputedStyle(e).animationName === 'aviso-fade' && getComputedStyle(e.querySelector('.aviso-logo__llave')).animationName === 'none' && getComputedStyle(e.querySelector('.aviso-pop__tiempo')).animationName === 'none').catch(() => false), `ingreso-fallo (${n}): solo un fundido con movimiento reducido`)
   await alerta(f.p, n, 'ingreso-fallo', 'El ingreso no terminó')
   ok(await f.p.getByRole('button', { name: 'Entrar' }).isVisible(), `ingreso-fallo (${n}): queda la pantalla de entrada`)
+  const vio = await f.p.evaluate(() => window.__vio)
+  ok(vio[0] === 'cargando:true' && vio[1] === 'entrar+aviso', /* «entrar» solo (sin aviso) recién después de que el aviso se va */ `ingreso-fallo (${n}): primero «Entrando…» con aria-busy, luego Entrar con el error (${vio.join(' → ')})`)
+  const err = f.p.locator('#error-ingreso')
+  await f.p.locator('.aviso-pop').waitFor({ state: 'detached', timeout: 8000 }).catch(() => {})
+  ok(await err.isVisible() && (await err.textContent()) === 'El ingreso no terminó Toca Entrar y elige tu cuenta.', `ingreso-fallo (${n}): el error sigue escrito en Entrar después del aviso («${await err.textContent().catch(() => '')}»)`)
+  ok(await f.p.getByRole('button', { name: 'Entrar' }).getAttribute('aria-describedby') === 'error-ingreso', `ingreso-fallo (${n}): el error está asociado al botón Entrar`)
+  await f.p.getByLabel(/Acepto los Términos/).check(); await f.p.getByLabel(/Acepto el Aviso de privacidad/).check(); await f.p.getByRole('button', { name: 'Entrar' }).click()
+  ok(await err.count() === 0, `ingreso-fallo (${n}): al volver a intentar, el error se quita`)
   await f.ctx.close()
   // Ingreso correcto (Vite sin Cavos real: login simulado)
   const g = await contexto(w, { sesion: false }); await g.p.goto(B2); await g.p.waitForTimeout(800)
