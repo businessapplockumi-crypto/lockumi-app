@@ -35,6 +35,17 @@ El contrato tiene dos partes (rama `contrato-plegable`, pendiente de publicar):
 - **La impresión siempre es completa.** «Descargar o imprimir» usa `Documento` con `impresion` (sin botón ni partes ocultas); con el menú del navegador, `@media print` muestra `.cp-completo[hidden]` y oculta el botón, y `beforeprint`/`afterprint` lo abren y lo dejan como estaba. Si tocas esto, corre `src/screens/__tests__/contrato-plegable.test.tsx` y `scripts/contrato-plegable/capturar.mjs` (genera los PDF y los revisa con `pdftotext`).
 - Accesibilidad: `<button type="button">` con `aria-expanded` y `aria-controls`; el bloque es `role="region"` con `hidden`. Letra de 14 px o más, 56 px de alto como mínimo y solo variables de `src/index.css`.
 
+## Avisos después de cada paso (`src/alertas.ts`)
+
+Rama `contrato-plegable`, pendiente de publicar. Ver [`docs/alertas.md`](docs/alertas.md).
+
+- **No llames a `<Aviso>` directo desde una pantalla.** Usa `avisar(alerta)` (cola: se muestran de a uno). `<Alertas />` va una sola vez en `App.tsx` (con y sin sesión).
+- **Los avisos del flujo salen solos:** `Detalle` guarda una `instantanea()` del alquiler y, en cada cambio, `alertaPorCambio(antes, ahora, rol)` decide el aviso (cambio de estado, firma nueva de una parte o plazo adelantado). Así también avisa cuando el dueño de prueba firma solo. Un paso nuevo = un `case` nuevo en `alertaPorCambio` + su prueba en `src/__tests__/alertas.test.tsx` + su captura en `scripts/alertas/capturar.mjs`.
+- Cada aviso tiene `titulo`, `hecho` (qué pasó) y `sigue` (qué sigue). Ícono del sprite de `index.html` (`icono: 'i-…'`), sin emojis. Los errores usan `tipo: 'error'` (`alertdialog`) y siempre dicen cómo seguir; los errores de los pasos siguen en la pantalla (`p.error`).
+- **Textos:** español neutro, sin palabras técnicas, sin «liberado» y con «(simulación)» para la persona mediadora. Todo texto con sentido legal lleva `// LEGAL: revisar` y no se cambia sin Legal.
+- `Aviso` (`src/Aviso.tsx`): ids con `useId`, foco al botón principal, Tab atrapado entre la X y el botón, Esc cierra y el foco vuelve a donde estaba (o a `#contenido`). Si lo tocas, corre `scripts/alertas/capturar.mjs` (revisa foco, Tab, Esc, X, tamaño y capturas en 390 y 1280 px).
+- `[hidden]` y `display`: si una clase pone `display:grid|flex`, agrega `.clase[hidden]{display:none}` (pasó con `.turno`).
+
 ## Agregar un estado del alquiler y su color
 
 «Tus alquileres» pinta cada tarjeta según el **grupo** de su estado: `pendiente` (amarillo miel), `curso` (verde salvia), `reclamo` (terracota) o `terminado` (arena). Para agregar un estado:
