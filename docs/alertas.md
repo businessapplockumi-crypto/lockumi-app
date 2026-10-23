@@ -4,9 +4,9 @@ Rama `contrato-plegable` (22 oct 2026), **pendiente de publicar**: solo vista pr
 
 ## Avisos v2 (23 oct 2026)
 
-Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama, solo vista previa. Reemplaza el estilo del aviso; **los textos no cambian** (los legales siguen siendo los de la tabla de abajo; los dos textos cortos de la maqueta v2 esperan a Legal y no se usan).
+Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama. Reemplaza el estilo del aviso. **Textos cortos aprobados por Legal el 23 oct 2026** (revisión de Legal del 23 oct 2026): «¡Depósito guardado!» y «El ingreso no terminó» (ver la tabla de abajo) y el botón «Decidir como persona mediadora» renombrado a «Resolver el reclamo (simulación)»; los demás textos no cambian.
 
-**Decisiones confirmadas por Katherine (23 oct, 11:24 a. m.):** 1) sin botón «Continuar» / «Entendido»: se cierra con la X o con Esc; 2) los 6 logros con llave y color verde son `ingreso`, `contrato-firmado`, `pago`, `entrada-confirmada`, `devolucion` y `acuerdo`; 3) en el teléfono, si el título queda abajo en la pantalla, la tarjeta pasa abajo para no taparlo. Publicar en producción (avisos v2 y contrato plegable) queda aprobado **solo después del OK de Legal** a los 2 textos acortados; hasta entonces no hay merge a `master`.
+**Decisiones confirmadas por Katherine (23 oct, 11:24 a. m.):** 1) sin botón «Continuar» / «Entendido» (desde las 11:25 a. m., tampoco X: ver «Cierre» abajo); 2) los 6 logros con llave y color verde son `ingreso`, `contrato-firmado`, `pago`, `entrada-confirmada`, `devolucion` y `acuerdo`; 3) en el teléfono, si el título queda abajo en la pantalla, la tarjeta pasa abajo para no taparlo. Publicar en producción (avisos v2 y contrato plegable) queda aprobado **solo después del OK de Legal** a los 2 textos acortados; hasta entonces no hay merge a `master`.
 
 - **Tarjeta crema pequeña** (`src/Aviso.tsx`, CSS `.aviso-capa` / `.aviso-pop` en `src/index.css`):
   - esquinas de 26 px;
@@ -23,15 +23,18 @@ Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama, solo vista previa. Reem
   - **error**: terracota oscuro.
 - **Animación de la llave en los logros:** la misma del logo (entra, se inserta y gira 90°, la cerradura se cierra, pulso verde), **una sola vez**, en 2 s; al final queda el logo completo y quieto. En los pasos y errores el logo está quieto y completo. Con «reducir movimiento» solo hay un fundido de 160 ms y la llave no se mueve.
 - **Qué sigue** en una línea aparte: «**Lo que sigue:** …» (o «**Cómo seguir:** …» en errores), con el color del tono.
-- **No se cierra solo**, tampoco los errores. Se cierra con la X («Cerrar aviso», zona táctil de 44 px) o con Esc. Se quitó el botón «Continuar» / «Entendido» (la X hace lo mismo).
+- **Cierre (aprobado por Katherine, 23 oct, 11:25 a. m.): sin X.** El aviso **se esconde solo a los 5 s** (`DURACION_AVISO`), también los errores. Se cierra antes al tocarlo o hacer clic, con Enter, Espacio o Esc. Si el dedo o el mouse está encima, o tiene el foco, el conteo se pausa y sigue donde quedó al salir. Una línea fina abajo (`.aviso-pop__tiempo`) marca el tiempo y se detiene en la pausa. Los avisos en cola salen uno tras otro. Sin botón «Continuar» / «Entendido».
 - **Accesibilidad:**
-  - `role="dialog"`, o `alertdialog` en los errores, con `aria-modal="false"` (no bloquea la página) y `aria-labelledby` / `aria-describedby`;
-  - el foco va a la X y, al cerrar, vuelve a donde estaba (o a `#contenido`). Si la persona ya está en otro lado, no se lo quitamos;
-  - si estaba escribiendo en un campo, no se le quita el foco: el aviso se lee por una región `aria-live` (`polite`, o `assertive` en errores);
+  - **ya no es un diálogo**: `<Alertas />` deja siempre en la página dos zonas, `role="status"` con `aria-live="polite"` (pasos y logros) y `role="alert"` (errores), y el aviso aparece dentro de la que corresponde, así el lector de pantalla lo anuncia sin mover el foco;
+  - **no roba el foco**. La tarjeta se puede enfocar con Tab (`tabindex="0"`, nombre «Aviso. Toca para cerrar», título y texto con `aria-describedby`): enfocada se pausa y Enter, Espacio o Esc la cierran; al cerrarla el foco vuelve a donde estaba (o a `#contenido`);
+  - con «reducir movimiento»: solo un fundido al aparecer, sin animación de salida ni de la llave, y la línea del tiempo queda quieta;
+  - límite: la tarjeta va al final de la página, así que llegar con Tab antes de 5 s puede costar; casi todo lo que dice también queda en la pantalla (líneas del paso e historial), salvo el error del ingreso (ver «Decisiones pendientes»);
   - contraste AA en todos los textos (el más justo, verde `#2E7347` sobre `#E3F2E8`, 4,95:1).
 - **«Tomar foto»** (`src/Camara.tsx`): el emoji 📷 se cambió por el ícono de cámara de la app (`i-camara`).
 
-Capturas reales (localhost, sesión simulada): `capturas/alertas-v2-*.png`. Imágenes livianas y GIF de la llave: `diseno/envio/alertas-v2-implementado/`.
+Capturas reales (localhost, sesión simulada): `capturas/alertas-v2-*.png`. Imágenes livianas y GIF de la llave: `diseno/envio/alertas-v2-implementado/`. GIF del cierre solo (celular y computadora): `diseno/envio/alertas-v2-autocierre/aviso-se-esconde-solo.gif`.
+
+**Decisiones pendientes (Katherine):** 1) el error «El ingreso no terminó» (regreso de Google o Apple) **solo se ve en el aviso**: a los 5 s desaparece y no queda nada en la pantalla (es el único aviso de error); 2) el enlace «Entrar con mi correo» de la maqueta no se agregó (tocar el aviso lo cierra; un enlace dentro chocaría con eso); 3) se quitó «en esta misma pestaña» del texto (decisión de Producto según Legal); 4) llegar con Tab antes de 5 s.
 
 ## Por qué no se veían
 
@@ -68,7 +71,7 @@ Los marcados `// LEGAL: revisar` en `src/alertas.ts` son los del depósito guard
 | Crear alquiler | `crear` | Alquiler creado | Guardamos el alquiler de Apartamento en Barreal de Heredia con un depósito de 20 USDC. | Lo que sigue: Leer el contrato y firmarlo. Después lo firma el dueño de prueba. |
 | Firma del inquilino | `firma-inquilino` | Firmaste el contrato | La firma quedó guardada con la fecha y la hora. | Lo que sigue: El dueño de prueba lo firma solo, en unos segundos. |
 | Firma del dueño de prueba (contrato firmado por los dos) | `firma-dueno` | Contrato firmado por los dos | El dueño de prueba también firmó. El contrato ya tiene las dos firmas. | Lo que sigue: Pagar el depósito de 20 USDC. |
-| Pagar el depósito | `pago` | Depósito guardado | Tu depósito de 20 USDC quedó guardado en una cuenta segura de la red de prueba. Nadie puede sacarlo solo. | Lo que sigue: Tomar las fotos de entrada de cada espacio y marcar la lista. |
+| Pagar el depósito | `pago` | ¡Depósito guardado! | 20 USDC guardados en una cuenta segura de la red de prueba. Nadie puede sacarlos solo. *(Legal, 23 oct)* | Lo que sigue: Tomar las fotos de entrada de cada espacio y marcar la lista. |
 | Fotos y lista de entrada: confirma el inquilino | `entrada-inquilino` | Confirmaste las fotos de entrada | Las fotos y la lista quedaron guardadas con la fecha y la hora. | Lo que sigue: El dueño de prueba las revisa y las confirma solo, en unos segundos. |
 | Fotos de entrada: confirma el dueño de prueba | `entrada-dueno` | Empezó el alquiler | Los dos confirmaron las fotos de entrada. El depósito sigue guardado. | Lo que sigue: Cuando entregues el lugar, toca «Empezar fotos de salida». |
 | Empezar fotos de salida | `salida-inicio` | Empezaron las fotos de salida | Ya pueden registrar cómo quedó el lugar. | Lo que sigue: Tomar una foto de cada espacio, marcar la lista y confirmar. |
@@ -77,10 +80,10 @@ Los marcados `// LEGAL: revisar` en `src/alertas.ts` son los del depósito guard
 | Solo red de prueba: adelantar el plazo | `adelantar` | Plazo adelantado | Solo en la red de prueba: terminamos ahora los 7 días para reclamos. | Lo que sigue: El dueño de prueba aprueba y Lockumi devuelve el depósito al inquilino en la red de prueba. Tarda entre 20 y 60 segundos. |
 | Devolución automática (sin reclamos) | `devolucion` | Depósito devuelto | No hubo reclamos en 7 días. El dueño de prueba aprobó y Lockumi devolvió 19,94 USDC al inquilino en la red de prueba. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Reclamo del dueño de prueba | `reclamo` | Reclamo enviado | El dueño de prueba reclamó 5 USDC del depósito. | Lo que sigue: El inquilino acepta o no el reclamo. Si no lo acepta, pasa a una persona mediadora (simulación). |
-| No estoy de acuerdo → mediación | `mediacion` | Pasa a una persona mediadora | No hubo acuerdo con el reclamo. En esta prueba la persona mediadora es una simulación. | Lo que sigue: Decides tú el reparto con «Decidir como persona mediadora». |
+| No estoy de acuerdo → mediación | `mediacion` | Pasa a una persona mediadora | No hubo acuerdo con el reclamo. En esta prueba la persona mediadora es una simulación. | Lo que sigue: En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)». *(Legal, 23 oct)* |
 | Reparto de la persona mediadora (simulación) | `reparto` | Reparto decidido | La persona mediadora (simulación) decidió: 2,4925 USDC al dueño y 17,4475 USDC al inquilino. El reparto se hizo en la red de prueba. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Aceptar reclamo | `acuerdo` | Reclamo aceptado | Se repartió el depósito en la red de prueba: 4,985 USDC al dueño y 14,955 USDC al inquilino. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
-| Entrar (el regreso de Google o Apple no terminó) | `ingreso-fallo` | No pudimos completar el ingreso | El ingreso con tu cuenta no terminó y no se guardó tu sesión. | Cómo seguir: Toca «Entrar» y vuelve a elegir tu cuenta en esta misma pestaña. Si sigue pasando, entra con tu correo. |
+| Entrar (el regreso de Google o Apple no terminó) | `ingreso-fallo` | El ingreso no terminó | Toca Entrar y elige tu cuenta. *(Legal, 23 oct)* | — |
 | Entrar (correcto) | `ingreso` | ¡Ingresaste correctamente! | Te damos la bienvenida a la demo. Desde aquí puedes ver tus alquileres y crear un depósito protegido. | — |
 
 En el modo real (app.lockumi.com) el aviso de ingreso dice «Estamos preparando tu billetera.» en lugar de «Te damos la bienvenida a la demo.». El texto no cambió.
@@ -89,8 +92,8 @@ Montos: los de devolución y reparto ya vienen con la comisión de la red de pru
 
 ## Pruebas
 
-- `src/__tests__/alertas.test.tsx` (20 pruebas; v2: diálogo no modal con `aria-live`, solo X y Esc, casita completa con el `viewBox` del logo, CSS de 26 px / 320 / 366 px, llave una sola vez, movimiento reducido, tonos e ícono de «Tomar foto»):
-  - el componente (roles, ids, X, ícono, movimiento reducido);
+- `src/__tests__/alertas.test.tsx` (21 pruebas; v2: sin diálogo ni X, zonas `status` / `alert`, cierre solo a los 5 s con pausa, toque, Enter, Espacio y Esc, textos de Legal, casita completa con el `viewBox` del logo, CSS de 26 px / 320 / 366 px, llave una sola vez, movimiento reducido, tonos e ícono de «Tomar foto»):
+  - el componente (zonas, nombre, ids, sin X, pausa, ícono, movimiento reducido);
   - la cola;
   - cada paso con las acciones reales de la demo;
   - textos sin emojis, sin «liberado» y sin palabras técnicas;
@@ -98,7 +101,7 @@ Montos: los de devolución y reparto ya vienen con la comisión de la red de pru
   - CSS de `.turno[hidden]`.
 - `scripts/alertas/capturar.mjs`:
   - recorre los tres caminos (sin reclamos, mediación y reclamo aceptado) en 390 y 1280 px, con la sesión simulada y `/api/solo` respondido en el script; bloquea Stellar y Cavos;
-  - revisa cada aviso: título, rol (no modal), foco en la X, que no se cierre solo, cierre con Esc o X, foco de vuelta, que en el teléfono no tape el encabezado ni el título, la casita completa, tamaño y emojis;
+  - revisa cada aviso: título, zona `status` o `alert` (sin diálogo), que no robe el foco, nombre «Aviso. Toca para cerrar» y sin X; lo cierra por turnos tocándolo, con Esc, enfocándolo (pausa: con mouse o foco encima no se esconde) + Enter con el foco de vuelta, o dejándolo esconderse solo (entre 5 y 7 s); que en el teléfono no tape el encabezado ni el título, la casita completa, tamaño y emojis;
   - guarda `capturas/alertas-preview-<paso>-{movil,escritorio}.png`.
 
   Uso: `VITE_CAVOS_APP_ID=… OUT=…/alertas-preview- CHROME=/usr/bin/google-chrome node scripts/alertas/capturar.mjs`, con Vite en 5173 (con `VITE_TRUSTLESS=1` y `VITE_CAVOS_APP_ID`) y en 5174 (solo `VITE_TRUSTLESS=1`, para el ingreso simulado).
