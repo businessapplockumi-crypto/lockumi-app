@@ -201,10 +201,25 @@ describe('error del ingreso escrito en Entrar', () => {
   })
   it('App: «Entrando…» mientras se confirma el regreso; el error queda hasta volver a intentar o entrar', () => {
     const a = leer('../App.tsx')
-    expect(a).toContain("if (!u && regreso === 'esperando') return <Fondo>{skip}<Entrando /><Alertas /></Fondo>")
+    expect(a).toContain("if (!u && regreso === 'esperando') return <Fondo>{skip}<Alertas /><Entrando /></Fondo>")
     expect(a).toContain(".catch(() => { setRegreso('fallo'); avisar(alertaIngresoFallo()) })")
     expect(a).toContain("error={regreso === 'fallo'} onReintento={() => setRegreso(null)}")
     expect(a).toContain('const entro = (x: Usuario) => { setRegreso(null);')
     expect(leer('../screens/Login.tsx')).toContain('onReintento?.(); setAbierta(true)')
+  })
+})
+
+describe('aviso al inicio del orden de Tab', () => {
+  const app = leer('../App.tsx')
+  it('<Alertas /> va justo después de «Saltar al contenido» en las tres vistas (sin sesión, entrando y con sesión)', () => {
+    const fondos = app.match(/<Fondo>\{skip\}[\s\S]*?<\/Fondo>/g)!.filter(f => f.includes('<Alertas />'))
+    expect(fondos).toHaveLength(3)
+    for (const f of fondos) expect(f).toMatch(/^<Fondo>\{skip\}\s*<Alertas \/>/)
+    expect(app).not.toMatch(/<Pie \/>\s*<Alertas \/>/)
+  })
+  it('sigue sin robar el foco: el aviso no se enfoca solo al aparecer', () => {
+    const av = leer('../Aviso.tsx')
+    expect(av).not.toMatch(/autoFocus/)
+    expect(av).toContain('tabIndex={0}')
   })
 })

@@ -257,7 +257,9 @@ Detalle en [`docs/correo-resend.md`](docs/correo-resend.md). El tratamiento de d
 
 ## Pendiente de publicar
 
-Nada pendiente por ahora: lo último se publicó el 23 oct 2026 (ver [Cambios publicados](#cambios-publicados)).
+Cambios listos en una rama, con vista previa, que **todavía no están** en app.lockumi.com ni en `master`.
+
+- **Aviso al alcance de Tab** (23 oct 2026; rama `aviso-tab` desde `master` en `0d0f93e`, solo vista previa protegida de Vercel; falta el OK de Katherine): el aviso de 5 s iba al final de la página y con teclado costaba llegar antes de que se escondiera. Ahora va justo después de «Saltar al contenido»: desde el inicio de la página, el 1.º Tab es «Saltar al contenido» y el 2.º, el aviso. No roba el foco; con el foco se pausa, Enter, Espacio o Esc lo cierran y el foco vuelve a donde estaba. Se mantienen las zonas `role="status"` y `role="alert"`. No cambia el ingreso ni los textos. Código: `src/App.tsx`; pruebas: `src/__tests__/alertas.test.tsx` y `scripts/alertas/capturar.mjs`. Detalle: [`docs/alertas.md`](docs/alertas.md).
 
 ## Cambios publicados
 

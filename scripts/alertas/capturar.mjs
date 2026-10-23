@@ -61,8 +61,13 @@ async function alerta(p, n, paso, titulo, { capturar = true } = {}) {
   if (como === 'toque') { if (n === 'movil') await pop.tap(); else await pop.click() }
   else if (como === 'Escape') await p.keyboard.press('Escape')
   else if (como === 'teclado') {
-    if (n !== 'movil') { await pop.hover(); await p.waitForTimeout(5400); ok(await pop.isVisible(), `${et}: con el mouse encima no se esconde`); await p.mouse.move(2, 2) }
-    await pop.focus(); await p.waitForTimeout(5400); ok(await pop.isVisible(), `${et}: con el foco no se esconde (pausa)`)
+    let encima = 0   // tiempo con el mouse encima: el conteo de 5 s estuvo en pausa
+    if (n !== 'movil') { const h0 = Date.now(); await pop.hover(); await p.waitForTimeout(5400); ok(await pop.isVisible(), `${et}: con el mouse encima no se esconde`); await p.mouse.move(2, 2); encima = (Date.now() - h0) / 1000 }
+    // Con Tab de verdad: desde «Saltar al contenido», la parada siguiente es el aviso (antes de 5 s).
+    await p.locator('a.skip').focus(); await p.keyboard.press('Tab')
+    const t = (Date.now() - visto) / 1000 - encima, llego = await pop.evaluate(e => e === document.activeElement)
+    ok(llego && t < 5, `${et}: se llega con Tab (después de «Saltar al contenido», a los ${t.toFixed(1)} s de conteo)`)
+    await p.waitForTimeout(5400); ok(await pop.isVisible(), `${et}: con el foco no se esconde (pausa)`)
     await p.keyboard.press('Enter')
   } else await p.mouse.move(2, 2)
   // Se cerró (el siguiente de la cola puede aparecer enseguida). Solo: entre 5 y 7 s desde que apareció.
@@ -111,7 +116,7 @@ async function hastaVentana(p, n, cap) {
   await alerta(p, n, 'salida-dueno', 'Fotos de salida confirmadas', cap)
 }
 
-for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
+for (const [n, w] of [['movil', 390], ['escritorio', 1280]].filter(([n]) => !process.env.SOLO || process.env.SOLO === n)) {   // SOLO=movil|escritorio para repetir un tamaño
   console.log('==', n, w)
   const { ctx, p } = await contexto(w)
   await p.goto(B); await p.waitForTimeout(800)
@@ -158,6 +163,16 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
   await f.p.getByLabel(/Acepto los Términos/).check(); await f.p.getByLabel(/Acepto el Aviso de privacidad/).check(); await f.p.getByRole('button', { name: 'Entrar' }).click()
   ok(await err.count() === 0, `ingreso-fallo (${n}): al volver a intentar, el error se quita`)
   await f.ctx.close()
+  // Recién cargada la página (foco al inicio): Tab, Tab → «Saltar al contenido», luego el aviso. Pausa, Esc y el foco vuelve.
+  const h = await contexto(w, { sesion: false }); await h.p.goto(B + '?cavos_auth_code=simulado-invalido#/')
+  const pt = h.p.locator('.aviso-pop'); await pt.waitFor({ timeout: 30000 }); const vt = Date.now()
+  await h.p.keyboard.press('Tab'); const prim = await h.p.evaluate(() => document.activeElement?.className); await h.p.keyboard.press('Tab')
+  const st = (Date.now() - vt) / 1000, en = await pt.evaluate(e => e === document.activeElement)
+  ok(prim === 'skip' && en && st < 5, `tab (${n}): 1.º Tab «Saltar al contenido», 2.º Tab el aviso (a los ${st.toFixed(1)} s)`)
+  await h.p.waitForTimeout(5400); ok(await pt.isVisible(), `tab (${n}): con el foco se pausa (sigue a los ${((Date.now() - vt) / 1000).toFixed(1)} s)`)
+  await h.p.keyboard.press('Escape'); await h.p.waitForTimeout(400)
+  ok(await pt.count() === 0 && await h.p.evaluate(() => document.activeElement?.className === 'skip'), `tab (${n}): Esc lo cierra y el foco vuelve a «Saltar al contenido»`)
+  await h.ctx.close()
   // Ingreso correcto (Vite sin Cavos real: login simulado)
   const g = await contexto(w, { sesion: false }); await g.p.goto(B2); await g.p.waitForTimeout(800)
   await g.p.getByLabel(/Acepto los Términos/).check(); await g.p.getByLabel(/Acepto el Aviso de privacidad/).check(); await g.p.getByRole('button', { name: 'Entrar' }).click(); await g.p.getByRole('button', { name: 'Continuar con Google' }).click()
