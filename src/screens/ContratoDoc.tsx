@@ -96,7 +96,8 @@ export function ContratoDoc({ a }: { a: Alquiler }) {
   // igual; además se abre aquí para que pantalla e impresión coincidan, y al terminar vuelve a como estaba.
   const [abierto, setAbierto] = useState(false)
   const id = 'ct-completo-' + useId().replace(/[^a-zA-Z0-9_-]/g, '')
-  const actual = useRef(abierto); actual.current = abierto
+  const actual = useRef(abierto)
+  useEffect(() => { actual.current = abierto }, [abierto])
   useEffect(() => {
     let antes: boolean | null = null
     const abrir = () => { antes = actual.current; setAbierto(true) }
