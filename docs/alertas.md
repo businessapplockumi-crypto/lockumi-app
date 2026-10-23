@@ -2,6 +2,35 @@
 
 Rama `contrato-plegable` (22 oct 2026), **pendiente de publicar**: solo vista previa protegida de Vercel. app.lockumi.com (`master` en `ad1578f`) no cambia.
 
+## Avisos v2 (23 oct 2026)
+
+Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama, solo vista previa. Reemplaza el estilo del aviso; **los textos no cambian** (los legales siguen siendo los de la tabla de abajo; los dos textos cortos de la maqueta v2 esperan a Legal y no se usan).
+
+- **Tarjeta crema pequeña** (`src/Aviso.tsx`, CSS `.aviso-capa` / `.aviso-pop` en `src/index.css`):
+  - esquinas de 26 px;
+  - sin fondo borroso, no bloquea la pantalla;
+  - en computadora (720 px o más): abajo a la derecha, 320 px de ancho;
+  - en el teléfono: arriba, hasta 366 px. `lugarEnCelular()` la ubica **debajo del encabezado, del logo y del título** de la pantalla (primer `h1`, su `.cab` o `.entrada-app__titulo` en la entrada), así no los tapa. Si quedaría por debajo de la mitad de la pantalla, va al pie. Se recalcula al cambiar de pantalla, de tamaño y al desplazar la página (acompaña al título sin taparlo). Revisado en 375 y 390 px.
+- **Ícono: la casita oficial completa** (`src/LogoAviso.tsx`). Se toma del markup literal del logo de lockumi.com (`src/logoLandingMarkup.ts`):
+  - mismo `viewBox` (`419.5 65.25 420.25 408.25`), con planta, techo verde, puerta, cerradura y llave;
+  - `overflow: visible` en el SVG y en la esquina, sin recortes;
+  - ids propios (`aviso-casa-*`) para no chocar con el logo de la pantalla.
+- **Esquina de color según el tono** (`tonoDe(alerta)` en `src/alertas.ts`):
+  - **paso**: miel (colores de «pendiente»);
+  - **logro**: verde (`LOGROS`: `ingreso`, `contrato-firmado`, `pago`, `entrada-confirmada`, `devolucion`, `acuerdo`);
+  - **error**: terracota oscuro.
+- **Animación de la llave en los logros:** la misma del logo (entra, se inserta y gira 90°, la cerradura se cierra, pulso verde), **una sola vez**, en 2 s; al final queda el logo completo y quieto. En los pasos y errores el logo está quieto y completo. Con «reducir movimiento» solo hay un fundido de 160 ms y la llave no se mueve.
+- **Qué sigue** en una línea aparte: «**Lo que sigue:** …» (o «**Cómo seguir:** …» en errores), con el color del tono.
+- **No se cierra solo**, tampoco los errores. Se cierra con la X («Cerrar aviso», zona táctil de 44 px) o con Esc. Se quitó el botón «Continuar» / «Entendido» (la X hace lo mismo).
+- **Accesibilidad:**
+  - `role="dialog"`, o `alertdialog` en los errores, con `aria-modal="false"` (no bloquea la página) y `aria-labelledby` / `aria-describedby`;
+  - el foco va a la X y, al cerrar, vuelve a donde estaba (o a `#contenido`). Si la persona ya está en otro lado, no se lo quitamos;
+  - si estaba escribiendo en un campo, no se le quita el foco: el aviso se lee por una región `aria-live` (`polite`, o `assertive` en errores);
+  - contraste AA en todos los textos (el más justo, verde `#2E7347` sobre `#E3F2E8`, 4,95:1).
+- **«Tomar foto»** (`src/Camara.tsx`): el emoji 📷 se cambió por el ícono de cámara de la app (`i-camara`).
+
+Capturas reales (localhost, sesión simulada): `capturas/alertas-v2-*.png`. Imágenes livianas y GIF de la llave: `diseno/envio/alertas-v2-implementado/`.
+
 ## Por qué no se veían
 
 1. **Había un solo aviso emergente**, «¡Ingresaste correctamente!» (`src/Aviso.tsx`, desde `000cb43`, 16 oct). `App.tsx` lo muestra solo dentro de `entro()`, es decir, **justo después de entrar** (login con correo, o el regreso de Google o Apple que procesa `auth.completarRegreso()`). La sesión queda guardada en el navegador (`lockumi.usuario`), así que al volver a la app no se entra de nuevo y el aviso no aparece. Está publicado: el texto está en el paquete de producción (`index-BVqVWzj6.js`).
@@ -13,7 +42,7 @@ Rama `contrato-plegable` (22 oct 2026), **pendiente de publicar**: solo vista pr
 
 - `src/alertas.ts`: cola de avisos (`avisar`, `cerrarAlerta`) y textos. `alertaPorCambio(antes, ahora, rol)` compara el alquiler antes y después de cada cambio y devuelve el aviso del paso. Así también avisa cuando el dueño de prueba firma o confirma solo.
 - `src/Alertas.tsx`: muestra el primer aviso de la cola (en `App.tsx`, con y sin sesión).
-- `src/Aviso.tsx` (mejorado, sin librerías):
+- `src/Aviso.tsx` (22 oct; **reemplazado por los avisos v2**, ver arriba):
   - `role="dialog"`, o `alertdialog` para los errores, con `aria-modal`, `aria-labelledby` y `aria-describedby` (ids únicos con `useId`; antes eran fijos);
   - el foco va al botón principal, Tab y Shift+Tab quedan dentro (X y botón; antes Tab solo volvía al botón), Esc o la X cierran y el foco vuelve a donde estaba o, si ese botón ya no existe, al contenido;
   - el efecto ya no se repite en cada render;
@@ -58,7 +87,7 @@ Montos: los de devolución y reparto ya vienen con la comisión de la red de pru
 
 ## Pruebas
 
-- `src/__tests__/alertas.test.tsx` (17 pruebas):
+- `src/__tests__/alertas.test.tsx` (20 pruebas; v2: diálogo no modal con `aria-live`, solo X y Esc, casita completa con el `viewBox` del logo, CSS de 26 px / 320 / 366 px, llave una sola vez, movimiento reducido, tonos e ícono de «Tomar foto»):
   - el componente (roles, ids, X, ícono, movimiento reducido);
   - la cola;
   - cada paso con las acciones reales de la demo;
@@ -67,7 +96,7 @@ Montos: los de devolución y reparto ya vienen con la comisión de la red de pru
   - CSS de `.turno[hidden]`.
 - `scripts/alertas/capturar.mjs`:
   - recorre los tres caminos (sin reclamos, mediación y reclamo aceptado) en 390 y 1280 px, con la sesión simulada y `/api/solo` respondido en el script; bloquea Stellar y Cavos;
-  - revisa cada aviso: título, rol, foco, Tab, cierre con Esc, X o botón, foco de vuelta, tamaño y emojis;
+  - revisa cada aviso: título, rol (no modal), foco en la X, que no se cierre solo, cierre con Esc o X, foco de vuelta, que en el teléfono no tape el encabezado ni el título, la casita completa, tamaño y emojis;
   - guarda `capturas/alertas-preview-<paso>-{movil,escritorio}.png`.
 
   Uso: `VITE_CAVOS_APP_ID=… OUT=…/alertas-preview- CHROME=/usr/bin/google-chrome node scripts/alertas/capturar.mjs`, con Vite en 5173 (con `VITE_TRUSTLESS=1` y `VITE_CAVOS_APP_ID`) y en 5174 (solo `VITE_TRUSTLESS=1`, para el ingreso simulado).
