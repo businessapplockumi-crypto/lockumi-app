@@ -6,6 +6,8 @@ Rama `contrato-plegable` (22 oct 2026), **pendiente de publicar**: solo vista pr
 
 Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama, solo vista previa. Reemplaza el estilo del aviso; **los textos no cambian** (los legales siguen siendo los de la tabla de abajo; los dos textos cortos de la maqueta v2 esperan a Legal y no se usan).
 
+**Decisiones confirmadas por Katherine (23 oct, 11:24 a. m.):** 1) sin botón «Continuar» / «Entendido»: se cierra con la X o con Esc; 2) los 6 logros con llave y color verde son `ingreso`, `contrato-firmado`, `pago`, `entrada-confirmada`, `devolucion` y `acuerdo`; 3) en el teléfono, si el título queda abajo en la pantalla, la tarjeta pasa abajo para no taparlo. Publicar en producción (avisos v2 y contrato plegable) queda aprobado **solo después del OK de Legal** a los 2 textos acortados; hasta entonces no hay merge a `master`.
+
 - **Tarjeta crema pequeña** (`src/Aviso.tsx`, CSS `.aviso-capa` / `.aviso-pop` en `src/index.css`):
   - esquinas de 26 px;
   - sin fondo borroso, no bloquea la pantalla;
