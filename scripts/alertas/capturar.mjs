@@ -40,23 +40,25 @@ async function alerta(p, n, paso, titulo, { capturar = true } = {}) {
   const m = await pop.evaluate(e => {
     const t = document.getElementById(e.getAttribute('aria-labelledby') || ''), d = document.getElementById(e.getAttribute('aria-describedby') || '')
     const r = e.getBoundingClientRect()
-    return { rol: e.getAttribute('role'), modal: e.getAttribute('aria-modal'), titulo: t?.textContent ?? '', desc: d?.textContent ?? '', foco: e.contains(document.activeElement) && document.activeElement.classList.contains('aviso-pop__boton'),
+    return { rol: e.getAttribute('role'), modal: e.getAttribute('aria-modal'), titulo: t?.textContent ?? '', desc: d?.textContent ?? '', foco: e.contains(document.activeElement) && document.activeElement.classList.contains('aviso-pop__x'),
+      tapa: innerWidth < 720 && [...document.querySelectorAll('header.barra, #contenido h1, main h1, .marca-c__arte, .entrada-app__titulo')].some(x => { const q = x.getBoundingClientRect(); return q.height && q.bottom > r.top + .5 && q.top < r.bottom - .5 }),
+      logo: (() => { const s = e.querySelector('.aviso-pop__logo svg'); return !!s && s.getAttribute('viewBox') === '419.5 65.25 420.25 408.25' && getComputedStyle(s).overflow === 'visible' && getComputedStyle(e.querySelector('.aviso-pop__esquina')).overflow === 'visible' })(),
       cabe: r.left >= 0 && r.right <= innerWidth + .5 && r.top >= -.5 && r.bottom <= innerHeight + .5, letra: Math.min(...[...e.querySelectorAll('p,h2,button,strong')].map(x => parseFloat(getComputedStyle(x).fontSize))),
-      emoji: /\p{Extended_Pictographic}/u.test(e.textContent), icono: e.querySelector('use')?.getAttribute('href') ?? (e.querySelector('.aviso-pop__trazo') ? 'trazo' : '') }
+      emoji: /\p{Extended_Pictographic}/u.test(e.textContent), tono: e.className.replace('aviso-pop aviso-pop--', '') }
   })
   const et = `${paso} (${n})`
   ok(m.titulo === titulo, `${et}: título «${m.titulo}»`)
-  ok((m.rol === 'dialog' || m.rol === 'alertdialog') && m.modal === 'true', `${et}: role=${m.rol} aria-modal`)
-  ok(m.desc.length > 20, `${et}: descripción enlazada`); ok(m.foco, `${et}: el foco entra al botón principal`)
-  ok(m.cabe, `${et}: cabe en la pantalla`); ok(m.letra >= 12, `${et}: letra mínima ${m.letra}px`); ok(!m.emoji, `${et}: sin emojis`); ok(!!m.icono, `${et}: ícono ${m.icono}`)
-  for (const k of ['Tab', 'Tab', 'Tab', 'Shift+Tab']) await p.keyboard.press(k)
-  ok(await pop.evaluate(e => e.contains(document.activeElement)), `${et}: Tab no sale del aviso`)
+  ok((m.rol === 'dialog' || m.rol === 'alertdialog') && m.modal === 'false', `${et}: role=${m.rol}, no modal`)
+  ok(m.desc.length > 20, `${et}: descripción enlazada`); ok(m.foco, `${et}: el foco va a la X «Cerrar aviso»`)
+  ok(m.cabe, `${et}: cabe en la pantalla`); ok(m.letra >= 12, `${et}: letra mínima ${m.letra}px`); ok(!m.emoji, `${et}: sin emojis`); ok(m.logo, `${et}: casita completa (${m.tono})`); ok(!m.tapa, `${et}: no tapa el encabezado ni el título`)
+  await p.waitForTimeout(1200)   // no se cierra solo
+  ok(await pop.isVisible(), `${et}: sigue abierto (no se cierra solo)`)
   if (capturar && !vistos[paso + n]) { vistos[paso + n] = 1; await p.screenshot({ path: `${OUT}${paso}-${n}.png` }) }
   vistos.textos ??= {}; vistos.textos[paso] = { titulo: m.titulo, texto: m.desc }
-  const como = ['Escape', 'x', 'boton'][modo++ % 3]
-  if (como === 'Escape') await p.keyboard.press('Escape'); else if (como === 'x') await pop.getByRole('button', { name: 'Cerrar' }).click(); else await pop.locator('.aviso-pop__boton').click()
+  const como = ['Escape', 'x'][modo++ % 2]
+  if (como === 'Escape') await p.keyboard.press('Escape'); else await pop.getByRole('button', { name: 'Cerrar aviso' }).click()
   // Cerró este aviso (el siguiente de la cola puede aparecer enseguida)
-  await p.waitForFunction(t => !document.querySelector('.aviso-velo--sale') && ![...document.querySelectorAll('.aviso-pop__titulo')].some(h => h.textContent === t), m.titulo, { timeout: 3000 })
+  await p.waitForFunction(t => !document.querySelector('.aviso-capa--sale') && ![...document.querySelectorAll('.aviso-pop__titulo')].some(h => h.textContent === t), m.titulo, { timeout: 3000 })
   await p.waitForTimeout(100)
   const f = await p.evaluate(() => ({ en: document.activeElement !== document.body && document.activeElement?.isConnected, quien: document.activeElement?.tagName + '#' + (document.activeElement?.id || document.activeElement?.className) }))
   ok(f.en, `${et}: cerrado con ${como}, el foco vuelve a ${f.quien}`)
@@ -130,7 +132,7 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
   // Ingreso que no terminó (regreso de Google con un código que no sirve; Cavos bloqueado) + movimiento reducido
   const f = await contexto(w, { sesion: false, reducir: true })
   await f.p.goto(B + '?cavos_auth_code=simulado-invalido#/')
-  ok(await f.p.locator('.aviso-pop').evaluate(e => getComputedStyle(e).animationName === 'none').catch(() => false), `ingreso-fallo (${n}): sin animación con movimiento reducido`)
+  ok(await f.p.locator('.aviso-pop').evaluate(e => getComputedStyle(e).animationName === 'aviso-fade' && getComputedStyle(e.querySelector('.aviso-logo__llave')).animationName === 'none').catch(() => false), `ingreso-fallo (${n}): solo un fundido con movimiento reducido`)
   await alerta(f.p, n, 'ingreso-fallo', 'No pudimos completar el ingreso')
   ok(await f.p.getByRole('button', { name: 'Entrar' }).isVisible(), `ingreso-fallo (${n}): queda la pantalla de entrada`)
   await f.ctx.close()

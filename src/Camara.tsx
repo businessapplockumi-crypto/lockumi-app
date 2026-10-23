@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { crearFoto } from './fotos'
 import type { Foto, Rol } from './types'
+import { Icono } from './ui'
 
 /** Botón "Tomar foto": abre la cámara en vivo dentro de la app (no permite elegir de la galería).
  *  Si no se puede (sin permiso, sin cámara, navegador sin soporte), ofrece la cámara del teléfono como respaldo. */
@@ -15,7 +16,7 @@ export function TomarFoto({ por, onFoto, etiqueta = 'Tomar foto', principal = tr
   }
   return <div className="tomar">
     <button type="button" className={'boton boton--ancho ' + (principal ? 'boton--primario boton--grande' : 'boton--secundario')} disabled={ocupado}
-      onClick={() => hayVivo ? setAbierta(true) : input.current?.click()}>{ocupado ? 'Guardando…' : '📷 ' + etiqueta}</button>
+      onClick={() => hayVivo ? setAbierta(true) : input.current?.click()}>{ocupado ? 'Guardando…' : <><Icono id="i-camara" /> {etiqueta}</>}</button>
     {/* Respaldo: capture abre la cámara del teléfono; en computadora abre el explorador de archivos. Sin `multiple` (falla en Samsung Internet 29). */}
     <input ref={input} type="file" accept="image/*" capture="environment" className="sr" tabIndex={-1} aria-hidden="true" onChange={e => desdeArchivo(e.target.files)} />
     {aviso && <div className="aviso-campo" role="alert"><p>{aviso}</p>

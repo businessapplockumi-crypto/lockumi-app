@@ -12,15 +12,17 @@ export interface Alerta {
   /** Paso del flujo (sirve para pruebas y capturas). */
   paso: string
   tipo?: 'exito' | 'error'
-  /** Ícono del sprite de la app (index.html). Sin ícono: check o signo de atención animado. */
-  icono?: string
   titulo: string
   /** Qué pasó. */
   hecho: string
   /** Qué sigue. */
   sigue?: string
-  boton?: string
 }
+
+/** Logros del flujo: el aviso sale en verde y la llave del logo entra y gira una vez. */
+export const LOGROS = new Set(['ingreso', 'contrato-firmado', 'pago', 'entrada-confirmada', 'devolucion', 'acuerdo'])
+/** Tono del aviso: paso (miel), logro (verde) o error (terracota). */
+export const tonoDe = (a: Pick<Alerta, 'paso' | 'tipo'>): 'paso' | 'logro' | 'error' => a.tipo === 'error' ? 'error' : LOGROS.has(a.paso) ? 'logro' : 'paso'
 
 // ---- Cola ----
 let cola: Alerta[] = []
@@ -48,13 +50,13 @@ export const alertaIngreso = (real = modoReal): Alerta => ({
   hecho: `${real ? 'Estamos preparando tu billetera.' : 'Te damos la bienvenida a la demo.'} Desde aquí puedes ver tus alquileres y crear un depósito protegido.`,
 })
 export const alertaIngresoFallo = (): Alerta => ({
-  paso: 'ingreso-fallo', tipo: 'error', titulo: 'No pudimos completar el ingreso', boton: 'Entendido',
+  paso: 'ingreso-fallo', tipo: 'error', titulo: 'No pudimos completar el ingreso',
   hecho: 'El ingreso con tu cuenta no terminó y no se guardó tu sesión.',
   sigue: 'Toca «Entrar» y vuelve a elegir tu cuenta en esta misma pestaña. Si sigue pasando, entra con tu correo.',
 })
 
 export const alertaCreado = (a: Pick<Alquiler, 'direccion' | 'monto'>, c = CTX): Alerta => ({
-  paso: 'crear', icono: 'i-registro', titulo: 'Alquiler creado',
+  paso: 'crear', titulo: 'Alquiler creado',
   hecho: `Guardamos el alquiler de ${a.direccion} con un depósito de ${usd(a.monto)}.`,
   sigue: c.prueba ? 'Leer el contrato y firmarlo. Después lo firma el dueño de prueba.' : 'Leer el contrato y firmarlo. Falta también la firma del inquilino.',
 })
@@ -68,7 +70,7 @@ function alertaFirma(etapa: keyof typeof ETAPA, quienFirmo: Rol, rol: Rol, c: Co
   const sigue = c.prueba && falta === 'dueno'
     ? `El dueño de prueba ${etapa === 'contrato' ? 'lo firma' : 'las revisa y las confirma'} solo, en unos segundos.`
     : `Falta que el ${NOMBRE[falta]} ${etapa === 'contrato' ? 'lo firme' : 'las confirme'}.`
-  return { paso: `${etapa}-firma-${quienFirmo}`, icono: etapa === 'contrato' ? 'i-registro' : 'i-camara', titulo, hecho, sigue }
+  return { paso: `${etapa}-firma-${quienFirmo}`, titulo, hecho, sigue }
 }
 
 /** Lo mínimo del alquiler para comparar antes y después (sin copiar las fotos). */
@@ -84,41 +86,41 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
   const r = ahora.resultado
   if (antes.estado !== ahora.estado) switch (ahora.estado) {
     case 'pendiente_pago': return antes.estado !== 'firmas' ? null : {
-      paso: 'contrato-firmado', icono: 'i-check', titulo: 'Contrato firmado por los dos',
+      paso: 'contrato-firmado', titulo: 'Contrato firmado por los dos',
       hecho: c.prueba ? 'El dueño de prueba también firmó. El contrato ya tiene las dos firmas.' : 'El contrato ya tiene las dos firmas.',
       sigue: `Pagar el depósito de ${usd(ahora.monto)}.`,
     }
     case 'fotos_entrada': return {
-      paso: 'pago', icono: 'i-candado', titulo: 'Depósito guardado',
+      paso: 'pago', titulo: 'Depósito guardado',
       // LEGAL: revisar
       hecho: c.red ? `Tu depósito de ${usd(ahora.monto)} quedó guardado en una cuenta segura de la red de prueba. Nadie puede sacarlo solo.` : `El depósito de ${usd(ahora.monto)} quedó guardado. Nadie puede tomarlo solo.`,
       sigue: 'Tomar las fotos de entrada de cada espacio y marcar la lista.',
     }
     case 'en_curso': return {
-      paso: 'entrada-confirmada', icono: 'i-camara', titulo: 'Empezó el alquiler',
+      paso: 'entrada-confirmada', titulo: 'Empezó el alquiler',
       hecho: 'Los dos confirmaron las fotos de entrada. El depósito sigue guardado.',
       sigue: rol === 'inquilino' ? 'Cuando entregues el lugar, toca «Empezar fotos de salida».' : 'Cuando el inquilino entregue el lugar, cualquiera de los dos puede empezar las fotos de salida.',
     }
     case 'salida': return {
-      paso: 'salida-inicio', icono: 'i-camara', titulo: 'Empezaron las fotos de salida',
+      paso: 'salida-inicio', titulo: 'Empezaron las fotos de salida',
       hecho: 'Ya pueden registrar cómo quedó el lugar.',
       sigue: 'Tomar una foto de cada espacio, marcar la lista y confirmar.',
     }
     case 'ventana_reclamo': return {
-      paso: 'salida-confirmada', icono: 'i-escudo', titulo: 'Fotos de salida confirmadas',
+      paso: 'salida-confirmada', titulo: 'Fotos de salida confirmadas',
       hecho: `Los dos confirmaron las fotos de salida. Empiezan los ${textoPlazo(ahora)} para reclamos.`,
       // LEGAL: revisar
       sigue: c.video ? `Si el dueño de prueba no reclama en ${textoPlazo(ahora)}, el depósito vuelve al inquilino. En esta prueba puedes adelantar el plazo o hacer un reclamo en nombre del dueño de prueba.`
         : `Si el dueño no reclama en ${textoPlazo(ahora)}, el depósito vuelve al inquilino.`,
     }
     case 'reclamo': return !ahora.reclamo ? null : {
-      paso: 'reclamo', icono: 'i-balanza', titulo: 'Reclamo enviado',
+      paso: 'reclamo', titulo: 'Reclamo enviado',
       hecho: `${quien('dueno', c)} reclamó ${usd(ahora.reclamo.monto)} del depósito.`,
       // LEGAL: revisar
       sigue: `El inquilino acepta o no el reclamo. Si no lo acepta, pasa a una persona mediadora${c.prueba ? ' (simulación)' : ''}.`,
     }
     case 'mediacion': return {
-      paso: 'mediacion', icono: 'i-balanza', titulo: 'Pasa a una persona mediadora',
+      paso: 'mediacion', titulo: 'Pasa a una persona mediadora',
       hecho: `No hubo acuerdo con el reclamo.${c.prueba ? ' En esta prueba la persona mediadora es una simulación.' : ''}`,
       // LEGAL: revisar
       sigue: c.video ? 'Decides tú el reparto con «Decidir como persona mediadora».' : 'Una persona mediadora revisa las fotos de entrada y de salida y decide cómo se reparte el depósito.',
@@ -128,20 +130,20 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
       const red = c.red ? ' en la red de prueba' : ''
       // LEGAL: revisar
       if (r.via === 'automatico') return {
-        paso: 'devolucion', icono: 'i-check', titulo: 'Depósito devuelto',
+        paso: 'devolucion', titulo: 'Depósito devuelto',
         hecho: c.red ? `No hubo reclamos en ${textoPlazo(ahora)}. El dueño de prueba aprobó y Lockumi devolvió ${usd(r.inquilino)} al inquilino en la red de prueba.`
           : `No hubo reclamos en ${textoPlazo(ahora)}. El depósito volvió completo al inquilino: ${usd(r.inquilino)}.`,
         sigue: TERMINO,
       }
       // LEGAL: revisar
       if (r.via === 'acuerdo') return {
-        paso: 'acuerdo', icono: 'i-check', titulo: 'Reclamo aceptado',
+        paso: 'acuerdo', titulo: 'Reclamo aceptado',
         hecho: `Se repartió el depósito${red}: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino.`,
         sigue: TERMINO,
       }
       // LEGAL: revisar
       return {
-        paso: 'reparto', icono: 'i-balanza', titulo: 'Reparto decidido',
+        paso: 'reparto', titulo: 'Reparto decidido',
         hecho: `La persona mediadora${c.prueba ? ' (simulación)' : ''} decidió: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino.${c.red ? ' El reparto se hizo en la red de prueba.' : ''}`,
         sigue: TERMINO,
       }
@@ -154,7 +156,7 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
   if (f) for (const p of ['inquilino', 'dueno'] as const) if (!f[1][p] && f[2][p]) return alertaFirma(f[0], p, rol, c)
   // Solo red de prueba: se adelantó el plazo para reclamos.
   if (ahora.estado === 'ventana_reclamo' && ahora.diasSimulados > antes.diasSimulados) return {
-    paso: 'adelantar', icono: 'i-flecha', titulo: 'Plazo adelantado',
+    paso: 'adelantar', titulo: 'Plazo adelantado',
     hecho: `Solo en la red de prueba: terminamos ahora los ${textoPlazo(ahora)} para reclamos.`,
     // LEGAL: revisar
     sigue: c.red ? 'El dueño de prueba aprueba y Lockumi devuelve el depósito al inquilino en la red de prueba. Tarda entre 20 y 60 segundos.' : 'El depósito vuelve completo al inquilino.',

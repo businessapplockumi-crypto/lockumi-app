@@ -29,32 +29,50 @@ describe('caja «Qué toca ahora» (.turno) con hidden', () => {
   })
 })
 
-describe('Aviso (componente)', () => {
-  const html = (tipo: 'exito' | 'error', icono?: string) => renderToStaticMarkup(<Aviso tipo={tipo} titulo="Depósito guardado" icono={icono} boton="Continuar" onCerrar={() => {}}><p>Hecho</p></Aviso>)
-  it('es un diálogo modal con título y descripción enlazados por id', () => {
-    const h = html('exito')
-    expect(h).toContain('role="dialog"'); expect(h).toContain('aria-modal="true"')
+describe('Aviso v2 (componente)', () => {
+  const html = (tono: 'paso' | 'logro' | 'error') => renderToStaticMarkup(<Aviso tono={tono} titulo="Depósito guardado" onCerrar={() => {}}><p>Hecho</p></Aviso>)
+  it('es un diálogo no modal con título y descripción enlazados por id, y región aria-live', () => {
+    const h = html('paso')
+    expect(h).toContain('role="dialog"'); expect(h).toContain('aria-modal="false"'); expect(h).not.toContain('aviso-velo')
     const t = h.match(/aria-labelledby="([^"]+)"/)![1], d = h.match(/aria-describedby="([^"]+)"/)![1]
     expect(t).not.toBe(d); expect(h).toContain(`id="${t}"`); expect(h).toContain(`id="${d}"`)
     expect(h).toMatch(/<h2 id="[^"]+" class="aviso-pop__titulo">Depósito guardado<\/h2>/)
+    expect(h).toContain('aria-live="polite"')
   })
-  it('los errores son alertdialog', () => { expect(html('error')).toContain('role="alertdialog"') })
-  it('tiene un botón Cerrar claro y el botón principal', () => {
-    const h = html('exito')
-    expect(h).toContain('aria-label="Cerrar"'); expect(h).toMatch(/aviso-pop__boton"[^>]*>Continuar<\/button>/)
+  it('los errores son alertdialog y se anuncian con prioridad', () => { const h = html('error'); expect(h).toContain('role="alertdialog"'); expect(h).toContain('aria-live="assertive"') })
+  it('solo se cierra con la X (con etiqueta) o Esc: sin botón principal ni cierre automático', () => {
+    const h = html('error'); expect(h).toContain('aria-label="Cerrar aviso"'); expect(h.match(/<button/g)).toHaveLength(1)
+    expect(leer('../Aviso.tsx')).not.toMatch(/setTimeout\(\(\) => (cerrar|cerrarRef)/)
+    expect(leer('../Aviso.tsx')).toContain("e.key === 'Escape'")
   })
-  it('usa el ícono del sprite de la app cuando se lo pasan', () => {
-    expect(html('exito', 'i-candado')).toContain('href="#i-candado"')
-    expect(html('exito')).toContain('aviso-pop__trazo')
-    for (const id of ['i-registro', 'i-check', 'i-candado', 'i-camara', 'i-escudo', 'i-balanza', 'i-flecha']) expect(leer('../../index.html')).toContain(`<symbol id="${id}"`)
+  it('lleva la casita oficial completa: mismo viewBox del logo, sin recortes, con la llave y sin ids repetidos', () => {
+    const h = html('logro')
+    expect(h).toContain('class="aviso-pop aviso-pop--logro"')
+    expect(h).toContain('viewBox="419.5 65.25 420.25 408.25"'); expect(h).toContain('overflow="visible"')
+    for (const c of ['aviso-logo__planta', 'aviso-logo__franja', 'aviso-logo__puerta', 'aviso-logo__cerradura', 'aviso-logo__llave']) expect(h).toContain(c)
+    expect(h).not.toContain('id="casa-clip"'); expect(h).toContain('url(#aviso-casa-clip)')
+    expect(leer('../logoLandingMarkup.ts')).toContain('viewBox=\\"419.5 65.25 420.25 408.25\\"')
   })
-  it('respeta prefers-reduced-motion (también el ícono)', () => {
-    const rm = css.slice(css.indexOf('@media (prefers-reduced-motion:reduce){\n  .aviso-velo'))
-    expect(rm).toContain('.aviso-pop__icono{animation:none!important;opacity:1}')
+  it('CSS: tarjeta crema de 26 px, 320 px en escritorio y 366 px en celular; la llave gira una vez (~2 s) solo en logros', () => {
+    expect(css).toMatch(/\.aviso-pop\{[^}]*border-radius:26px/); expect(css).toContain('width:320px'); expect(css).toContain('max-width:366px')
+    expect(css).toContain('.aviso-pop--logro .aviso-logo__llave{animation:aviso-llave 2s var(--ease) 250ms both}')
+    expect(css).not.toMatch(/aviso-llave[^;}]*infinite/)
+    expect(css).toMatch(/\.aviso-pop__esquina\{[^}]*overflow:visible/); expect(css).toMatch(/\.aviso-pop__logo svg\{[^}]*overflow:visible/)
+  })
+  it('respeta prefers-reduced-motion (también la llave)', () => {
+    const rm = css.slice(css.indexOf('@media (prefers-reduced-motion:reduce){\n  .aviso-pop{'))
+    expect(rm).toContain('.aviso-logo__llave,.aviso-logo__cerradura{transform:none!important;opacity:1}')
+  })
+  it('tono de cada aviso: logros en verde, errores en terracota, el resto miel', () => {
+    expect(al.tonoDe({ paso: 'pago' })).toBe('logro'); expect(al.tonoDe({ paso: 'contrato-firmado' })).toBe('logro'); expect(al.tonoDe({ paso: 'devolucion' })).toBe('logro')
+    expect(al.tonoDe({ paso: 'crear' })).toBe('paso'); expect(al.tonoDe(al.alertaIngresoFallo())).toBe('error')
   })
   it('el texto separa qué pasó y qué sigue', () => {
     const h = renderToStaticMarkup(<TextoAlerta a={{ paso: 'x', titulo: 'T', hecho: 'Pasó esto.', sigue: 'Hacer aquello.' }} />)
-    expect(h).toBe('<p>Pasó esto.</p><p class="aviso-pop__sigue"><strong>Lo que sigue</strong>Hacer aquello.</p>')
+    expect(h).toBe('<p>Pasó esto.</p><p class="aviso-pop__sigue"><strong>Lo que sigue:</strong> Hacer aquello.</p>')
+  })
+  it('«Tomar foto» usa el ícono de cámara de la app (sin emoji)', () => {
+    const c = leer('../Camara.tsx'); expect(c).toContain('<Icono id="i-camara" />'); expect(c).not.toMatch(EMOJI)
   })
 })
 
@@ -143,7 +161,7 @@ describe('textos de los avisos', () => {
   })
   it('sin emojis, sin «liberado» y sin palabras técnicas', () => {
     for (const x of todas()) {
-      const s = [x.titulo, x.hecho, x.sigue ?? '', x.boton ?? ''].join(' ')
+      const s = [x.titulo, x.hecho, x.sigue ?? ''].join(' ')
       expect(s).not.toMatch(EMOJI); expect(s).not.toMatch(/liberad|liberó|escrow|blockchain|wallet|hash|testnet|USDC de/i)
     }
   })

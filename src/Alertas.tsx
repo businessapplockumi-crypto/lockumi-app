@@ -1,12 +1,12 @@
 import { useSyncExternalStore } from 'react'
 import { Aviso } from './Aviso'
-import { alertaActual, cerrarAlerta, suscribirAlertas, type Alerta } from './alertas'
+import { alertaActual, cerrarAlerta, suscribirAlertas, tonoDe, type Alerta } from './alertas'
 
-/** Contenido de un aviso de paso: qué pasó y, aparte, qué sigue. */
+/** Contenido de un aviso de paso: qué pasó y, en una línea aparte, qué sigue. */
 export function TextoAlerta({ a }: { a: Alerta }) {
   return <>
     <p>{a.hecho}</p>
-    {a.sigue && <p className="aviso-pop__sigue"><strong>{a.tipo === 'error' ? 'Cómo seguir' : 'Lo que sigue'}</strong>{a.sigue}</p>}
+    {a.sigue && <p className="aviso-pop__sigue"><strong>{a.tipo === 'error' ? 'Cómo seguir:' : 'Lo que sigue:'}</strong> {a.sigue}</p>}
   </>
 }
 
@@ -14,5 +14,5 @@ export function TextoAlerta({ a }: { a: Alerta }) {
 export function Alertas() {
   const a = useSyncExternalStore(suscribirAlertas, alertaActual, alertaActual)
   if (!a) return null
-  return <Aviso key={a.paso + a.titulo} tipo={a.tipo} titulo={a.titulo} icono={a.icono} boton={a.boton} onCerrar={cerrarAlerta}><TextoAlerta a={a} /></Aviso>
+  return <Aviso key={a.paso + a.titulo} tono={tonoDe(a)} titulo={a.titulo} onCerrar={cerrarAlerta}><TextoAlerta a={a} /></Aviso>
 }
