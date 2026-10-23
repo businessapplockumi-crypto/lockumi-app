@@ -39,7 +39,7 @@ El contrato tiene dos partes (publicado el 23 oct 2026):
 
 Publicado el 23 oct 2026 (avisos v2). Ver [`docs/alertas.md`](docs/alertas.md).
 
-- **No llames a `<Aviso>` directo desde una pantalla.** Usa `avisar(alerta)` (cola: se muestran de a uno). `<Alertas />` va una sola vez en `App.tsx` (con y sin sesión).
+- **No llames a `<Aviso>` directo desde una pantalla.** Usa `avisar(alerta)` (cola: se muestran de a uno). `<Alertas />` va una sola vez en `App.tsx` (con y sin sesión), **justo después de «Saltar al contenido»** para que el aviso sea la 2.ª parada de Tab (rama `aviso-tab`, pendiente de publicar). No lo muevas al final ni le des foco al aparecer.
 - **Los avisos del flujo salen solos:** `Detalle` guarda una `instantanea()` del alquiler y, en cada cambio, `alertaPorCambio(antes, ahora, rol)` decide el aviso (cambio de estado, firma nueva de una parte o plazo adelantado). Así también avisa cuando el dueño de prueba firma solo. Un paso nuevo = un `case` nuevo en `alertaPorCambio` + su prueba en `src/__tests__/alertas.test.tsx` + su captura en `scripts/alertas/capturar.mjs`.
 - Cada aviso tiene `titulo`, `hecho` (qué pasó) y `sigue` (qué sigue). El ícono es siempre la casita de Lockumi (`src/LogoAviso.tsx`, tomada del logo oficial); el color sale de `tonoDe(alerta)`: `paso` (miel), `logro` (verde, la llave gira una vez; pasos en `LOGROS`) o `error`. Sin emojis. Los errores usan `tipo: 'error'` (zona `role="alert"`) y siempre dicen cómo seguir; los errores de los pasos siguen en la pantalla (`p.error`).
 - **Textos:** español neutro, sin palabras técnicas, sin «liberado» y con «(simulación)» para la persona mediadora. Todo texto con sentido legal lleva `// LEGAL: revisar` y no se cambia sin Legal.

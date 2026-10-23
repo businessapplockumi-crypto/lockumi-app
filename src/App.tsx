@@ -32,15 +32,16 @@ export default function App() {
   if (legal) return <Fondo>{skip}<PaginaLegal slug={legal} /><Pie /></Fondo>
   // Si llegó por un link de invitación, se vuelve ahí después de entrar (también tras el regreso de Google o Apple).
   if (!u && r.startsWith('/invitacion/')) sessionStorage.setItem('lockumi.regreso', r)
-  if (!u && regreso === 'esperando') return <Fondo>{skip}<Entrando /><Alertas /></Fondo>
-  if (!u) return <Fondo>{skip}<Login onOk={entro} error={regreso === 'fallo'} onReintento={() => setRegreso(null)} /><Pie /><Alertas /></Fondo>
+  if (!u && regreso === 'esperando') return <Fondo>{skip}<Alertas /><Entrando /></Fondo>
+  if (!u) return <Fondo>{skip}<Alertas /><Login onOk={entro} error={regreso === 'fallo'} onReintento={() => setRegreso(null)} /><Pie /></Fondo>
   const m = r.match(/^\/alquiler\/(.+)$/)
   const inv = r.match(/^\/invitacion\/([0-9a-f-]{36})\/([0-9a-f]{64})$/)
+  // El aviso va justo después de «Saltar al contenido»: es la 2.ª parada de Tab (sin robar el foco).
   return <Fondo>{skip}
+    <Alertas />
     <Barra u={u} onSalir={() => { auth.salir(); olvidarBilletera(); setU(null) }} />
     {r === '/crear' ? <Crear u={u} /> : inv ? <Invitacion id={inv[1]} token={inv[2]} u={u} /> : m ? <Detalle id={m[1]} u={u} /> : <Inicio u={u} />}
     <Pie />
-    <Alertas />
   </Fondo>
 }
 

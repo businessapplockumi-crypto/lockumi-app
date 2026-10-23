@@ -1,6 +1,6 @@
 # Avisos después de cada paso
 
-**Publicado el 23 oct 2026** en app.lockumi.com: rama `contrato-plegable` unida a `master` por avance rápido desde `ad1578f` en `abdfd9b` (código `afe15ae` y `abdfd9b`, docs `2312401`); deploy de producción `dpl_ARoWYrXEBftUcz1L4NoRiQNA9N6v`. Pruebas antes de publicar: 163/163 unitarias y 855/855 del recorrido en navegador.
+**Publicado el 23 oct 2026** en app.lockumi.com (salvo el aviso al inicio del orden de Tab: rama `aviso-tab`, pendiente de publicar): rama `contrato-plegable` unida a `master` por avance rápido desde `ad1578f` en `abdfd9b` (código `afe15ae` y `abdfd9b`, docs `2312401`); deploy de producción `dpl_ARoWYrXEBftUcz1L4NoRiQNA9N6v`. Pruebas antes de publicar: 163/163 unitarias y 855/855 del recorrido en navegador.
 
 ## Avisos v2 (23 oct 2026)
 
@@ -28,13 +28,13 @@ Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama. Reemplaza el estilo del
   - **ya no es un diálogo**: `<Alertas />` deja siempre en la página dos zonas, `role="status"` con `aria-live="polite"` (pasos y logros) y `role="alert"` (errores), y el aviso aparece dentro de la que corresponde, así el lector de pantalla lo anuncia sin mover el foco;
   - **no roba el foco**. La tarjeta se puede enfocar con Tab (`tabindex="0"`, nombre «Aviso. Toca para cerrar», título y texto con `aria-describedby`): enfocada se pausa y Enter, Espacio o Esc la cierran; al cerrarla el foco vuelve a donde estaba (o a `#contenido`);
   - con «reducir movimiento»: solo un fundido al aparecer, sin animación de salida ni de la llave, y la línea del tiempo queda quieta;
-  - límite: la tarjeta va al final de la página, así que llegar con Tab antes de 5 s puede costar; casi todo lo que dice también queda en la pantalla (líneas del paso e historial), y el error del ingreso queda escrito en Entrar (ver «Error del ingreso en Entrar»);
+  - **se llega con Tab antes de 5 s** *(rama `aviso-tab`, pendiente de publicar)*: `<Alertas />` va justo después de «Saltar al contenido», así que desde el inicio de la página el aviso es la **2.ª parada de Tab** (1.º «Saltar al contenido», 2.º el aviso, antes del encabezado). Sigue sin robar el foco. Con el foco se pausa; Enter, Espacio o Esc lo cierran y el foco vuelve a donde estaba. Si el foco ya está más abajo (por ejemplo en el botón del paso), Tab sigue hacia adelante y no llega al aviso; se llega con Mayús+Tab hasta el inicio o desde «Saltar al contenido». Antes iba al final de la página; casi todo lo que dice también queda en la pantalla (líneas del paso e historial), y el error del ingreso queda escrito en Entrar (ver «Error del ingreso en Entrar»);
   - contraste AA en todos los textos (el más justo, verde `#2E7347` sobre `#E3F2E8`, 4,95:1).
 - **«Tomar foto»** (`src/Camara.tsx`): el emoji 📷 se cambió por el ícono de cámara de la app (`i-camara`).
 
 Capturas reales (localhost, sesión simulada): `capturas/alertas-v2-*.png`. Imágenes livianas y GIF de la llave: `diseno/envio/alertas-v2-implementado/`. GIF del cierre solo (celular y computadora): `diseno/envio/alertas-v2-autocierre/aviso-se-esconde-solo.gif`.
 
-**Decisiones pendientes (Katherine):** 1) ~~el error del ingreso solo se ve en el aviso~~ **resuelto el 23 oct** (queda escrito en Entrar, ver abajo); 2) el enlace «Entrar con mi correo» de la maqueta no se agregó (tocar el aviso lo cierra; un enlace dentro chocaría con eso); 3) se quitó «en esta misma pestaña» del texto (decisión de Producto según Legal); 4) llegar con Tab antes de 5 s.
+**Decisiones pendientes (Katherine):** 1) ~~el error del ingreso solo se ve en el aviso~~ **resuelto el 23 oct** (queda escrito en Entrar, ver abajo); 2) el enlace «Entrar con mi correo» de la maqueta no se agregó (tocar el aviso lo cierra; un enlace dentro chocaría con eso); 3) se quitó «en esta misma pestaña» del texto (decisión de Producto según Legal); 4) ~~llegar con Tab antes de 5 s~~ **propuesto en la rama `aviso-tab`** (pendiente del OK de Katherine para publicar). Siguen sin agregarse «Entrar con mi correo» ni «en esta misma pestaña».
 
 ### Error del ingreso en Entrar (aprobado por Katherine, 23 oct, 11:49 a. m.)
 
