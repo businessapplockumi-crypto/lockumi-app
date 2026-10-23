@@ -33,36 +33,46 @@ async function contexto(w, { sesion = true, reducir = false } = {}) {
   return { ctx, p }
 }
 
-/** Espera un aviso, revisa accesibilidad, lo captura (la primera vez de cada paso y tamaño) y lo cierra. */
+/** Espera un aviso, revisa accesibilidad, lo captura (la primera vez de cada paso y tamaño) y lo cierra
+ *  de una de cuatro maneras (por turnos): tocándolo, con Esc, enfocándolo con teclado (pausa) + Enter, o dejándolo esconderse solo. */
 let modo = 0
 async function alerta(p, n, paso, titulo, { capturar = true } = {}) {
-  const pop = p.locator('.aviso-pop'); await pop.waitFor({ timeout: 30000 }); await p.waitForTimeout(1300)
+  const pop = p.locator('.aviso-pop'); await pop.waitFor({ timeout: 30000 }); const visto = Date.now(); await p.waitForTimeout(900)
   const m = await pop.evaluate(e => {
-    const t = document.getElementById(e.getAttribute('aria-labelledby') || ''), d = document.getElementById(e.getAttribute('aria-describedby') || '')
-    const r = e.getBoundingClientRect()
-    return { rol: e.getAttribute('role'), modal: e.getAttribute('aria-modal'), titulo: t?.textContent ?? '', desc: d?.textContent ?? '', foco: e.contains(document.activeElement) && document.activeElement.classList.contains('aviso-pop__x'),
+    const [t, d] = (e.getAttribute('aria-describedby') || '').split(' ').map(x => document.getElementById(x))
+    const r = e.getBoundingClientRect(), zona = e.closest('.aviso-zona')
+    return { rol: e.getAttribute('role'), zona: zona?.getAttribute('role'), vivo: zona?.getAttribute('aria-live'), nombre: e.getAttribute('aria-label'), tab: e.tabIndex,
+      titulo: t?.textContent ?? '', desc: d?.textContent ?? '', robo: e.contains(document.activeElement), botones: e.querySelectorAll('button').length,
       tapa: innerWidth < 720 && [...document.querySelectorAll('header.barra, #contenido h1, main h1, .marca-c__arte, .entrada-app__titulo')].some(x => { const q = x.getBoundingClientRect(); return q.height && q.bottom > r.top + .5 && q.top < r.bottom - .5 }),
       logo: (() => { const s = e.querySelector('.aviso-pop__logo svg'); return !!s && s.getAttribute('viewBox') === '419.5 65.25 420.25 408.25' && getComputedStyle(s).overflow === 'visible' && getComputedStyle(e.querySelector('.aviso-pop__esquina')).overflow === 'visible' })(),
-      cabe: r.left >= 0 && r.right <= innerWidth + .5 && r.top >= -.5 && r.bottom <= innerHeight + .5, letra: Math.min(...[...e.querySelectorAll('p,h2,button,strong')].map(x => parseFloat(getComputedStyle(x).fontSize))),
-      emoji: /\p{Extended_Pictographic}/u.test(e.textContent), tono: e.className.replace('aviso-pop aviso-pop--', '') }
+      cabe: r.left >= 0 && r.right <= innerWidth + .5 && r.top >= -.5 && r.bottom <= innerHeight + .5, letra: Math.min(...[...e.querySelectorAll('p,h2,strong')].map(x => parseFloat(getComputedStyle(x).fontSize))),
+      emoji: /\p{Extended_Pictographic}/u.test(e.textContent), tono: e.className.replace('aviso-pop aviso-pop--', '').split(' ')[0] }
   })
   const et = `${paso} (${n})`
   ok(m.titulo === titulo, `${et}: título «${m.titulo}»`)
-  ok((m.rol === 'dialog' || m.rol === 'alertdialog') && m.modal === 'false', `${et}: role=${m.rol}, no modal`)
-  ok(m.desc.length > 20, `${et}: descripción enlazada`); ok(m.foco, `${et}: el foco va a la X «Cerrar aviso»`)
+  ok(m.rol === 'group' && (m.tono === 'error' ? m.zona === 'alert' : m.zona === 'status' && m.vivo === 'polite'), `${et}: sin diálogo; zona ${m.zona}${m.vivo ? ' ' + m.vivo : ''} (${m.tono})`)
+  ok(m.nombre === 'Aviso. Toca para cerrar' && m.tab === 0 && m.botones === 0, `${et}: enfocable, nombre «${m.nombre}», sin X`)
+  ok(m.desc.length > 20, `${et}: título y texto enlazados`); ok(!m.robo, `${et}: no roba el foco`)
   ok(m.cabe, `${et}: cabe en la pantalla`); ok(m.letra >= 12, `${et}: letra mínima ${m.letra}px`); ok(!m.emoji, `${et}: sin emojis`); ok(m.logo, `${et}: casita completa (${m.tono})`); ok(!m.tapa, `${et}: no tapa el encabezado ni el título`)
-  await p.waitForTimeout(1200)   // no se cierra solo
-  ok(await pop.isVisible(), `${et}: sigue abierto (no se cierra solo)`)
   if (capturar && !vistos[paso + n]) { vistos[paso + n] = 1; await p.screenshot({ path: `${OUT}${paso}-${n}.png` }) }
   vistos.textos ??= {}; vistos.textos[paso] = { titulo: m.titulo, texto: m.desc }
-  const como = ['Escape', 'x'][modo++ % 2]
-  if (como === 'Escape') await p.keyboard.press('Escape'); else await pop.getByRole('button', { name: 'Cerrar aviso' }).click()
-  // Cerró este aviso (el siguiente de la cola puede aparecer enseguida)
-  await p.waitForFunction(t => !document.querySelector('.aviso-capa--sale') && ![...document.querySelectorAll('.aviso-pop__titulo')].some(h => h.textContent === t), m.titulo, { timeout: 3000 })
-  await p.waitForTimeout(100)
-  const f = await p.evaluate(() => ({ en: document.activeElement !== document.body && document.activeElement?.isConnected, quien: document.activeElement?.tagName + '#' + (document.activeElement?.id || document.activeElement?.className) }))
-  ok(f.en, `${et}: cerrado con ${como}, el foco vuelve a ${f.quien}`)
-  ok(await p.evaluate(() => !!document.querySelector('.aviso-pop') || document.body.style.overflow === ''), `${et}: la página vuelve a desplazarse`)
+  const como = ['toque', 'Escape', 'teclado', 'solo'][modo++ % 4]
+  if (como === 'toque') { if (n === 'movil') await pop.tap(); else await pop.click() }
+  else if (como === 'Escape') await p.keyboard.press('Escape')
+  else if (como === 'teclado') {
+    if (n !== 'movil') { await pop.hover(); await p.waitForTimeout(5400); ok(await pop.isVisible(), `${et}: con el mouse encima no se esconde`); await p.mouse.move(2, 2) }
+    await pop.focus(); await p.waitForTimeout(5400); ok(await pop.isVisible(), `${et}: con el foco no se esconde (pausa)`)
+    await p.keyboard.press('Enter')
+  } else await p.mouse.move(2, 2)
+  // Se cerró (el siguiente de la cola puede aparecer enseguida). Solo: entre 5 y 7 s desde que apareció.
+  await p.waitForFunction(t => !document.querySelector('.aviso-capa--sale') && ![...document.querySelectorAll('.aviso-pop__titulo')].some(h => h.textContent === t), m.titulo, { timeout: como === 'solo' ? 8000 : 3000 })
+  if (como === 'solo') { const s = (Date.now() - visto) / 1000; ok(s >= 4.9 && s < 7, `${et}: se escondió solo a los ${s.toFixed(1)} s`) }
+  else ok(true, `${et}: cerrado con ${como}`)
+  if (como === 'teclado') {
+    await p.waitForTimeout(100)
+    const f = await p.evaluate(() => ({ en: document.activeElement !== document.body && document.activeElement?.isConnected, quien: document.activeElement?.tagName + '#' + (document.activeElement?.id || document.activeElement?.className) }))
+    ok(f.en, `${et}: el foco vuelve a ${f.quien}`)
+  }
 }
 
 async function fotos(p, cual) {
@@ -89,7 +99,7 @@ async function hastaVentana(p, n, cap) {
   await alerta(p, n, 'firma-inquilino', 'Firmaste el contrato', cap)
   await alerta(p, n, 'firma-dueno', 'Contrato firmado por los dos', cap)
   await p.getByRole('button', { name: /^Pagar / }).click()
-  await alerta(p, n, 'pago', 'Depósito guardado', cap)
+  await alerta(p, n, 'pago', '¡Depósito guardado!', cap)
   await fotos(p, 'entrada')
   await alerta(p, n, 'entrada-inquilino', 'Confirmaste las fotos de entrada', cap)
   await alerta(p, n, 'entrada-dueno', 'Empezó el alquiler', cap)
@@ -117,7 +127,7 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
   await alerta(p, n, 'reclamo', 'Reclamo enviado')
   await p.getByRole('button', { name: 'No estoy de acuerdo' }).click()
   await alerta(p, n, 'mediacion', 'Pasa a una persona mediadora')
-  await p.getByRole('button', { name: 'Decidir como persona mediadora' }).click(); await p.getByRole('button', { name: 'Confirmar el reparto' }).click()
+  await p.getByRole('button', { name: 'Resolver el reclamo (simulación)' }).click(); await p.getByRole('button', { name: 'Confirmar el reparto' }).click()
   await alerta(p, n, 'reparto', 'Reparto decidido')
   // C) reclamo aceptado
   await hastaVentana(p, n, { capturar: false })
@@ -132,8 +142,8 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
   // Ingreso que no terminó (regreso de Google con un código que no sirve; Cavos bloqueado) + movimiento reducido
   const f = await contexto(w, { sesion: false, reducir: true })
   await f.p.goto(B + '?cavos_auth_code=simulado-invalido#/')
-  ok(await f.p.locator('.aviso-pop').evaluate(e => getComputedStyle(e).animationName === 'aviso-fade' && getComputedStyle(e.querySelector('.aviso-logo__llave')).animationName === 'none').catch(() => false), `ingreso-fallo (${n}): solo un fundido con movimiento reducido`)
-  await alerta(f.p, n, 'ingreso-fallo', 'No pudimos completar el ingreso')
+  ok(await f.p.locator('.aviso-pop').evaluate(e => getComputedStyle(e).animationName === 'aviso-fade' && getComputedStyle(e.querySelector('.aviso-logo__llave')).animationName === 'none' && getComputedStyle(e.querySelector('.aviso-pop__tiempo')).animationName === 'none').catch(() => false), `ingreso-fallo (${n}): solo un fundido con movimiento reducido`)
+  await alerta(f.p, n, 'ingreso-fallo', 'El ingreso no terminó')
   ok(await f.p.getByRole('button', { name: 'Entrar' }).isVisible(), `ingreso-fallo (${n}): queda la pantalla de entrada`)
   await f.ctx.close()
   // Ingreso correcto (Vite sin Cavos real: login simulado)

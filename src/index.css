@@ -282,7 +282,8 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 
 /* Aviso v2 después de cada paso: tarjeta crema pequeña, casita completa de Lockumi en una esquina de color.
    Celular: arriba, debajo del encabezado y del título (Aviso.tsx calcula el alto). Escritorio: abajo a la derecha.
-   No se cierra solo; X o Esc. Tonos: paso (miel), logro (verde), error (terracota). */
+   Se esconde solo a los 5 s (pausa con el dedo, el mouse o el foco encima); también al tocarlo, Enter, Espacio o Esc.
+   Tonos: paso (miel), logro (verde), error (terracota). */
 .aviso-capa{position:fixed;z-index:60;top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;margin:0 auto;max-width:366px;pointer-events:none}
 .aviso-capa:not([style]){top:auto;bottom:calc(12px + env(safe-area-inset-bottom))}
 @media (min-width:720px){.aviso-capa,.aviso-capa:not([style]){top:auto;bottom:28px;left:auto;right:28px;width:320px;max-width:calc(100vw - 56px)}}
@@ -304,15 +305,16 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .aviso-logo__pulso{transform-origin:center;opacity:0}
 .aviso-logo__puerta-luz,.aviso-logo__brillo{opacity:0}
 .aviso-pop__cuerpo{min-width:0;padding-top:2px}
-.aviso-pop__titulo{margin:0;padding-right:28px;font:800 16.5px/1.25 Nunito,system-ui,sans-serif;letter-spacing:-.005em;color:var(--cafe)}
+.aviso-pop__titulo{margin:0;font:800 16.5px/1.25 Nunito,system-ui,sans-serif;letter-spacing:-.005em;color:var(--cafe)}
 .aviso-pop__texto p{margin:3px 0 0;font-size:13.5px;line-height:1.4;color:var(--cafe-suave)}
 .aviso-pop__texto .aviso-pop__sigue{margin-top:6px}
 .aviso-pop__sigue strong{color:var(--acento-texto);font-weight:700}
-.aviso-pop__x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:var(--cafe-suave);display:grid;place-items:center;cursor:pointer}
-.aviso-pop__x::before{content:"";position:absolute;inset:-6px}
-.aviso-pop__x:hover{background:rgba(61,42,34,.06)}.aviso-pop__x:focus-visible{outline:none;box-shadow:var(--foco)}
-.aviso-pop__x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
 .aviso-capa--sale .aviso-pop{animation:aviso-sale 200ms ease both}
+.aviso-pop{cursor:pointer;-webkit-tap-highlight-color:transparent}.aviso-pop:focus-visible{outline:none;box-shadow:var(--foco),0 10px 28px -6px rgba(61,42,34,.20)}
+/* Señal de tiempo: línea fina abajo que se acorta en 5 s y se detiene en pausa; quieta con «reducir movimiento». */
+.aviso-pop__tiempo{position:absolute;left:22px;right:22px;bottom:5px;height:3px;border-radius:2px;background:var(--acento-anillo);opacity:.45;transform-origin:left;animation:aviso-tiempo 5s linear both}
+.aviso-pop--pausa .aviso-pop__tiempo{animation-play-state:paused}
+@keyframes aviso-tiempo{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 /* Logros: la llave del logo entra a la cerradura y gira, una sola vez (~2 s), como en el logo de lockumi.com */
 .aviso-pop--logro .aviso-logo__llave{animation:aviso-llave 2s var(--ease) 250ms both}
 .aviso-pop--logro .aviso-logo__cerradura{animation:aviso-cerradura 2s var(--ease) 250ms both}
@@ -331,6 +333,7 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
   .aviso-pop{animation:aviso-fade 160ms linear both!important}.aviso-capa--sale .aviso-pop{animation:none!important;opacity:0}
   .aviso-pop__esquina,.aviso-logo__llave,.aviso-logo__cerradura,.aviso-logo__pulso,.aviso-logo__puerta-luz{animation:none!important}
   .aviso-logo__llave,.aviso-logo__cerradura{transform:none!important;opacity:1}
+  .aviso-pop__tiempo{animation:none!important;opacity:.3}
 }
 @keyframes aviso-fade{from{opacity:0}to{opacity:1}}
 .billetera__detalle{font-size:13px;opacity:.85}.billetera__detalle summary{cursor:pointer;width:max-content}

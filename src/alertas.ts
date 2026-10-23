@@ -50,9 +50,8 @@ export const alertaIngreso = (real = modoReal): Alerta => ({
   hecho: `${real ? 'Estamos preparando tu billetera.' : 'Te damos la bienvenida a la demo.'} Desde aquí puedes ver tus alquileres y crear un depósito protegido.`,
 })
 export const alertaIngresoFallo = (): Alerta => ({
-  paso: 'ingreso-fallo', tipo: 'error', titulo: 'No pudimos completar el ingreso',
-  hecho: 'El ingreso con tu cuenta no terminó y no se guardó tu sesión.',
-  sigue: 'Toca «Entrar» y vuelve a elegir tu cuenta en esta misma pestaña. Si sigue pasando, entra con tu correo.',
+  paso: 'ingreso-fallo', tipo: 'error', titulo: 'El ingreso no terminó',
+  hecho: 'Toca Entrar y elige tu cuenta.',   // texto corto aprobado por Legal (23 oct 2026)
 })
 
 export const alertaCreado = (a: Pick<Alquiler, 'direccion' | 'monto'>, c = CTX): Alerta => ({
@@ -91,9 +90,9 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
       sigue: `Pagar el depósito de ${usd(ahora.monto)}.`,
     }
     case 'fotos_entrada': return {
-      paso: 'pago', titulo: 'Depósito guardado',
-      // LEGAL: revisar
-      hecho: c.red ? `Tu depósito de ${usd(ahora.monto)} quedó guardado en una cuenta segura de la red de prueba. Nadie puede sacarlo solo.` : `El depósito de ${usd(ahora.monto)} quedó guardado. Nadie puede tomarlo solo.`,
+      paso: 'pago', titulo: '¡Depósito guardado!',
+      // LEGAL: revisar · texto corto de la red de prueba aprobado por Legal (23 oct 2026)
+      hecho: c.red ? `${usd(ahora.monto)} guardados en una cuenta segura de la red de prueba. Nadie puede sacarlos solo.` : `El depósito de ${usd(ahora.monto)} quedó guardado. Nadie puede tomarlo solo.`,
       sigue: 'Tomar las fotos de entrada de cada espacio y marcar la lista.',
     }
     case 'en_curso': return {
@@ -123,7 +122,7 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
       paso: 'mediacion', titulo: 'Pasa a una persona mediadora',
       hecho: `No hubo acuerdo con el reclamo.${c.prueba ? ' En esta prueba la persona mediadora es una simulación.' : ''}`,
       // LEGAL: revisar
-      sigue: c.video ? 'Decides tú el reparto con «Decidir como persona mediadora».' : 'Una persona mediadora revisa las fotos de entrada y de salida y decide cómo se reparte el depósito.',
+      sigue: c.video ? 'En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».' : 'Una persona mediadora revisa las fotos de entrada y de salida y decide cómo se reparte el depósito.',
     }
     case 'cerrado': {
       if (!r) return null

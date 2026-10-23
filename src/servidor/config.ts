@@ -14,7 +14,7 @@ export const modoPrueba = !modoServidor && import.meta.env.VITE_TRUSTLESS === '1
 export const modoSolo = modoPrueba && import.meta.env.VITE_FLUJO === 'solo'
 /** Interfaz completa del video (8 pasos: contrato, firmas, depósito, actas con fotos, 7 días, mediador) en un solo aparato,
  *  sin «Ver como»: tú eres el inquilino; el dueño de prueba firma y confirma solo, y los reclamos y la decisión de la persona
- *  mediadora se hacen con botones rotulados («Hacer un reclamo como dueño de prueba», «Decidir como persona mediadora»).
+ *  mediadora se hacen con botones rotulados («Hacer un reclamo como dueño de prueba», «Resolver el reclamo (simulación)»).
  *  Opción por defecto con VITE_TRUSTLESS=1. */
 export const modoVideo = modoPrueba && !modoSolo
 /** ¿El depósito se mueve de verdad en Stellar testnet (Trustless Work)? Sí en la red de prueba (modoSolo y modoVideo):

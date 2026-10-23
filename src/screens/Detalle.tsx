@@ -199,11 +199,11 @@ function Mediacion({ a }: P) {
   const decidir = () => p.correr(av => acciones.decidir(a, aDueno, undefined, av))
   return <section className="pila"><div className="cab"><h2>Con una persona mediadora</h2>{modoPrueba && <Simulado />}</div>
     {modoSolo && <p className="nota">La persona mediadora es simulada: su decisión no se registra en la red de prueba ni mueve el depósito de prueba.</p>}
-    {modoVideo && <p className="nota">En esta prueba la persona mediadora es simulada: decides tú con «Decidir como persona mediadora». El reparto que elijas sí se hace de verdad en la red de prueba.</p>}
+    {modoVideo && <p className="nota">En esta prueba la persona mediadora es simulada: decides tú con «Resolver el reclamo (simulación)». El reparto que elijas sí se hace de verdad en la red de prueba.</p>}
     <p>No hubo acuerdo. Una persona mediadora revisa las fotos de entrada y salida y decide cómo se reparte el depósito.</p>
     {!modoVideo && <Espera texto="No tienes que hacer nada. Te avisaremos cuando haya una decisión." />}
     <Evidencia a={a} />
-    {mediador && (!panel ? <button type="button" className={modoVideo ? 'boton boton--primario boton--ancho boton--grande' : 'enlace'} onClick={() => setPanel(true)}>{modoServidor ? 'Decidir como mediador' : modoVideo ? 'Decidir como persona mediadora' : 'Demo: decidir como mediador'}</button>
+    {mediador && (!panel ? <button type="button" className={modoVideo ? 'boton boton--primario boton--ancho boton--grande' : 'enlace'} onClick={() => setPanel(true)}>{modoServidor ? 'Decidir como mediador' : modoVideo ? 'Resolver el reclamo (simulación)' : 'Demo: decidir como mediador'}</button>
       : <div className="mediador pila"><label className="campo"><span>Para el dueño: {usd(aDueno)} · para el inquilino: {usd(a.monto - aDueno)}</span>
           <input type="range" min={0} max={r.monto} step={escrowReal ? 0.01 : 10} value={aDueno} onChange={e => setAD(Number(e.target.value))} aria-valuetext={`${usd(aDueno)} para el dueño`} /></label>
         {p.error}

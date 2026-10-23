@@ -15,58 +15,73 @@ function lugarEnCelular(): { top?: number } {
   return top < innerHeight * 0.55 ? { top } : {}
 }
 
+/** Tiempo que se ve cada aviso antes de esconderse solo. */
+export const DURACION_AVISO = 5000
+
 /** Aviso v2 (sin librerías): tarjeta crema pequeña con la casita completa de Lockumi en una esquina de color.
  *  Tonos: paso (miel), logro (verde; la llave entra y gira una vez, como en el logo) y error (terracota).
- *  No se cierra solo (tampoco los errores): se cierra con la X o con Esc.
- *  Accesible: role="dialog" (o "alertdialog" en errores) no modal, con título y descripción enlazados; el foco va a la X
- *  y al cerrar vuelve a donde estaba. Si la persona está escribiendo, no le quitamos el foco: el aviso se anuncia por aria-live. */
+ *  Se esconde solo a los 5 s. También se cierra al tocarlo o hacer clic, con Enter, Espacio o Esc.
+ *  Si el dedo o el mouse está encima, o tiene el foco, el conteo se pausa y se reanuda al salir.
+ *  No es un diálogo y no roba el foco: se anuncia desde la zona `role="status"` (o `role="alert"` en errores)
+ *  de <Alertas />. Se puede enfocar con Tab (pausa) y, al cerrarlo, el foco vuelve a donde estaba. */
 export function Aviso({ tono = 'paso', titulo, children, onCerrar }:
   { tono?: Tono; titulo: string; children: ReactNode; onCerrar: () => void }) {
   const [saliendo, setSaliendo] = useState(false)
   const [lugar, setLugar] = useState<{ top?: number }>({})
-  const [voz, setVoz] = useState('')
+  const [pausa, setPausa] = useState(false)
   const ref = useRef<HTMLDivElement>(null); const id = useId()
   const saliendoRef = useRef(false); const onCerrarRef = useRef(onCerrar)
+  const antesDelFoco = useRef<HTMLElement | null>(null)
   useEffect(() => { onCerrarRef.current = onCerrar })
   const cerrar = () => {
     if (saliendoRef.current) return; saliendoRef.current = true; setSaliendo(true)
+    const nodo = ref.current
+    if (nodo?.contains(document.activeElement)) {   // tenía el foco: vuelve a donde estaba
+      const v = antesDelFoco.current
+      if (v && v !== document.body && v.isConnected) v.focus(); else document.getElementById('contenido')?.focus()
+    }
     setTimeout(() => onCerrarRef.current(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200)
   }
   const cerrarRef = useRef(cerrar); useEffect(() => { cerrarRef.current = cerrar })
+  // Conteo de 5 s que se pausa (dedo o mouse encima, o foco) y sigue donde quedó.
+  const encima = useRef(false), conFoco = useRef(false), queda = useRef(DURACION_AVISO), desde = useRef(0), reloj = useRef(0)
+  const revisar = () => {
+    const pausar = encima.current || conFoco.current
+    if (pausar && reloj.current) { clearTimeout(reloj.current); reloj.current = 0; queda.current -= Date.now() - desde.current }
+    if (!pausar && !reloj.current) { desde.current = Date.now(); reloj.current = window.setTimeout(() => cerrarRef.current(), Math.max(0, queda.current)) }
+    setPausa(pausar)
+  }
+  const revisarRef = useRef(revisar); useEffect(() => { revisarRef.current = revisar })
+  useEffect(() => { revisarRef.current(); return () => { clearTimeout(reloj.current); reloj.current = 0 } }, [])   // (en StrictMode el efecto corre dos veces)
   useLayoutEffect(() => {
-    const poner = () => setLugar(lugarEnCelular()); poner()
+    const poner = () => setLugar(lugarEnCelular())
     // Otra vez cuando la pantalla nueva ya está dibujada (por ejemplo, al pasar de «Nuevo alquiler» al alquiler creado)
     // y cuando la página se desplaza (la app sube al paso nuevo): el aviso acompaña al título sin taparlo.
     let cuadro = 0
     const luego = () => { cancelAnimationFrame(cuadro); cuadro = requestAnimationFrame(poner) }
-    luego(); const t = setTimeout(poner, 350)
+    poner(); luego(); const t = setTimeout(poner, 350)
     addEventListener('resize', luego); addEventListener('hashchange', luego); addEventListener('scroll', luego, { passive: true })
     return () => { cancelAnimationFrame(cuadro); clearTimeout(t); removeEventListener('resize', luego); removeEventListener('hashchange', luego); removeEventListener('scroll', luego) }
   }, [])
   useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null, nodo = ref.current
-    const escribiendo = !!prev?.matches?.('input:not([type=checkbox]):not([type=radio]),textarea,select,[contenteditable="true"]')
-    if (escribiendo) setVoz(nodo?.querySelector('.aviso-pop__titulo')?.textContent + '. ' + (nodo?.querySelector('.aviso-pop__texto')?.textContent ?? ''))
-    else nodo?.querySelector<HTMLElement>('.aviso-pop__x')?.focus()
-    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); cerrarRef.current() } }
-    addEventListener('keydown', k)
-    return () => {
-      removeEventListener('keydown', k)
-      const dentro = !document.activeElement || document.activeElement === document.body || nodo?.contains(document.activeElement)
-      if (!dentro) return
-      if (prev && prev !== document.body && prev.isConnected) prev.focus()
-      else document.getElementById('contenido')?.focus()
-    }
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrarRef.current() }
+    addEventListener('keydown', k); return () => removeEventListener('keydown', k)
   }, [])
+  const poner = (campo: typeof encima, v: boolean) => { campo.current = v; revisar() }
   return <div className={'aviso-capa' + (saliendo ? ' aviso-capa--sale' : '')} style={lugar.top != null ? { top: lugar.top, bottom: 'auto' } : undefined}>
-    <div ref={ref} className={'aviso-pop aviso-pop--' + tono} role={tono === 'error' ? 'alertdialog' : 'dialog'} aria-modal="false" aria-labelledby={id + 't'} aria-describedby={id + 'd'}>
+    <div ref={ref} className={'aviso-pop aviso-pop--' + tono + (pausa ? ' aviso-pop--pausa' : '')} role="group" tabIndex={0}
+      aria-label="Aviso. Toca para cerrar" aria-describedby={id + 't ' + id + 'd'}
+      onClick={cerrar}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); cerrar() } }}
+      onPointerEnter={() => poner(encima, true)} onPointerLeave={() => poner(encima, false)}
+      onPointerDown={() => poner(encima, true)} onPointerCancel={() => poner(encima, false)}
+      onFocus={e => { antesDelFoco.current = e.relatedTarget as HTMLElement | null; poner(conFoco, true) }} onBlur={() => poner(conFoco, false)}>
       <div className="aviso-pop__esquina"><LogoAviso /></div>
       <div className="aviso-pop__cuerpo">
         <h2 id={id + 't'} className="aviso-pop__titulo">{titulo}</h2>
         <div id={id + 'd'} className="aviso-pop__texto">{children}</div>
       </div>
-      <button type="button" className="aviso-pop__x" aria-label="Cerrar aviso" onClick={cerrar}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button>
+      <span className="aviso-pop__tiempo" aria-hidden="true" style={{ animationDuration: DURACION_AVISO + 'ms' }} />
     </div>
-    <p className="aviso-capa__voz" aria-live={tono === 'error' ? 'assertive' : 'polite'}>{voz}</p>
   </div>
 }

@@ -31,19 +31,26 @@ describe('caja «Qué toca ahora» (.turno) con hidden', () => {
 
 describe('Aviso v2 (componente)', () => {
   const html = (tono: 'paso' | 'logro' | 'error') => renderToStaticMarkup(<Aviso tono={tono} titulo="Depósito guardado" onCerrar={() => {}}><p>Hecho</p></Aviso>)
-  it('es un diálogo no modal con título y descripción enlazados por id, y región aria-live', () => {
+  it('no es un diálogo: tarjeta enfocable con nombre «Aviso. Toca para cerrar», título y texto enlazados', () => {
     const h = html('paso')
-    expect(h).toContain('role="dialog"'); expect(h).toContain('aria-modal="false"'); expect(h).not.toContain('aviso-velo')
-    const t = h.match(/aria-labelledby="([^"]+)"/)![1], d = h.match(/aria-describedby="([^"]+)"/)![1]
+    expect(h).not.toContain('role="dialog"'); expect(h).not.toContain('alertdialog'); expect(h).not.toContain('aria-modal'); expect(h).not.toContain('aviso-velo')
+    expect(h).toContain('tabindex="0"'); expect(h).toContain('aria-label="Aviso. Toca para cerrar"')
+    const [t, d] = h.match(/aria-describedby="([^"]+)"/)![1].split(' ')
     expect(t).not.toBe(d); expect(h).toContain(`id="${t}"`); expect(h).toContain(`id="${d}"`)
     expect(h).toMatch(/<h2 id="[^"]+" class="aviso-pop__titulo">Depósito guardado<\/h2>/)
-    expect(h).toContain('aria-live="polite"')
   })
-  it('los errores son alertdialog y se anuncian con prioridad', () => { const h = html('error'); expect(h).toContain('role="alertdialog"'); expect(h).toContain('aria-live="assertive"') })
-  it('solo se cierra con la X (con etiqueta) o Esc: sin botón principal ni cierre automático', () => {
-    const h = html('error'); expect(h).toContain('aria-label="Cerrar aviso"'); expect(h.match(/<button/g)).toHaveLength(1)
-    expect(leer('../Aviso.tsx')).not.toMatch(/setTimeout\(\(\) => (cerrar|cerrarRef)/)
-    expect(leer('../Aviso.tsx')).toContain("e.key === 'Escape'")
+  it('sin X ni botones; se esconde solo a los 5 s, con pausa (dedo, mouse o foco) y cierre con clic, Enter, Espacio o Esc', () => {
+    const h = html('error'); expect(h).not.toContain('<button'); expect(h).not.toContain('Cerrar aviso')
+    const c = leer('../Aviso.tsx')
+    expect(c).toContain('export const DURACION_AVISO = 5000')
+    for (const x of ['onClick={cerrar}', "e.key === 'Enter' || e.key === ' ' || e.key === 'Escape'", 'onPointerEnter', 'onPointerLeave', 'onPointerDown', 'onFocus', 'onBlur', "e.key === 'Escape') cerrarRef.current()"]) expect(c).toContain(x)
+    expect(c).not.toMatch(/\.focus\(\)[^\n]*aviso-pop/)   // no roba el foco al aparecer
+    expect(css).toContain('.aviso-pop--pausa .aviso-pop__tiempo{animation-play-state:paused}')
+  })
+  it('zonas fijas para lectores de pantalla: status (amable) en pasos y logros, alert en errores', () => {
+    const z = leer('../Alertas.tsx')
+    expect(z).toContain('<div className="aviso-zona" role="status" aria-live="polite">{tono !== \'error\' && aviso}</div>')
+    expect(z).toContain('<div className="aviso-zona" role="alert">{tono === \'error\' && aviso}</div>')
   })
   it('lleva la casita oficial completa: mismo viewBox del logo, sin recortes, con la llave y sin ids repetidos', () => {
     const h = html('logro')
@@ -61,7 +68,7 @@ describe('Aviso v2 (componente)', () => {
   })
   it('respeta prefers-reduced-motion (también la llave)', () => {
     const rm = css.slice(css.indexOf('@media (prefers-reduced-motion:reduce){\n  .aviso-pop{'))
-    expect(rm).toContain('.aviso-logo__llave,.aviso-logo__cerradura{transform:none!important;opacity:1}')
+    expect(rm).toContain('.aviso-logo__llave,.aviso-logo__cerradura{transform:none!important;opacity:1}'); expect(rm).toContain('.aviso-pop__tiempo{animation:none!important')
   })
   it('tono de cada aviso: logros en verde, errores en terracota, el resto miel', () => {
     expect(al.tonoDe({ paso: 'pago' })).toBe('logro'); expect(al.tonoDe({ paso: 'contrato-firmado' })).toBe('logro'); expect(al.tonoDe({ paso: 'devolucion' })).toBe('logro')
@@ -96,7 +103,7 @@ describe('cada paso del flujo dispara su aviso', () => {
     const a = () => store.fresco(id)!
     expect((await paso(() => acciones.firmar(a(), 'contrato', 'inquilino'))).titulo).toBe('Firmaste el contrato')
     await paso(() => acciones.firmar(a(), 'contrato', 'dueno'))
-    expect((await paso(() => acciones.pagar(a()))).titulo).toBe('Depósito guardado')
+    expect((await paso(() => acciones.pagar(a()))).titulo).toBe('¡Depósito guardado!')
     expect((await paso(() => acciones.firmar(a(), 'entrada', 'dueno'))).titulo).toBe('El dueño confirmó las fotos de entrada')
     await paso(() => acciones.firmar(a(), 'entrada', 'inquilino'))
     await paso(() => acciones.iniciarSalida(a()))
@@ -139,6 +146,14 @@ describe('cada paso del flujo dispara su aviso', () => {
 })
 
 describe('textos de los avisos', () => {
+  it('textos aprobados por Legal (23 oct): depósito guardado y mediación', () => {
+    const base = { id: '1', direccion: 'Casa', monto: 20, ventanaSegundos: 604800, diasSimulados: 0, contrato: { firmas: {} }, entrada: { firmas: {} } }
+    const p = al.alertaPorCambio({ ...base, estado: 'pendiente_pago' } as never, { ...base, estado: 'fotos_entrada' } as never, 'inquilino', VIDEO)!
+    expect(p.titulo).toBe('¡Depósito guardado!'); expect(p.hecho).toMatch(/^[^a-z]*20[^a-z]* guardados en una cuenta segura de la red de prueba\. Nadie puede sacarlos solo\.$/)   // «20 USDC» en la app (formato de usd())
+    const m = al.alertaPorCambio({ ...base, estado: 'reclamo' } as never, { ...base, estado: 'mediacion' } as never, 'inquilino', VIDEO)!
+    expect(m.sigue).toBe('En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».')
+    expect(leer('../screens/Detalle.tsx')).toContain("'Resolver el reclamo (simulación)'"); expect(leer('../screens/Detalle.tsx')).not.toContain('Decidir como persona mediadora')
+  })
   const todas = () => {
     const base = { id: '1', direccion: 'Casa', monto: 20, ventanaSegundos: 604800, diasSimulados: 0, contrato: { firmas: {} }, entrada: { firmas: {} }, salida: { firmas: {} } }
     const r = (via: string) => ({ resultado: { via, dueno: 5, inquilino: 15, fecha: '' } })
@@ -157,7 +172,7 @@ describe('textos de los avisos', () => {
   it('hay aviso para cada paso y todos dicen qué pasó (y casi todos qué sigue)', () => {
     const t = todas(); expect(t.every(Boolean)).toBe(true)
     expect(new Set(t.map(x => x.paso)).size).toBe(17)
-    for (const x of t) { expect(x.titulo.length).toBeGreaterThan(5); expect(x.hecho.length).toBeGreaterThan(10); if (x.paso !== 'ingreso') expect(x.sigue).toBeTruthy() }
+    for (const x of t) { expect(x.titulo.length).toBeGreaterThan(5); expect(x.hecho.length).toBeGreaterThan(10); if (x.paso !== 'ingreso' && x.paso !== 'ingreso-fallo') expect(x.sigue).toBeTruthy() }
   })
   it('sin emojis, sin «liberado» y sin palabras técnicas', () => {
     for (const x of todas()) {
@@ -165,8 +180,8 @@ describe('textos de los avisos', () => {
       expect(s).not.toMatch(EMOJI); expect(s).not.toMatch(/liberad|liberó|escrow|blockchain|wallet|hash|testnet|USDC de/i)
     }
   })
-  it('el error dice cómo seguir y es alertdialog', () => {
-    const e = al.alertaIngresoFallo(); expect(e.tipo).toBe('error'); expect(e.sigue).toMatch(/Toca «Entrar»/)
+  it('el error dice cómo seguir (texto corto aprobado por Legal)', () => {
+    const e = al.alertaIngresoFallo(); expect(e.tipo).toBe('error'); expect(e.titulo).toBe('El ingreso no terminó'); expect(e.hecho).toBe('Toca Entrar y elige tu cuenta.')
   })
   it('los textos con sentido legal están marcados para Legal', () => {
     expect(leer('../alertas.ts').match(/\/\/ LEGAL: revisar/g)!.length).toBeGreaterThanOrEqual(8)
