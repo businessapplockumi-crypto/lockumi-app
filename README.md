@@ -216,7 +216,7 @@ Todo lo que se escribe en un escrow queda público y permanente en Stellar. Por 
 - **Sin datos personales:** nunca se envían a la cadena la dirección del inmueble, nombres, correos ni teléfonos; una última verificación en el servidor bloquea el deploy si algún texto los trae. Las fotos y las actas se quedan en tu navegador y no van a la cadena; la evidencia del hito es un texto fijo.
 - **Siguen en la cadena**, por cómo funciona el escrow: las cuentas G… de dueño e inquilino, el monto y las fechas de las transacciones.
 - **Red principal bloqueada:** la red está fija en el código (`api/_lib/red.ts`). El servidor rechaza cualquier passphrase, Horizon, RPC o API de Trustless Work que no sea de testnet.
-- **Límites de monto:** con «USDC de prueba de Lockumi», máximo 20 USDC de prueba; con USDC de prueba de tu propia cuenta, hasta tu saldo real y un máximo de 50 000. Se revisa en el cliente y en el servidor.
+- **Límites de monto:** con el USDC de prueba de Lockumi (la tesorería), el tope es 20 USDC de prueba. Con tu propio USDC de prueba, la app no pone tope: el límite es tu saldo, más un máximo técnico del servidor de 50 000 USDC (`MONTO_MAX_USDC`) que lo protege. Se revisa en el cliente y en el servidor.
 
 ## Qué es real y qué es simulado
 
