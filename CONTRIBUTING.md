@@ -37,7 +37,7 @@ El contrato tiene dos partes (publicado el 23 oct 2026):
 
 ## Estado de espera del pago (`src/espera.ts`, `src/EsperaPago.tsx`)
 
-Pendiente de publicar (rama `espera-pagar`). Ver [`docs/estado-espera.md`](docs/estado-espera.md).
+Publicado el 24 oct 2026. Ver [`docs/estado-espera.md`](docs/estado-espera.md).
 
 - Los pasos (Firmando · Enviando · Guardado) salen del `avance` real de `services/escrow.ts` con `etapaDeAvance()`. **Sin temporizadores.** Si cambias un texto de `avance` del depósito, revisa `etapaDeAvance` y su prueba en `src/__tests__/espera-pago.test.tsx`.
 - El terracota (`--accion`) es solo para el botón en reposo. En espera, el botón usa `aria-busy` y `aria-disabled` (no `disabled`) y los tres verdes `--estado-curso-fondo`, `--salvia` y `--exito`, sin colores nuevos.
@@ -48,7 +48,7 @@ Pendiente de publicar (rama `espera-pagar`). Ver [`docs/estado-espera.md`](docs/
 
 Publicado el 23 oct 2026 (avisos v2). Ver [`docs/alertas.md`](docs/alertas.md).
 
-- **Aviso v2 · toast (rama `ux-guiada`, pendiente de publicar):** `avisar()` ya no es una cola: es una **pila de hasta 3** (`MAX_AVISOS`). Cada aviso puede llevar `linea` ({et, texto}, texto de Legal) y `accion` ({texto, etiqueta, ir: 'panel' | 'detalles'}); `irA()` enfoca el botón principal del panel. 8 s con acción, 5 s sin acción; los errores (`tipo: 'error'`) no se esconden solos. Montos solo con `usd()`. Si agregas un título o botón que el aviso no debe tapar, súmalo en `TAPAR_NUNCA` (`src/Alertas.tsx`). Si lo tocas, corre `scripts/aviso-v2/capturar.mjs`, `scripts/espera-pagar/capturar.mjs` y `scripts/alertas/capturar.mjs`. Lo de abajo describe el v2 publicado.
+- **Aviso v2 · toast (publicado el 24 oct 2026):** `avisar()` ya no es una cola: es una **pila de hasta 3** (`MAX_AVISOS`). Cada aviso puede llevar `linea` ({et, texto}, texto de Legal) y `accion` ({texto, etiqueta, ir: 'panel' | 'detalles'}); `irA()` enfoca el botón principal del panel. 8 s con acción, 5 s sin acción; los errores (`tipo: 'error'`) no se esconden solos. Montos solo con `usd()`. Si agregas un título o botón que el aviso no debe tapar, súmalo en `TAPAR_NUNCA` (`src/Alertas.tsx`). Si lo tocas, corre `scripts/aviso-v2/capturar.mjs`, `scripts/espera-pagar/capturar.mjs` y `scripts/alertas/capturar.mjs`. Lo de abajo describe el v2 publicado.
 - **No llames a `<Aviso>` directo desde una pantalla.** Usa `avisar(alerta)` (cola: se muestran de a uno). `<Alertas />` va una sola vez en `App.tsx` (con y sin sesión), **justo después de «Saltar al contenido»** para que el aviso sea la 2.ª parada de Tab (ramas `aviso-tab` y `espera-pagar`, pendiente de publicar). No lo muevas al final ni le des foco al aparecer.
 - **Los avisos del flujo salen solos:** `Detalle` guarda una `instantanea()` del alquiler y, en cada cambio, `alertaPorCambio(antes, ahora, rol)` decide el aviso (cambio de estado, firma nueva de una parte o plazo adelantado). Así también avisa cuando el dueño de prueba firma solo. Un paso nuevo = un `case` nuevo en `alertaPorCambio` + su prueba en `src/__tests__/alertas.test.tsx` + su captura en `scripts/alertas/capturar.mjs`.
 - Cada aviso tiene `titulo`, `hecho` (qué pasó) y `sigue` (qué sigue). El ícono es siempre la casita de Lockumi (`src/LogoAviso.tsx`, tomada del logo oficial); el color sale de `tonoDe(alerta)`: `paso` (miel), `logro` (verde, la llave gira una vez; pasos en `LOGROS`) o `error`. Sin emojis. Los errores usan `tipo: 'error'` (zona `role="alert"`) y siempre dicen cómo seguir; los errores de los pasos siguen en la pantalla (`p.error`).

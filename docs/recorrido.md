@@ -1,6 +1,6 @@
 # Recorrido guiado
 
-Estado: rama `ux-guiada`, solo vista previa (24 oct 2026). Todavía no está en app.lockumi.com.
+Estado: **publicado el 24 oct 2026** en app.lockumi.com (rama `ux-guiada` unida a `master` con merge `--no-ff`).
 
 ## Qué es
 

@@ -1,6 +1,6 @@
 # Estado de espera del pago (v2)
 
-**Pendiente de publicar** (rama `espera-pagar` desde `master` en `76373f8`, solo vista previa protegida de Vercel; falta el OK de Katherine). Solo el paso **«Pagar»** (`PagoSimulado` en `src/screens/Detalle.tsx`, la pantalla del depósito en app.lockumi.com). Los demás pasos que tardan (firma, fotos, devolución, reclamo, reparto) no cambian. La pantalla de la fase 1 mínima (`PagoReal`, `VITE_FLUJO=solo`) tampoco.
+**Publicado el 24 oct 2026** (rama `espera-pagar` → `ux-guiada`, unida a `master` con merge `--no-ff`; aprobado por Katherine). Solo el paso **«Pagar»** (`PagoSimulado` en `src/screens/Detalle.tsx`, la pantalla del depósito en app.lockumi.com). Los demás pasos que tardan (firma, fotos, devolución, reclamo, reparto) no cambian. La pantalla de la fase 1 mínima (`PagoReal`, `VITE_FLUJO=solo`) tampoco.
 
 Maqueta aprobada: `diseno/estado-espera/v2/` y `diseno/envio/estado-espera-v2/LEEME.md` (fuera del repo).
 
