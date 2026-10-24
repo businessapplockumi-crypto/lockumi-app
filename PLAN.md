@@ -77,3 +77,13 @@ No se usan llaves ni secretos. Toda integración simulada lleva la insignia "Dem
 - `src/services/auth.ts` expone `loginGoogle`, `loginApple`, `sendOtp`, `verifyOtp`, `handleCallback` sobre una interfaz `CavosLike` con la forma de CavosAuth de @cavos/kit (`getGoogleOAuthUrl`, `getAppleOAuthUrl`, `handleCallback`, `sendOtp`, `verifyOtp`). Proveedor actual: simulado; la dependencia no se agregó.
 - Sin selector de rol al entrar; dentro de cada alquiler queda el selector «Ver la demo como» (demo en un solo dispositivo).
 - Texto en español neutro con tuteo (sin voseo).
+
+## Recorrido guiado (24 oct 2026, rama `ux-guiada`)
+
+- [x] 6 pasos con driver.js sobre las pantallas reales; textos exactos de la maqueta.
+- [x] Se abre solo la primera vez (por correo, guardado como huella) y tiene «Saltar».
+- [x] Se vuelve a ver desde «¿Cómo funciona?» (encabezado) y la tarjeta «¿Primera vez?» de Inicio.
+- [x] Alquiler de ejemplo de solo lectura para fotos, firmas y depósito, y mediación (simulación).
+- [x] Accesible: foco en el globo, Tab atrapado, Esc, foco de vuelta, movimiento reducido.
+- [ ] Entrada en el menú de la cuenta (avatar) de la maqueta: la app todavía no tiene ese menú.
+- [ ] Publicar en `master` cuando Katherine dé el OK.

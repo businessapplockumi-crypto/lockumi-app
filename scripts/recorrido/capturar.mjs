@@ -32,6 +32,8 @@ const leer = p => p.evaluate(() => { const g = document.querySelector('.driver-p
     foco: document.activeElement?.textContent?.trim(), dentro: g.contains(document.activeElement), choca, cabe: r.left >= 0 && r.right <= innerWidth + .5 && r.top >= 0 && r.bottom <= innerHeight + .5,
     fondo: getComputedStyle(g).backgroundColor, ruta: location.hash, anim: getComputedStyle(g).animationName, animD: getComputedStyle(g).animationDuration } })
 const esperarPaso = (p, i) => p.waitForFunction(t => document.querySelector('.driver-popover.recorrido .driver-popover-title')?.textContent === t, TITULOS[i], { timeout: 8000 })
+// Espera a que el globo termine de aparecer (opacidad 1) antes de cada captura.
+const quieto = p => p.waitForFunction(() => { const g = document.querySelector('.driver-popover'); return !g || (getComputedStyle(g).opacity === '1' && !g.getAnimations().length) }, null, { timeout: 3000 }).catch(() => {})
 const fotos = []; const cuadro = async p => { if (process.env.GIF) { const f = `${OUT}gif-${String(fotos.length).padStart(3, '0')}.png`; await p.screenshot({ path: f }); fotos.push(f) } }
 
 for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
@@ -50,7 +52,7 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
     ok(g.dentro && g.foco === esperados.at(-1), `${n}: paso ${i + 1} foco en «${g.foco}»`)
     ok(!g.choca && g.cabe, `${n}: paso ${i + 1} el globo no tapa lo que señala y cabe en la pantalla`)
     if (i === 0) ok(g.fondo === 'rgb(255, 245, 238)', `${n}: globo crema sólido (${g.fondo})`)
-    await p.screenshot({ path: `${OUT}${n}-${i + 1}.png` }); await cuadro(p)
+    await quieto(p); await p.screenshot({ path: `${OUT}${n}-${i + 1}.png` }); await cuadro(p)
     if (i === 1) { // trampa de foco: Tab no sale del globo
       let fuera = false; for (let k = 0; k < 5; k++) { await p.keyboard.press('Tab'); if (!(await leer(p)).dentro) fuera = true }
       ok(!fuera, `${n}: Tab queda dentro del globo (trampa de foco)`)
@@ -70,12 +72,12 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
   ok(ab.h >= 44 && ab.w >= 44 && (n === 'movil' ? ab.t === '?' : ab.t.includes('¿Cómo funciona?')), `${n}: botón «¿Cómo funciona?» en la cabecera (${Math.round(ab.w)}×${Math.round(ab.h)}, ${n === 'movil' ? 'solo el ícono' : 'con texto'})`)
   await ayuda.focus(); await p.keyboard.press('Enter'); await esperarPaso(p, 0)
   ok(true, `${n}: «¿Cómo funciona?» abre el recorrido`)
-  if (n === 'escritorio') await p.screenshot({ path: `${OUT}${n}-cabecera.png` })
+  if (n === 'escritorio') await quieto(p), await p.screenshot({ path: `${OUT}${n}-cabecera.png` })
   await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('.driver-popover'), null, { timeout: 3000 }); await p.waitForTimeout(150)
   ok(await ayuda.evaluate(e => e === document.activeElement), `${n}: Esc lo cierra y el foco vuelve a «¿Cómo funciona?»`)
   // Desde la tarjeta de Inicio, con Saltar.
   const ver = p.getByRole('button', { name: 'Ver el recorrido' }); await ver.scrollIntoViewIfNeeded()
-  if (n === 'movil') await p.screenshot({ path: `${OUT}${n}-tarjeta.png` })
+  if (n === 'movil') await quieto(p), await p.screenshot({ path: `${OUT}${n}-tarjeta.png` })
   await ver.click(); await esperarPaso(p, 0); await p.locator('.recorrido__saltar').click()
   await p.waitForFunction(() => !document.querySelector('.driver-popover'), null, { timeout: 3000 })
   ok(true, `${n}: «Ver el recorrido» en Inicio lo abre y «Saltar» lo cierra`)
