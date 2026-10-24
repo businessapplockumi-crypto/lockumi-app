@@ -55,33 +55,108 @@ Legal revisó `84cb442` el 24 oct 2026:
 - SQL: `bash scripts/espacios/probar-sql.sh`.
 - Navegador: con `VITE_TRUSTLESS=1 VITE_CAVOS_APP_ID=captura-local npx vite --port 5173 --strictPort`, correr `CHROME=/usr/bin/google-chrome OUT=/tmp/esp/ node scripts/agregar-espacio/capturar.mjs` (390 y 1280 px; `GIF=1` guarda los cuadros de la celebración).
 
-## Runbook: prueba SQL contra Supabase (proyecto de prueba `sddgjnuvxzkrhhuczuly`)
+## Runbook: Supabase de prueba (`sddgjnuvxzkrhhuczuly`) por la Management API
 
-**Todavía no se corrió:** no hay una credencial válida; Katherine tiene que darla. **No aplica la migración:** todo corre dentro de una transacción que termina en `ROLLBACK`.
+**Todavía no se corrió nada remoto:** el token actual no sirve. Cuando Katherine dé uno nuevo, todo usa solo `SUPABASE_ACCESS_TOKEN`, un token personal de Supabase en `process.env`. No hace falta `SUPABASE_DB_URL`.
 
-**Antes de correrlo**, confirma que es un proyecto o branch de prueba. `sddgjnuvxzkrhhuczuly` es el proyecto de testnet de la app, pero también tiene las tablas `waitlist*` de lockumi.com, con correos reales. La prueba solo toca tablas `lk_*` y `storage.objects` del bucket `lk-fotos`, y todo se deshace. Si hay dudas, crea un **branch de Supabase** y usa su cadena de conexión.
+Todos los scripts llaman a `POST https://api.supabase.com/v1/projects/sddgjnuvxzkrhhuczuly/database/query` (`scripts/espacios/api.mjs`). Ninguno imprime el token. Todos exigen `CONFIRMO_PROYECTO=sddgjnuvxzkrhhuczuly`, y el proyecto está fijo en el código.
 
-**Variable que hace falta:** `SUPABASE_DB_URL`, la cadena de conexión de Postgres del proyecto (Settings → Database). Rol `postgres`, conexión directa o pooler en **modo sesión (puerto 5432)**; el pooler de transacciones (6543) no sirve porque la prueba usa `\gset` y funciones `pg_temp`. Ponla solo en la terminal (`read -s SUPABASE_DB_URL; export SUPABASE_DB_URL`) y nunca la imprimas ni la subas.
+El proyecto es el de testnet de la app, pero también tiene las tablas `waitlist*` de lockumi.com, con correos reales. Los scripts **solo** nombran tablas `lk_*` de `public` (la lista sale de `information_schema`), filas de `storage.objects` con `bucket_id = 'lk-fotos'` y catálogos (`pg_proc`, `pg_trigger`, `pg_policies`, `information_schema`). El ensayo local revisa que ninguna consulta nombre `waitlist`.
 
-`SUPABASE_ACCESS_TOKEN` (Management API) **no sirve para esta prueba**: `/database/query` no corre `\i` ni `\gset`. Solo hace falta más adelante para **aplicar** la migración con `scripts/aplicar-supabase-e2e.mjs`, y eso va aparte y con el visto bueno de Katherine.
+Ponte el token sin que quede en el historial ni en la pantalla:
 
-**Pasos:**
+```bash
+cd /workspace/lockumi/wt-espacio
+read -rs SUPABASE_ACCESS_TOKEN && export SUPABASE_ACCESS_TOKEN CONFIRMO_PROYECTO=sddgjnuvxzkrhhuczuly
+```
 
-1. Instala `psql` 15 o más nuevo.
-2. Corre:
+### 1. Respaldo (solo lectura)
 
-   ```bash
-   read -s SUPABASE_DB_URL; export SUPABASE_DB_URL
-   CONFIRMO_PROYECTO=sddgjnuvxzkrhhuczuly bash scripts/espacios/probar-sql-remoto.sh
-   ```
+```bash
+node scripts/espacios/exportar-lk.mjs
+```
 
-   El script no corre si `SUPABASE_DB_URL` no apunta a `sddgjnuvxzkrhhuczuly`, si falta `CONFIRMO_PROYECTO` o si usa el puerto 6543. Hace `begin;` → `scripts/espacios/prueba.sql` (aplica la migración dos veces y revisa todo) → `rollback;`.
-3. Resultado esperado: todas las líneas con ✓, «SQL TODO OK» y «ROLLBACK hecho». Si algo falla, psql se detiene; al cerrarse la conexión, Postgres deshace la transacción.
+Guarda en `/workspace/lockumi/respaldos/<fecha>/`, fuera del repo y nunca en un commit; no deja guardarlo dentro del repo:
 
-**Volver atrás:** no hace falta, porque la transacción siempre termina en `ROLLBACK`. Para comprobar que no quedó nada, corre `select count(*) from pg_proc where proname in ('lk_agregar_cuarto','lk_proteger_entrada');`: si la migración no estaba aplicada, da 0. Ese envoltorio (`begin` + `prueba.sql` + `rollback`) se probó en el Postgres local: no quedaron funciones nuevas ni contratos.
+- `tablas.json`;
+- `esquema/<tabla>.json`: columnas, restricciones, índices, políticas, triggers y RLS;
+- `filas/<tabla>.json`;
+- `storage-objects-lk-fotos.json`: solo metadatos, no los archivos;
+- `politicas-storage-lk.json`;
+- `funciones-lk.json`: definición, tipo de retorno y permisos;
+- `manifiesto.json`: cantidades y md5.
 
-**Límites de esta prueba en Supabase real:**
+Las consultas van con `read_only: true`. Carpetas con permiso 700 y archivos con 600.
 
-- Supabase bloquea el `DELETE` por SQL en `storage.objects` (trigger `storage.protect_delete`). `prueba.sql` activa `storage.allow_delete_query` en su sesión solo para revisar la **política RLS** `lk_fotos_borrar` sobre las filas, y luego se deshace. **No borra archivos reales.**
-- El borrado de archivos de verdad pasa por la API de Storage (`storage.from('lk-fotos').remove(...)`, como en `quitarCuartoServidor`). Probarlo requiere un usuario de prueba con sesión y un archivo subido: está pendiente (PLAN.md).
-- `auth.uid()` en Supabase lee `request.jwt.claim.sub` / `request.jwt.claims`. `pg_temp.yo()` de `prueba.sql` pone esas variables y también `lk.uid`, que usa el stub local.
+### 2. Prueba SQL que no deja nada
+
+```bash
+node scripts/espacios/probar-sql-remoto.mjs
+```
+
+1. **Sonda:** `BEGIN; create table public.lk__sonda_<azar>(x int); ROLLBACK;` y, en otra consulta, revisa que la tabla no exista. Después hace lo mismo con un error en medio (`select 1/0`): la API tiene que devolver el error y la tabla tampoco puede existir. Si la API no respeta `BEGIN … ROLLBACK`, borra la sonda y **no corre la prueba**.
+2. **Huella antes:** cantidad y md5 de las filas de cada tabla `lk_*` y de `storage.objects` (`lk-fotos`), más md5 de las funciones `lk_*` (con permisos), de los triggers, de las políticas `lk_*` de storage y de las columnas.
+3. **Prueba:** manda `BEGIN;` + `prueba.sql` convertido a SQL plano (`sqlPlano()` en `api.mjs`: mete la migración, cambia `\set`, `\gset` y `\echo`) + `ROLLBACK;`, en **una** consulta. Cada revisión lanza un error si no se cumple, así que una respuesta sin error quiere decir que pasaron todas. La prueba aplica la migración dos veces **dentro** de la transacción, así que sirve con la migración aplicada o sin aplicar.
+4. **Huella después:** tiene que ser igual. Si alguien usó la app de prueba en medio, cambia y el script lo dice. Córrelo cuando nadie la use.
+
+Lo que no se deshace: las secuencias (si alguna avanzó, no cambia ninguna fila). Mientras dura, `alter table lk_fotos add column` toma un bloqueo corto de `lk_fotos`.
+
+En Supabase real, el `DELETE` por SQL en `storage.objects` está bloqueado (`storage.protect_delete`). `prueba.sql` activa `storage.allow_delete_query` solo dentro de su transacción, para revisar la política `lk_fotos_borrar` sobre las filas. **No borra archivos.** El borrado de archivos de verdad (API de Storage, con un usuario con sesión) sigue pendiente (PLAN.md).
+
+**Sin plan de limpieza a mano:** si la sonda falla, no se corre la prueba. Una limpieza que borre solo lo que la prueba creó no sirve, porque la prueba firma una entrada y, con la migración, esa entrada ya no se puede borrar (es justo lo que se prueba). Habría que apagar triggers en la base real.
+
+### 3. Aplicar la migración (cambio duradero; solo con el OK de Katherine)
+
+```bash
+node scripts/espacios/aplicar-migracion.mjs                        # simulación: no llama a la API
+node scripts/espacios/aplicar-migracion.mjs --aplicar-de-verdad    # solo con el OK de Katherine
+```
+
+Con el flag:
+
+1. Hace un respaldo (paso 1).
+2. Manda `BEGIN; <migración>; COMMIT;`, todo o nada.
+3. Revisa las funciones, los 3 triggers `lk_proteger_entrada`, la política `lk_fotos_borrar` y la columna `cuarto_id`.
+4. Imprime la carpeta del respaldo.
+
+Después, corre otra vez el paso 2 y prende `VITE_ESPACIOS_SERVIDOR=1` en la vista previa.
+
+### 4. Volver atrás
+
+```bash
+node scripts/espacios/revertir-migracion.mjs --respaldo /workspace/lockumi/respaldos/<fecha-de-antes>    # solo escribe revertir.sql
+node scripts/espacios/revertir-migracion.mjs --respaldo /workspace/lockumi/respaldos/<fecha-de-antes> --revertir-de-verdad
+```
+
+Usa el respaldo que `aplicar-migracion.mjs` tomó **antes** de aplicar; si el respaldo ya tiene la migración, no corre. En una transacción:
+
+- quita los triggers, la política y las funciones nuevas;
+- vuelve a crear las funciones `lk_*` del respaldo con sus permisos; solo borra antes la que cambió de tipo de retorno, `lk_quitar_cuarto`;
+- quita la columna `cuarto_id` y los ids de espacio dentro de las listas.
+
+Lo que no devuelve: las fotos y los archivos que se hayan quitado mientras la migración estuvo aplicada. Esos se borran de verdad; sus filas están en `filas/*.json` del respaldo.
+
+### Ensayo local (sin Supabase)
+
+```bash
+bash scripts/espacios/ensayo-local.sh
+```
+
+Arranca un Postgres 17 temporal y la API falsa `scripts/espacios/api-falsa.mjs` en 127.0.0.1. La API falsa manda todo el texto en una consulta simple de varias sentencias, devuelve las filas de la última que tiene filas y un 400 con `message` si hay error. El ensayo usa datos que ya existían (un alquiler, un archivo de `lk-fotos`, un archivo de otro bucket y una tabla `waitlist`) y corre, en orden:
+
+1. aplicar sin flag: no hace ninguna llamada a la API;
+2. exportar;
+3. prueba remota con la migración sin aplicar;
+4. aplicar con flag;
+5. prueba remota con la migración aplicada;
+6. revertir con el primer respaldo: filas y definiciones `lk_*` quedan iguales, permisos incluidos.
+
+Al final revisa que ninguna consulta nombre `waitlist`, que el respaldo de storage solo traiga `lk-fotos` y que el token no salga en pantalla. Resultado del 24 oct 2026: «ENSAYO TODO OK» (148 consultas).
+
+Lo que el ensayo **no** puede probar, porque depende de la API real:
+
+- que la API real respete `BEGIN … ROLLBACK` (lo revisa la sonda antes de todo);
+- los permisos del rol con que corre la API (`set role authenticated` y el `insert` en `storage.objects`);
+- el formato exacto de la respuesta.
+
+Si algo de eso falla, la API devuelve el error, la transacción no se confirma y el script lo dice.

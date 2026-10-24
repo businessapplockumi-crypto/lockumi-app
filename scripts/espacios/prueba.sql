@@ -8,8 +8,8 @@ create or replace function pg_temp.ok(c boolean, que text) returns void language
 create or replace function pg_temp.yo(u text) returns void language sql as $$
   select set_config('lk.uid', u, false), set_config('request.jwt.claim.sub', u, false), set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, false) $$;
 -- Supabase real bloquea DELETE por SQL en storage.objects (trigger storage.protect_delete). Esta prueba solo revisa la
--- política RLS lk_fotos_borrar sobre las filas, dentro de una transacción que se deshace (probar-sql-remoto.sh hace ROLLBACK).
--- No borra archivos reales: eso solo lo hace la API de Storage.
+-- política RLS lk_fotos_borrar sobre las filas, dentro de una transacción que se deshace (probar-sql-remoto.mjs hace ROLLBACK).
+-- No borra archivos reales: eso solo lo hace la API de Storage. (Por la API de Supabase: probar-sql-remoto.mjs, que manda BEGIN … ROLLBACK.)
 select set_config('storage.allow_delete_query', 'true', false);
 \set A '''11111111-1111-4111-8111-111111111111'''
 \set B '''22222222-2222-4222-8222-222222222222'''
@@ -19,7 +19,7 @@ select (public.lk_crear_contrato('Apartamento en Barreal de Heredia', 20, curren
 insert into public.lk_participantes(contrato_id, rol, usuario, email_cavos) values (:'cid', 'inquilino', :B, 'demo@lockumi.com');
 update public.lk_contratos set estado = 'fotos_entrada' where id = :'cid';
 -- Antes de la migración: acta vieja sin id y una foto de Cocina por índice
-select pg_temp.ok(not (cuartos->0 ? 'id'), 'antes: el acta vieja no tiene id') from public.lk_actas where contrato_id = :'cid';
+select pg_temp.ok(not (cuartos->0 ? 'id') or to_regprocedure('public.lk_entrada_fija(uuid)') is not null, 'antes: el acta vieja no tiene id (o la migración ya estaba aplicada)') from public.lk_actas where contrato_id = :'cid';
 select public.lk_registrar_foto(:'cid', 'entrada', 1, :'cid' || '/entrada/a.jpg', repeat('a', 64), now(), null, 'camara', false);
 \echo '── aplicando la migración nueva ──'
 \i :migracion
@@ -83,7 +83,7 @@ select pg_temp.ok(cuartos->-1->>'agregado_por' = 'inquilino', 'el inquilino tamb
 update public.lk_actas set cuartos = jsonb_set(cuartos, '{0,items,0,estado}', '"bien"') where contrato_id = :'cid' and etapa = 'entrada';
 insert into public.lk_firmas(contrato_id, etapa, rol, usuario) values (:'cid', 'entrada', 'dueno', :A), (:'cid', 'entrada', 'inquilino', :B);
 \set FIJA '''La entrada ya está firmada por los dos'''
-select set_config('lk.cid', :'cid', false);
+select set_config('lk.cid', (:'cid')::text, false);
 select pg_temp.falla(format('select public.lk_agregar_cuarto(%L, %L)', :'cid', 'Jardín'), :FIJA);
 select pg_temp.falla(format('select public.lk_quitar_cuarto(%L, %L)', :'cid', 'sala'), :FIJA);
 select pg_temp.falla(format('select public.lk_renombrar_cuarto(%L, %L, %L)', :'cid', :'pid', 'Otro'), :FIJA);

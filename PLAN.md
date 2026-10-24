@@ -108,4 +108,4 @@ Pendiente para producción (Legal, 24 oct 2026):
 - [ ] Moderación del texto libre (nombres de espacios y puntos de la lista).
 - [ ] Una nota posterior a la firma, con fecha, que vean las dos partes, sin cambiar la entrada firmada.
 - [ ] Al borrar una cuenta, las fotos y la lista de una entrada firmada se guardan hasta que termine el plazo de guarda. Legal propone 18 meses (Ley 7527, art. 120); falta confirmarlo con un abogado y en el Aviso de privacidad.
-- [ ] Correr `scripts/espacios/probar-sql-remoto.sh` contra el proyecto de prueba cuando Katherine dé `SUPABASE_DB_URL` (runbook en `docs/espacios.md`), y probar el borrado de archivos con la API de Storage real.
+- [ ] Cuando Katherine dé un `SUPABASE_ACCESS_TOKEN` válido, con el runbook de `docs/espacios.md`: respaldo (`exportar-lk.mjs`) → prueba que no deja nada (`probar-sql-remoto.mjs`) → **con el OK de Katherine**, aplicar (`aplicar-migracion.mjs --aplicar-de-verdad`, cambio duradero en la base real) → prueba otra vez → `VITE_ESPACIOS_SERVIDOR=1` en la vista previa. Para volver atrás: `revertir-migracion.mjs`. Además, probar el borrado de archivos con la API de Storage real.
