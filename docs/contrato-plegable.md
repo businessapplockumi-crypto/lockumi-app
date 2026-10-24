@@ -4,6 +4,8 @@
 
 Maqueta aprobada: `/workspace/lockumi/producto/contrato-plegable/` (`LEEME.md`, `contrato-plegable.css`, `construir.mjs` y las capturas `firma-*` y `detalle-*`).
 
+> **24 oct 2026 (rama `contrato-compacto`, vista previa sin publicar):** en el detalle del alquiler el contrato plegable de la columna lateral se reemplaza por el [contrato compacto](contrato-compacto.md) (tarjeta o barra + panel). La pantalla **Firma** sigue igual.
+
 ## Qué cambia
 
 Un solo cambio en `ContratoDoc` (`src/screens/ContratoDoc.tsx`), que afecta dos pantallas:
