@@ -49,6 +49,10 @@ El paso 6 («Los pasos») sigue apuntando bien con la columna reordenada, en com
 
 En esta misma rama, la sección «Mediación» del contrato (y los demás textos de mediación) dicen que la persona mediadora ayuda a buscar un acuerdo y no decide. Lista completa en [`alertas.md`](alertas.md#textos-de-mediación-revisados-por-legal-24-oct-2026-rama-contrato-compacto-sin-publicar).
 
+## Legal, ronda 4 (24 oct 2026)
+
+Sin cambios en el contrato compacto. Cambian las notas del reclamo y del plazo en el detalle, y Términos 5.3. Ver `docs/alertas.md`, «Legal, ronda 4».
+
 ## Legal, ronda 3 (24 oct 2026)
 
 Sin cambios en el contrato compacto. Los textos «Nadie puede…» de avisos, Detalle, pago, Entrar, recorrido y README pasan a «Ni el dueño ni el inquilino…»; la nota de la mediación del modo de una persona y la cláusula 4.1 a) de Términos (1.6-demo) también cambian. Detalle en `docs/alertas.md`, «Legal, ronda 3».

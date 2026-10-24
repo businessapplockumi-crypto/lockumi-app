@@ -231,6 +231,26 @@ Esa nota solo se ve en el modo de una persona (`VITE_FLUJO=solo`). app.lockumi.c
 
 **Devolución automática (sin cambiar).** Cuando terminan los 7 días sin reclamo, ninguna persona aprueba, pero firma el servidor de Lockumi: la app abierta llama a `cerrarSinReclamo` (`Detalle.tsx`, efecto al llegar a 0) → `escrow.devolver` → `/api/solo` «aprobar» (firma la cuenta del dueño de prueba, con llave en el servidor de Lockumi) y «liberar» (firma la cuenta de plataforma de Lockumi). No hay tarea programada (`vercel.json` sin crons): si nadie abre la app, no se libera.
 
-**Términos 1.6-demo (misma versión y fecha, 24 oct 2026).** 4.1 a) cambia «Lockumi no custodia tus tokens de prueba» por el texto de Legal: «Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.» **5.3 (Cavos) no cambia:** según la documentación del vault de Cavos, dentro de los límites de la app (por omisión 25 USDC por transacción y 100 por día; 100 XLM y 500 por día) el vault firma pagos **sin preguntar** cuando lo pide el código de la página, así que el código web de Lockumi podría mover fondos de la billetera hasta esos límites sin que la persona lo vea. El servidor de Lockumi no tiene llaves de la billetera de nadie. 5.4 no cambia.
+**Términos 1.6-demo (misma versión y fecha, 24 oct 2026).** *(5.3 cambió en la ronda 4, ver abajo.)* 4.1 a) cambia «Lockumi no custodia tus tokens de prueba» por el texto de Legal: «Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.» **5.3 (Cavos) no cambia:** según la documentación del vault de Cavos, dentro de los límites de la app (por omisión 25 USDC por transacción y 100 por día; 100 XLM y 500 por día) el vault firma pagos **sin preguntar** cuando lo pide el código de la página, así que el código web de Lockumi podría mover fondos de la billetera hasta esos límites sin que la persona lo vea. El servidor de Lockumi no tiene llaves de la billetera de nadie. 5.4 no cambia.
 
 Pruebas: `src/__tests__/alertas.test.tsx`, `recorrido.test.tsx`, `src/legal/__tests__/casillas.test.tsx` (4.1 a) nueva, 5.3 igual, beneficio de Entrar), `contrato-compacto` y `contrato-plegable`; `node scripts/probar-esquema.mjs`.
+
+## Legal, ronda 4 (24 oct 2026, rama `contrato-compacto`, sin publicar)
+
+**Notas del modo de una persona (`src/screens/Detalle.tsx`).** Ahora coinciden con el código (`acciones.reclamar` → `escrow.disputar`):
+- Dueño, antes de reclamar: «El reclamo abre una disputa en la red de prueba y bloquea el depósito de prueba. La mediación es simulada.»
+- Reclamo abierto: «El reclamo se registra en la red de prueba y bloquea el depósito de prueba hasta que se resuelva. La mediación es simulada.»
+
+**Plazo de reclamos, nota de la red de prueba (la que ve app.lockumi.com):** «Termina el {fecha}. Si no hay reclamo en 7 días, el depósito de prueba se devuelve completo al inquilino la próxima vez que alguien abra el alquiler. Ninguna de las partes tiene que aprobarlo: lo ejecuta la cuenta de Lockumi.» La nota de la demo local sin red («…sin que nadie tenga que aprobarlo») no cambió. Ojo: dice «7 días» fijo; en una vista previa con `VITE_VENTANA_SEGUNDOS=300` el plazo real es de 5 minutos.
+
+**Textos que presentan la devolución como automática a los 7 días (sin cambiar, para Legal):** lista y propuestas en el informe de la ronda 4.
+
+**Términos 5.3 (Cavos), texto exacto de Legal, 1.6-demo sin cambio de versión.** Quitó la mención «Cavos, LLC (Delaware, Estados Unidos)» y el enlace a sus términos (https://cavos.xyz/terms).
+- Qué firma el vault de Cavos sin preguntar (`@cavos/kit` 0.4.2, `dist/vault/index.mjs`, `evaluate` y `parseStellarTransaction`; https://docs.cavos.xyz/docs/vault): pagos (`payment`) y `createAccount` dentro de los límites, y **siempre** las operaciones sin gasto `changeTrust`, `manageData`, `bumpSequence` y `endSponsoringFutureReserves`. Las llamadas a contratos y el `pathPaymentStrictReceive` de «Obtener USDC de prueba» siempre pasan por la regla «Over the limit».
+- La app no arma pagos para la billetera. Sí abre la trustline de USDC con `addTrustline` (un `changeTrust`), que el vault firma sin preguntar; no mueve fondos.
+- Que «el depósito y cada acción en el contrato te piden confirmar» depende del panel: Approvals → «Over the limit» = *Ask the user*. Con «Sign without asking» se firmarían sin preguntar.
+- Prueba: `src/__tests__/cavos-sin-firma-silenciosa.test.ts` falla si el código usa `execute`, `signMessage`, `signTransaction` de Cavos, `vault: false`, otro `Cavos.connect` o `signXdr` fuera de `firmarXdr`, o si arma `Operation.payment` / `Operation.createAccount`.
+- Desactivar la firma sin confirmación: no se puede desde el código (el vault lee la política de Cavos, no de la página). En el panel, app → Approvals: guardar una política con límite 0 (o sin límites) para XLM y USDC de Stellar. Según `evaluate`, con 0 todo pago pasa a la regla «Over the limit». Mientras no se guarde una política, valen los límites por omisión.
+
+**PLAN.md:** tarea programada para la devolución y la llave del dueño de prueba como custodia con dinero real (lista para el abogado).
+

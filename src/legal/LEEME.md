@@ -34,3 +34,6 @@ como `{ version, fecha }` y en el usuario (`lockumi.usuario` → `terminos`, `pr
   por el texto de Legal («Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de
   prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.»). 5.3 (Cavos) y 5.4 no cambian; el porqué está en
   `docs/alertas.md`, «Legal, ronda 3». Como la versión no cambió, quien ya aceptó la 1.6-demo no vuelve a ver la casilla.
+- **1.6-demo, ronda 4 (24 oct 2026, misma versión y fecha, sin publicar):** 5.3 (Cavos) pasa al texto exacto de Legal («Tu billetera
+  la protege Cavos con tus aparatos, y Lockumi no tiene tus llaves. … Si eso cambia, actualizaremos estos Términos antes de usarla.»).
+  Ya no nombra a Cavos, LLC ni enlaza sus términos. Prueba que lo respalda: `src/__tests__/cavos-sin-firma-silenciosa.test.ts`.
