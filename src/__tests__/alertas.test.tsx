@@ -5,8 +5,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 const mem = new Map<string, string>()
 vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, String(v)), removeItem: (k: string) => void mem.delete(k), clear: () => mem.clear() })
 
-const { Aviso } = await import('../Aviso')
-const { TextoAlerta } = await import('../Alertas')
+const { Tostada, duracionDe, DURACION_AVISO, DURACION_CON_ACCION, UMBRAL_LADO, UMBRAL_ABAJO, UMBRAL_VELOCIDAD } = await import('../Aviso')
+const { Alertas } = await import('../Alertas')
+const { usd } = await import('../ui')
 const al = await import('../alertas')
 const { acciones } = await import('../acciones')
 const { store } = await import('../store')
@@ -29,67 +30,141 @@ describe('caja «Qué toca ahora» (.turno) con hidden', () => {
   })
 })
 
-describe('Aviso v2 (componente)', () => {
-  const html = (tono: 'paso' | 'logro' | 'error') => renderToStaticMarkup(<Aviso tono={tono} titulo="Depósito guardado" onCerrar={() => {}}><p>Hecho</p></Aviso>)
-  it('no es un diálogo: tarjeta enfocable con nombre «Aviso. Toca para cerrar», título y texto enlazados', () => {
-    const h = html('paso')
-    expect(h).not.toContain('role="dialog"'); expect(h).not.toContain('alertdialog'); expect(h).not.toContain('aria-modal'); expect(h).not.toContain('aviso-velo')
+describe('Aviso v2: toast (componente)', () => {
+  const html = (a: Partial<import('../alertas').AlertaEnPila> = {}, indice = 0) => renderToStaticMarkup(<Tostada a={{ id: 1, paso: 'pago', titulo: '¡Depósito guardado!', hecho: '.', ...a }} indice={indice} pausa={false} abierta={false} desplazar={0} onCerrar={() => {}} />)
+  const pago = { linea: { et: 'Ahora:', texto: 'fotos de entrada' }, accion: { texto: 'Tomar fotos →', etiqueta: 'Tomar fotos de entrada', ir: 'panel' as const } }
+  it('no es un diálogo: pastilla enfocable «Aviso. Toca para cerrar», con título y una línea enlazados', () => {
+    const h = html(pago)
+    expect(h).not.toContain('role="dialog"'); expect(h).not.toContain('alertdialog'); expect(h).not.toContain('aria-modal')
     expect(h).toContain('tabindex="0"'); expect(h).toContain('aria-label="Aviso. Toca para cerrar"')
     const [t, d] = h.match(/aria-describedby="([^"]+)"/)![1].split(' ')
-    expect(t).not.toBe(d); expect(h).toContain(`id="${t}"`); expect(h).toContain(`id="${d}"`)
-    expect(h).toMatch(/<h2 id="[^"]+" class="aviso-pop__titulo">Depósito guardado<\/h2>/)
+    expect(h).toMatch(new RegExp(`<h2 id="${t}" class="tostada__t">¡Depósito guardado!</h2>`))
+    expect(h).toContain(`<p id="${d}" class="tostada__l"><b>Ahora:</b> fotos de entrada</p>`)
   })
-  it('sin X ni botones; se esconde solo a los 5 s, con pausa (dedo, mouse o foco) y cierre con clic, Enter, Espacio o Esc', () => {
-    const h = html('error'); expect(h).not.toContain('<button'); expect(h).not.toContain('Cerrar aviso')
-    const c = leer('../Aviso.tsx')
-    expect(c).toContain('export const DURACION_AVISO = 5000')
-    for (const x of ['onClick={cerrar}', "e.key === 'Enter' || e.key === ' ' || e.key === 'Escape'", 'onPointerEnter', 'onPointerLeave', 'onPointerDown', 'onFocus', 'onBlur', "e.key === 'Escape') cerrarRef.current()"]) expect(c).toContain(x)
-    expect(c).not.toMatch(/\.focus\(\)[^\n]*aviso-pop/)   // no roba el foco al aparecer
-    for (const x of ['new ResizeObserver(poner)', "addEventListener('scroll', poner", 'new MutationObserver(', 'tam?.disconnect()', 'cambios?.disconnect()']) expect(c).toContain(x)   // sigue al título si el contenido cambia; limpia al desmontar
-    expect(css).toContain('.aviso-pop--pausa .aviso-pop__tiempo{animation-play-state:paused}')
+  it('con acción: un solo botón (44 px) con etiqueta completa; sin X ni «Entendido»', () => {
+    const h = html(pago)
+    expect(h.match(/<button/g)).toHaveLength(1)
+    expect(h).toContain('<button type="button" class="tostada__accion" aria-label="Tomar fotos de entrada">Tomar fotos →</button>')
+    expect(h).not.toMatch(/Entendido|Cerrar aviso|✕|×/)
+    expect(css).toMatch(/\.tostada__accion\{[^}]*min-height:44px/); expect(css).toMatch(/\.tostada\{[^}]*min-height:64px/)
+    const sin = html({ linea: { texto: 'x' } }); expect(sin).not.toContain('<button')
+  })
+  it('tiempos: 5 s sin acción, 8 s con acción, el error no se esconde y no tiene línea de tiempo', () => {
+    expect(DURACION_AVISO).toBe(5000); expect(DURACION_CON_ACCION).toBe(8000)
+    expect(duracionDe({})).toBe(5000); expect(duracionDe({ accion: pago.accion })).toBe(8000); expect(duracionDe({ tipo: 'error' })).toBeNull()
+    expect(html(pago)).toContain('animation-duration:8000ms'); expect(html({})).toContain('animation-duration:5000ms')
+    const e = html(al.alertaErrorRed()); expect(e).not.toContain('tostada__tiempo'); expect(e).toContain('tostada--error')
+    expect(css).toMatch(/\.tostada__tiempo\{[^}]*height:2px/); expect(css).toContain('.tostada--pausa .tostada__tiempo{animation-play-state:paused}')
+  })
+  it('cierre con clic (fuera del botón), Enter, Espacio o Esc; la acción navega y cierra; pausa con dedo, mouse o foco', () => {
+    const c = leer('../Aviso.tsx'), z = leer('../Alertas.tsx')
+    expect(c).toContain("onClick={() => { if (!recienArrastrado.current) cerrar() }}")
+    expect(c).toContain("if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')")
+    expect(c).toContain('onClick={e => { e.stopPropagation(); cerrar(false); irA(accion.ir) }}')
+    for (const x of ['onPointerOver', 'onPointerOut', 'onPointerDown', 'onFocus', 'onBlur', "e.key === 'Escape' && !e.defaultPrevented"]) expect(z).toContain(x)
+    expect(z).toContain('pausa={abierta}')
+    expect(c).not.toMatch(/autoFocus/)
+  })
+  it('deslizar para cerrar: un tercio del ancho, 40 px hacia abajo o más de 0,5 px/ms; si no, vuelve con resorte de 200 ms', () => {
+    expect(UMBRAL_LADO).toBeCloseTo(1 / 3); expect(UMBRAL_ABAJO).toBe(40); expect(UMBRAL_VELOCIDAD).toBe(0.5)
+    expect(css).toMatch(/\.tostada--resorte\{transition:transform 200ms/); expect(css).toMatch(/\.tostada\{[^}]*touch-action:none/)
+    expect(css).toMatch(/\.tostada__manija\{[^}]*width:28px;height:4px/)
   })
   it('zonas fijas para lectores de pantalla: status (amable) en pasos y logros, alert en errores', () => {
     const z = leer('../Alertas.tsx')
-    expect(z).toContain('<div className="aviso-zona" role="status" aria-live="polite">{tono !== \'error\' && aviso}</div>')
-    expect(z).toContain('<div className="aviso-zona" role="alert">{tono === \'error\' && aviso}</div>')
+    expect(z).toContain('<div className="tostadas__zona" role="status" aria-live="polite">{nuevos.filter(a => a.tipo !== \'error\').map(tostada)}</div>')
+    expect(z).toContain('<div className="tostadas__zona" role="alert">{nuevos.filter(a => a.tipo === \'error\').map(tostada)}</div>')
+    const h = renderToStaticMarkup(<Alertas />); expect(h).toContain('role="status" aria-live="polite"'); expect(h).toContain('role="alert"')
   })
-  it('lleva la casita oficial completa: mismo viewBox del logo, sin recortes, con la llave y sin ids repetidos', () => {
-    const h = html('logro')
-    expect(h).toContain('class="aviso-pop aviso-pop--logro"')
+  it('lleva la casita oficial completa (32 px): mismo viewBox del logo, sin recortes, con la llave y sin ids repetidos', () => {
+    const h = html({}, 0)
+    expect(h).toContain('class="tostada tostada--logro"')
     expect(h).toContain('viewBox="419.5 65.25 420.25 408.25"'); expect(h).toContain('overflow="visible"')
     for (const c of ['aviso-logo__planta', 'aviso-logo__franja', 'aviso-logo__puerta', 'aviso-logo__cerradura', 'aviso-logo__llave']) expect(h).toContain(c)
     expect(h).not.toContain('id="casa-clip"'); expect(h).toContain('url(#aviso-casa-clip)')
+    expect(css).toContain('.tostada__casa .aviso-pop__logo{width:32px;height:32px}')
+    expect(css).toMatch(/\.aviso-pop__logo svg\{[^}]*overflow:visible/)
     expect(leer('../logoLandingMarkup.ts')).toContain('viewBox=\\"419.5 65.25 420.25 408.25\\"')
   })
-  it('CSS: tarjeta crema de 26 px, 320 px en escritorio y 366 px en celular; la llave gira una vez (~2 s) solo en logros', () => {
-    expect(css).toMatch(/\.aviso-pop\{[^}]*border-radius:26px/); expect(css).toContain('width:320px'); expect(css).toContain('max-width:366px')
-    expect(css).toContain('.aviso-pop--logro .aviso-logo__llave{animation:aviso-llave 2s var(--ease) 250ms both}')
-    expect(css).not.toMatch(/aviso-llave[^;}]*infinite/)
-    expect(css).toMatch(/\.aviso-pop__esquina\{[^}]*overflow:visible/); expect(css).toMatch(/\.aviso-pop__logo svg\{[^}]*overflow:visible/)
+  it('CSS: vidrio crema al 92 % con desenfoque de 18 px y fondo sólido sin soporte; 358 px en celular, 360 px en computadora; abajo', () => {
+    expect(css).toMatch(/\.tostada\{[^}]*background:rgba\(255,245,238,\.92\);-webkit-backdrop-filter:blur\(18px\) saturate\(1\.5\);backdrop-filter:blur\(18px\)/)
+    expect(css).toContain('@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tostada{background:var(--fondo)}}')
+    expect(css).toMatch(/\.tostadas\{position:fixed;[^}]*bottom:calc\(16px \+ env\(safe-area-inset-bottom\)\);width:min\(358px,calc\(100vw - 32px\)\)/)
+    expect(css).toContain('@media (min-width:720px){.tostadas{left:auto;right:24px;bottom:24px;width:360px;transform:none}}')
+    expect(css).toContain('.tostada--logro .aviso-logo__llave{animation:aviso-llave 2s var(--ease) 250ms both}'); expect(css).not.toMatch(/aviso-llave[^;}]*infinite/)
   })
-  it('respeta prefers-reduced-motion (también la llave)', () => {
-    const rm = css.slice(css.indexOf('@media (prefers-reduced-motion:reduce){\n  .aviso-pop{'))
-    expect(rm).toContain('.aviso-logo__llave,.aviso-logo__cerradura{transform:none!important;opacity:1}'); expect(rm).toContain('.aviso-pop__tiempo{animation:none!important')
+  it('movimiento: entra deslizando con fundido en 320 ms y sale en 200 ms; pila que asoma 12 y 23 px', () => {
+    expect(css).toMatch(/animation:tostada-entra 320ms cubic-bezier\(\.2,\.8,\.2,1\) backwards/); expect(css).toContain('@keyframes tostada-entra{from{opacity:0;transform:translateY(16px)}')
+    expect(css).toMatch(/transition:transform 240ms var\(--ease\),opacity 200ms ease/)
+    expect(css).toContain('.tostada[data-i="1"]{transform:translateY(-12px) scale(.95);opacity:.9}'); expect(css).toContain('.tostada[data-i="2"]{transform:translateY(-23px) scale(.9);opacity:.7}')
+    expect(html({}, 1)).toContain('data-i="1"')
+  })
+  it('respeta prefers-reduced-motion: solo fundido de 160 ms, sin giro ni llave animada', () => {
+    const rm = css.slice(css.indexOf('@media (prefers-reduced-motion:reduce){\n  .tostada{'))
+    expect(rm).toContain('.tostada{animation:aviso-fade 160ms linear backwards!important;transition:opacity 160ms linear!important}')
+    expect(rm).toContain('.aviso-logo__llave,.aviso-logo__cerradura{transform:none!important;opacity:1}'); expect(rm).toContain('.tostada__tiempo{animation:none!important')
+    expect(leer('../Aviso.tsx')).toContain('giro = reducir() ? 0 : (dx / w) * 4')
   })
   it('tono de cada aviso: logros en verde, errores en terracota, el resto miel', () => {
     expect(al.tonoDe({ paso: 'pago' })).toBe('logro'); expect(al.tonoDe({ paso: 'contrato-firmado' })).toBe('logro'); expect(al.tonoDe({ paso: 'devolucion' })).toBe('logro')
-    expect(al.tonoDe({ paso: 'crear' })).toBe('paso'); expect(al.tonoDe(al.alertaIngresoFallo())).toBe('error')
+    expect(al.tonoDe({ paso: 'crear' })).toBe('paso'); expect(al.tonoDe(al.alertaIngresoFallo())).toBe('error'); expect(al.tonoDe(al.alertaErrorRed())).toBe('error')
   })
-  it('el texto separa qué pasó y qué sigue', () => {
-    const h = renderToStaticMarkup(<TextoAlerta a={{ paso: 'x', titulo: 'T', hecho: 'Pasó esto.', sigue: 'Hacer aquello.' }} />)
-    expect(h).toBe('<p>Pasó esto.</p><p class="aviso-pop__sigue"><strong>Lo que sigue:</strong> Hacer aquello.</p>')
+  it('la línea: la aprobada («Ahora: …», «Sigue: …») o, si no hay, lo que sigue', () => {
+    expect(al.lineaDe({ paso: 'x', titulo: 'T', hecho: 'Pasó esto.', sigue: 'Hacer aquello.' })).toEqual({ texto: 'Hacer aquello.' })
+    expect(al.lineaDe({ paso: 'x', titulo: 'T', hecho: 'Pasó esto.' })).toEqual({ texto: 'Pasó esto.' })
+    expect(al.lineaDe(al.alertaIngreso(true))).toEqual({ et: 'Sigue:', texto: 'crear o ver tus alquileres' })
   })
   it('«Tomar foto» usa el ícono de cámara de la app (sin emoji)', () => {
     const c = leer('../Camara.tsx'); expect(c).toContain('<Icono id="i-camara" />'); expect(c).not.toMatch(EMOJI)
   })
 })
 
-describe('cola de avisos', () => {
-  it('muestra de a uno, en orden, sin repetir', () => {
+describe('pila de avisos (estilo Sonner)', () => {
+  it('hasta 3, el más nuevo al final de la lista (al frente), sin repetir; con el cuarto sale el más viejo', () => {
     al.vaciarAlertas()
-    const a = { paso: 'a', titulo: 'A', hecho: '.' }, b = { paso: 'b', titulo: 'B', hecho: '.' }
-    al.avisar(a); al.avisar(a); al.avisar(b); al.avisar(null)
-    expect(al.alertaActual()).toBe(a); al.cerrarAlerta(); expect(al.alertaActual()).toBe(b); al.cerrarAlerta(); expect(al.alertaActual()).toBeNull()
+    const x = (p: string) => ({ paso: p, titulo: p.toUpperCase(), hecho: '.' })
+    al.avisar(x('a')); al.avisar(x('a')); al.avisar(x('b')); al.avisar(null)
+    expect(al.alertasVisibles().map(a => a.paso)).toEqual(['a', 'b']); expect(al.alertaActual()?.paso).toBe('b')
+    al.avisar(x('c')); al.avisar(x('d'))
+    expect(al.alertasVisibles().map(a => a.paso)).toEqual(['b', 'c', 'd']); expect(al.MAX_AVISOS).toBe(3)
+    const r = al.alertasVisibles(); expect(al.alertasVisibles()).toBe(r)   // misma referencia (useSyncExternalStore)
+    al.cerrarAlerta(al.alertasVisibles()[1].id); expect(al.alertasVisibles().map(a => a.paso)).toEqual(['b', 'd'])
+    al.cerrarAlerta(); expect(al.alertasVisibles().map(a => a.paso)).toEqual(['b'])
+    al.vaciarAlertas(); expect(al.alertaActual()).toBeNull()
+  })
+})
+
+describe('aviso v2: textos aprobados por Legal (23/10) y montos del reparto real', () => {
+  const base = { id: 'x', estado: 'firmas', diasSimulados: 0, contrato: { firmas: {} }, entrada: { firmas: {} } } as never
+  const alq = (o: Record<string, unknown>) => ({ id: 'x', estado: 'firmas', diasSimulados: 0, monto: 3, contrato: { firmas: {} }, entrada: { firmas: {} }, historial: [], ...o }) as never
+  it('contrato firmado: «Ahora: pagar {monto}» y «Pagar →»; pago: «Ahora: fotos de entrada» y «Tomar fotos →»', () => {
+    const c = al.alertaPorCambio(base, alq({ estado: 'pendiente_pago', monto: 7 }), 'inquilino', VIDEO)!
+    expect(c.linea).toEqual({ et: 'Ahora:', texto: `pagar ${usd(7)} de prueba` }); expect(c.accion).toMatchObject({ texto: 'Pagar →', ir: 'panel' })
+    const p = al.alertaPorCambio({ ...(base as object), estado: 'pendiente_pago' } as never, alq({ estado: 'fotos_entrada' }), 'inquilino', VIDEO)!
+    expect(p.linea).toEqual({ et: 'Ahora:', texto: 'fotos de entrada' }); expect(p.accion).toEqual({ texto: 'Tomar fotos →', etiqueta: 'Tomar fotos de entrada', ir: 'panel' })
+    const e = al.alertaPorCambio({ ...(base as object), estado: 'fotos_entrada' } as never, alq({ estado: 'en_curso' }), 'inquilino', VIDEO)!
+    expect(e.linea).toEqual({ et: 'Al entregar:', texto: 'fotos de salida' }); expect(e.accion?.texto).toBe('Ver alquiler')
+  })
+  it('devolución y acuerdo: los montos salen de r.inquilino y r.dueno (nunca fijos)', () => {
+    const antes = { ...(base as object), estado: 'ventana_reclamo' } as never
+    for (const [dueno, inquilino] of [[0, 13], [4.5, 8.5], [1, 2]]) {
+      const d = al.alertaPorCambio(antes, alq({ estado: 'cerrado', resultado: { via: 'automatico', dueno, inquilino } }), 'inquilino', VIDEO)!
+      expect(d.linea).toEqual({ texto: `${usd(inquilino)} volvieron al inquilino` }); expect(d.accion?.texto).toBe('Ver detalle'); expect(d.accion?.ir).toBe('detalles')
+      const a = al.alertaPorCambio({ ...(base as object), estado: 'reclamo' } as never, alq({ estado: 'cerrado', resultado: { via: 'acuerdo', dueno, inquilino } }), 'inquilino', VIDEO)!
+      expect(a.linea).toEqual({ texto: `${usd(dueno)} al dueño y ${usd(inquilino)} al inquilino` })
+    }
+    const src = leer('../alertas.ts')
+    expect(src).toContain('linea: { texto: `${usd(r.inquilino)} volvieron al inquilino` }'); expect(src).toContain('linea: { texto: `${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino` }')
+    expect(src).not.toMatch(/linea: \{[^}]*\b\d+ USDC/)
+  })
+  it('error de red: «No se pudo completar» con el texto A12 sin cambios (el mismo de services/escrow.ts); sin acción', () => {
+    const e = al.alertaErrorRed(); expect(e).toMatchObject({ tipo: 'error', titulo: 'No se pudo completar', hecho: al.ERROR_RED }); expect(e.accion).toBeUndefined()
+    expect(leer('../services/escrow.ts')).toContain(`'${al.ERROR_RED}'`)
+    const d = leer('../screens/Detalle.tsx'); expect(d).toContain('if (m === ERROR_RED) avisar(alertaErrorRed())')
+  })
+  it('los textos nuevos del aviso v2 están marcados «LEGAL: revisado el 23/10»', () => {
+    const src = leer('../alertas.ts').split('\n')
+    for (const l of src.filter(l => /^\s+linea: \{/.test(l))) expect(l).toMatch(/LEGAL: revisado el 23\/10/)
   })
 })
 
@@ -221,5 +296,6 @@ describe('aviso al inicio del orden de Tab', () => {
     const av = leer('../Aviso.tsx')
     expect(av).not.toMatch(/autoFocus/)
     expect(av).toContain('tabIndex={0}')
+    expect(av).not.toMatch(/\.focus\(\)[^\n]*tostada/)
   })
 })

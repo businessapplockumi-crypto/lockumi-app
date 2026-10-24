@@ -1,5 +1,5 @@
 // Avisos emergentes después de cada paso del flujo: confirman qué pasó y dicen qué sigue.
-// Se muestran de a uno (cola). Las pantallas llaman a `avisar`; <Alertas /> (en App) los muestra con <Aviso />.
+// Aviso v2 (toast): pila de hasta 3, el más nuevo al frente. Las pantallas llaman a `avisar`; <Alertas /> (en App) los muestra con <Tostada />.
 // Los textos con sentido legal están marcados con `// LEGAL: revisar` (pendientes de revisión de Legal).
 import type { Alquiler, Rol } from './types'
 import { NOMBRE, otro } from './flujo'
@@ -17,27 +17,44 @@ export interface Alerta {
   hecho: string
   /** Qué sigue. */
   sigue?: string
+  /** Aviso v2: la única línea bajo el título («Ahora: …», «Sigue: …»). Si falta, se usa `sigue` (o `hecho`). */
+  linea?: Linea
+  /** Aviso v2: botón que lleva al paso siguiente (8 s en vez de 5 s). */
+  accion?: Accion
 }
+export interface Linea { et?: string; texto: string }
+/** `ir`: «panel» = la tarjeta del paso (enfoca su botón principal); «detalles» = abre «Detalles» (historial y montos). */
+export interface Accion { texto: string; etiqueta: string; ir: 'panel' | 'detalles' }
+/** Texto aprobado por Legal (A12) del error de red; el mismo de services/escrow.ts. */
+export const ERROR_RED = 'La red de prueba está lenta o no respondió. Espera un minuto y vuelve a tocar el botón.' // LEGAL: revisado A12 (24/10)
+/** Línea que muestra el aviso v2. */
+export const lineaDe = (a: Alerta): Linea => a.linea ?? { texto: a.sigue ?? a.hecho }
 
 /** Logros del flujo: el aviso sale en verde y la llave del logo entra y gira una vez. */
 export const LOGROS = new Set(['ingreso', 'contrato-firmado', 'pago', 'entrada-confirmada', 'devolucion', 'acuerdo'])
 /** Tono del aviso: paso (miel), logro (verde) o error (terracota). */
 export const tonoDe = (a: Pick<Alerta, 'paso' | 'tipo'>): 'paso' | 'logro' | 'error' => a.tipo === 'error' ? 'error' : LOGROS.has(a.paso) ? 'logro' : 'paso'
 
-// ---- Cola ----
-let cola: Alerta[] = []
+// ---- Pila (estilo Sonner) ----
+/** Hasta 3 visibles; con el cuarto sale el más viejo. */
+export const MAX_AVISOS = 3
+export type AlertaEnPila = Alerta & { id: number }
+let pila: AlertaEnPila[] = [], siguienteId = 1
 const oyentes = new Set<() => void>()
 const avisarCambio = () => oyentes.forEach(f => f())
 export function avisar(a: Alerta | null | undefined) {
   if (!a) return
-  if (cola.some(x => x.paso === a.paso && x.titulo === a.titulo)) return   // el mismo aviso no se repite en la cola
-  cola = [...cola, a]; avisarCambio()
+  if (pila.some(x => x.paso === a.paso && x.titulo === a.titulo)) return   // el mismo aviso no se repite en la pila
+  pila = [...pila, { ...a, id: siguienteId++ }].slice(-MAX_AVISOS); avisarCambio()
 }
-export function cerrarAlerta() { cola = cola.slice(1); avisarCambio() }
-export const alertaActual = () => cola[0] ?? null
+/** Cierra un aviso (por id) o, sin id, el más nuevo. */
+export function cerrarAlerta(id?: number) { pila = id == null ? pila.slice(0, -1) : pila.filter(x => x.id !== id); avisarCambio() }
+/** Los avisos visibles, del más viejo al más nuevo (misma referencia mientras no cambien). */
+export const alertasVisibles = () => pila
+export const alertaActual = () => pila.at(-1) ?? null
 export function suscribirAlertas(f: () => void) { oyentes.add(f); return () => { oyentes.delete(f) } }
 /** Solo para pruebas. */
-export function vaciarAlertas() { cola = []; avisarCambio() }
+export function vaciarAlertas() { pila = []; avisarCambio() }
 
 // ---- Textos ----
 export interface Contexto { prueba: boolean; video: boolean; red: boolean }
@@ -47,11 +64,17 @@ const quien = (r: Rol, c: Contexto) => r === 'dueno' && c.prueba ? 'El dueño de
 
 export const alertaIngreso = (real = modoReal): Alerta => ({
   paso: 'ingreso', titulo: '¡Ingresaste correctamente!',
+  linea: { et: 'Sigue:', texto: 'crear o ver tus alquileres' },   // LEGAL: revisado el 23/10
   hecho: `${real ? 'Estamos preparando tu billetera.' : 'Te damos la bienvenida a la demo.'} Desde aquí puedes ver tus alquileres y crear un depósito protegido.`,
 })
 export const alertaIngresoFallo = (): Alerta => ({
   paso: 'ingreso-fallo', tipo: 'error', titulo: 'El ingreso no terminó',
   hecho: 'Toca Entrar y elige tu cuenta.',   // texto corto aprobado por Legal (23 oct 2026)
+})
+/** Error de red (A12): «No se pudo completar» con el texto aprobado. Sin acción: se reintenta con el botón de la pantalla. */
+export const alertaErrorRed = (): Alerta => ({
+  paso: 'error-red', tipo: 'error', titulo: 'No se pudo completar',   // LEGAL: revisado el 23/10
+  hecho: ERROR_RED,
 })
 
 export const alertaCreado = (a: Pick<Alquiler, 'direccion' | 'monto'>, c = CTX): Alerta => ({
@@ -88,17 +111,23 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
       paso: 'contrato-firmado', titulo: 'Contrato firmado por los dos',
       hecho: c.prueba ? 'El dueño de prueba también firmó. El contrato ya tiene las dos firmas.' : 'El contrato ya tiene las dos firmas.',
       sigue: `Pagar el depósito de ${usd(ahora.monto)}.`,
+      linea: { et: 'Ahora:', texto: `pagar ${usd(ahora.monto)}${c.red ? ' de prueba' : ''}` },   // LEGAL: revisado el 23/10
+      accion: { texto: 'Pagar →', etiqueta: 'Pagar el depósito', ir: 'panel' },
     }
     case 'fotos_entrada': return {
       paso: 'pago', titulo: '¡Depósito guardado!',
       // LEGAL: revisar · texto corto de la red de prueba aprobado por Legal (23 oct 2026)
       hecho: c.red ? `${usd(ahora.monto)} guardados en una cuenta segura de la red de prueba. Nadie puede sacarlos solo.` : `El depósito de ${usd(ahora.monto)} quedó guardado. Nadie puede tomarlo solo.`,
       sigue: 'Tomar las fotos de entrada de cada espacio y marcar la lista.',
+      linea: { et: 'Ahora:', texto: 'fotos de entrada' },   // LEGAL: revisado el 23/10
+      accion: { texto: 'Tomar fotos →', etiqueta: 'Tomar fotos de entrada', ir: 'panel' },
     }
     case 'en_curso': return {
       paso: 'entrada-confirmada', titulo: 'Empezó el alquiler',
       hecho: 'Los dos confirmaron las fotos de entrada. El depósito sigue guardado.',
       sigue: rol === 'inquilino' ? 'Cuando entregues el lugar, toca «Empezar fotos de salida».' : 'Cuando el inquilino entregue el lugar, cualquiera de los dos puede empezar las fotos de salida.',
+      linea: { et: 'Al entregar:', texto: 'fotos de salida' },   // LEGAL: revisado el 23/10
+      accion: { texto: 'Ver alquiler', etiqueta: 'Ver el alquiler', ir: 'panel' },
     }
     case 'salida': return {
       paso: 'salida-inicio', titulo: 'Empezaron las fotos de salida',
@@ -133,12 +162,16 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
         hecho: c.red ? `No hubo reclamos en ${textoPlazo(ahora)}. El dueño de prueba aprobó y Lockumi devolvió ${usd(r.inquilino)} al inquilino en la red de prueba.`
           : `No hubo reclamos en ${textoPlazo(ahora)}. El depósito volvió completo al inquilino: ${usd(r.inquilino)}.`,
         sigue: TERMINO,
+        linea: { texto: `${usd(r.inquilino)} volvieron al inquilino` },   // LEGAL: revisado el 23/10 (monto del reparto real)
+        accion: { texto: 'Ver detalle', etiqueta: 'Ver el detalle del depósito devuelto', ir: 'detalles' },
       }
       // LEGAL: revisar
       if (r.via === 'acuerdo') return {
         paso: 'acuerdo', titulo: 'Reclamo aceptado',
         hecho: `Se repartió el depósito${red}: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino.`,
         sigue: TERMINO,
+        linea: { texto: `${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino` },   // LEGAL: revisado el 23/10 (montos del reparto real)
+        accion: { texto: 'Ver detalle', etiqueta: 'Ver el detalle del reparto', ir: 'detalles' },
       }
       // LEGAL: revisar
       return {
