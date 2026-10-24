@@ -126,7 +126,7 @@ Los marcados `// LEGAL: revisar` en `src/alertas.ts` son los del depósito guard
 | Crear alquiler | `crear` | Alquiler creado | Guardamos el alquiler de Apartamento en Barreal de Heredia con un depósito de 20 USDC. | Lo que sigue: Leer el contrato y firmarlo. Después lo firma el dueño de prueba. |
 | Firma del inquilino | `firma-inquilino` | Firmaste el contrato | La firma quedó guardada con la fecha y la hora. | Lo que sigue: El dueño de prueba lo firma solo, en unos segundos. |
 | Firma del dueño de prueba (contrato firmado por los dos) | `firma-dueno` | Contrato firmado por los dos | El dueño de prueba también firmó. El contrato ya tiene las dos firmas. | Lo que sigue: Pagar el depósito de 20 USDC. |
-| Pagar el depósito | `pago` | ¡Depósito guardado! | 20 USDC guardados en una cuenta segura de la red de prueba. Nadie puede sacarlos solo. *(Legal, 23 oct)* | Lo que sigue: Tomar las fotos de entrada de cada espacio y marcar la lista. |
+| Pagar el depósito | `pago` | ¡Depósito guardado! | 20 USDC guardados en una cuenta segura de la red de prueba. Ni el dueño ni el inquilino pueden sacarlos solos. *(Legal, 23 oct; cambiado por Legal el 24 oct, ronda 3)* | Lo que sigue: Tomar las fotos de entrada de cada espacio y marcar la lista. |
 | Fotos y lista de entrada: confirma el inquilino | `entrada-inquilino` | Confirmaste las fotos de entrada | Las fotos y la lista quedaron guardadas con la fecha y la hora. | Lo que sigue: El dueño de prueba las revisa y las confirma solo, en unos segundos. |
 | Fotos de entrada: confirma el dueño de prueba | `entrada-dueno` | Empezó el alquiler | Los dos confirmaron las fotos de entrada. El depósito sigue guardado. | Lo que sigue: Cuando entregues el lugar, toca «Empezar fotos de salida». |
 | Empezar fotos de salida | `salida-inicio` | Empezaron las fotos de salida | Ya pueden registrar cómo quedó el lugar. | Lo que sigue: Tomar una foto de cada espacio, marcar la lista y confirmar. |
@@ -197,7 +197,7 @@ app.lockumi.com (modo de una persona) muestra «Resolver el reclamo (simulación
 **Sin cambiar (para Legal):**
 - `src/screens/Detalle.tsx`, nota del modo de una persona: «La persona mediadora es simulada: su decisión no se registra en la red de prueba ni mueve el depósito de prueba.» Pendiente de un texto de Legal.
 - `supabase/migrations/20261017000000_lockumi_e2e.sql` (versión con servidor, no activa en app.lockumi.com): «Solo una persona mediadora puede decidir.» y «La persona mediadora decidió: …». No se editó: el repositorio no deja constancia de si se aplicó al proyecto de Supabase (`scripts/aplicar-supabase-e2e.mjs`). Si se aplicó, hace falta una migración nueva con `create or replace function` para `lk_decidir_mediacion`; si no, se puede editar este archivo. `scripts/probar-esquema.mjs` sigue esperando el texto actual.
-- La frase «nadie puede tomarlo/sacarlos solo» de otros textos (avisos, recorrido, Detalle, Real, Login, README) y la página de inicio (`lockumi/landing`): lista para Legal en el informe de la ronda 2; no se tocaron.
+- La frase «nadie puede tomarlo/sacarlos solo» de otros textos (avisos, recorrido, Detalle, Real, Login, README) y la página de inicio (`lockumi/landing`): lista para Legal en el informe de la ronda 2; no se tocaron. *(Cambiados en la ronda 3, salvo la página de inicio; ver abajo.)*
 
 Pruebas: `src/screens/__tests__/contrato-compacto.test.tsx` («ronda 2 de Legal…»), `contrato-plegable.test.tsx` y `src/legal/__tests__/casillas.test.tsx` (versión 1.6-demo, 6.7 exacta, la aceptación de Términos 1.5-demo ya no cuenta).
 
@@ -206,3 +206,31 @@ Pruebas: `src/screens/__tests__/contrato-compacto.test.tsx` («ronda 2 de Legal�
 Aprobada por Legal solo para un servicio real o una versión de producción. **No se muestra en la demo.**
 
 > Si después de la mediación no hay acuerdo, el depósito sigue guardado y cualquiera de las dos partes puede acudir a los tribunales de Costa Rica. El depósito se reparte según el acuerdo al que lleguen después o según lo que resuelva la autoridad.
+
+## Legal, ronda 3 (24 oct 2026, rama `contrato-compacto`, sin publicar)
+
+**Nota de la mediación (modo de una persona, `src/screens/Detalle.tsx`).** El reparto que se elige con «Resolver el reclamo (simulación)» **sí se ejecuta en la red de prueba**: `acciones.decidir` → `escrow.resolver` (`src/services/escrow.ts`, `escrowReal ? real : simulado`) → `/api/solo` «resolver» → `resolve-dispute` firmado por la cuenta de plataforma de Lockumi (`api/_lib/solo.ts`, caso `resolver`). Por eso la nota pasa a ser:
+
+> La mediación es simulada: el reparto que elijas se ejecuta con tokens de prueba, sin valor.
+
+Esa nota solo se ve en el modo de una persona (`VITE_FLUJO=solo`). app.lockumi.com muestra la nota de la demo en vivo, que no cambia. Para Legal (sin cambiar): las notas del mismo modo «El reclamo y la mediación no se registran en la red de prueba» y «El reclamo es simulado: no se registra en la red de prueba…» no coinciden con el código, porque `acciones.reclamar` abre la disputa en la red de prueba (`escrow.disputar`).
+
+**Mensajes de la versión con servidor.** No consta en el repositorio si `20261017000000_lockumi_e2e.sql` se aplicó al proyecto de Supabase. Por eso no se editó; la nueva migración `supabase/migrations/20261024120000_lk_mediacion_acuerdo.sql` reemplaza `lk_decidir_mediacion` (misma lógica y permisos) con los mensajes «Solo la persona mediadora puede registrar el acuerdo.» y «Acuerdo registrado: …». No se cruza con `20261024000000_lk_espacios.sql` de la rama `agregar-espacio`: esa migración no redefine `lk_decidir_mediacion` ni `lk_evento`. `scripts/probar-esquema.mjs` comprueba los dos textos.
+
+**«Nadie puede…» → «Ni el dueño ni el inquilino…»** (texto exacto de Legal; la página de inicio no cambia):
+
+| Dónde | Texto nuevo |
+|---|---|
+| Aviso «¡Depósito guardado!» (`src/alertas.ts`), con red / sin red | «… Ni el dueño ni el inquilino pueden sacarlos solos.» / «… Ni el dueño ni el inquilino pueden tomarlo solos.» |
+| Detalle, notas del depósito (cuenta propia y USDC de Lockumi) | «Ni el dueño ni el inquilino pueden sacarlos solos.» |
+| Detalle, alquiler en curso | «El depósito sigue guardado y ni el dueño ni el inquilino pueden tomarlo solos.» |
+| Pago en la red de prueba (`Real.tsx`) | «Ni el dueño ni el inquilino pueden tomarlos solos.» |
+| Entrar, beneficio «Tu depósito queda guardado» (solo el texto) | «Ni el dueño ni el inquilino pueden liberarlo solos.» |
+| Recorrido, «Firmas y depósito» | «Ni el dueño ni el inquilino lo pueden sacar solos.» |
+| README, «Depósito protegido» | «ni el dueño ni el inquilino pueden liberar el dinero por su cuenta; en la demo, si hay un reclamo, la cuenta de Lockumi ejecuta el reparto» |
+
+**Devolución automática (sin cambiar).** Cuando terminan los 7 días sin reclamo, ninguna persona aprueba, pero firma el servidor de Lockumi: la app abierta llama a `cerrarSinReclamo` (`Detalle.tsx`, efecto al llegar a 0) → `escrow.devolver` → `/api/solo` «aprobar» (firma la cuenta del dueño de prueba, con llave en el servidor de Lockumi) y «liberar» (firma la cuenta de plataforma de Lockumi). No hay tarea programada (`vercel.json` sin crons): si nadie abre la app, no se libera.
+
+**Términos 1.6-demo (misma versión y fecha, 24 oct 2026).** 4.1 a) cambia «Lockumi no custodia tus tokens de prueba» por el texto de Legal: «Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.» **5.3 (Cavos) no cambia:** según la documentación del vault de Cavos, dentro de los límites de la app (por omisión 25 USDC por transacción y 100 por día; 100 XLM y 500 por día) el vault firma pagos **sin preguntar** cuando lo pide el código de la página, así que el código web de Lockumi podría mover fondos de la billetera hasta esos límites sin que la persona lo vea. El servidor de Lockumi no tiene llaves de la billetera de nadie. 5.4 no cambia.
+
+Pruebas: `src/__tests__/alertas.test.tsx`, `recorrido.test.tsx`, `src/legal/__tests__/casillas.test.tsx` (4.1 a) nueva, 5.3 igual, beneficio de Entrar), `contrato-compacto` y `contrato-plegable`; `node scripts/probar-esquema.mjs`.

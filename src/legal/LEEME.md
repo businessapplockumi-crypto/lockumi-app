@@ -30,3 +30,7 @@ como `{ version, fecha }` y en el usuario (`lockumi.usuario` → `terminos`, `pr
   `<!-- LEGAL: revisado (24/10) … -->`, que no se publica. Como cambió la versión, quien aceptó la 1.5-demo vuelve a ver la casilla de
   Términos sin marcar la próxima vez que pase por «Entrar». El Aviso de privacidad sigue en 1.5-demo y su consentimiento sigue valiendo.
   Publicar necesita el OK de Katherine.
+- **1.6-demo, ronda 3 (24 oct 2026, misma versión y fecha, sin publicar):** 4.1 a) cambia «Lockumi no custodia tus tokens de prueba»
+  por el texto de Legal («Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de
+  prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.»). 5.3 (Cavos) y 5.4 no cambian; el porqué está en
+  `docs/alertas.md`, «Legal, ronda 3». Como la versión no cambió, quien ya aceptó la 1.6-demo no vuelve a ver la casilla.

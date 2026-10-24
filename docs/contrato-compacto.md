@@ -49,6 +49,10 @@ El paso 6 («Los pasos») sigue apuntando bien con la columna reordenada, en com
 
 En esta misma rama, la sección «Mediación» del contrato (y los demás textos de mediación) dicen que la persona mediadora ayuda a buscar un acuerdo y no decide. Lista completa en [`alertas.md`](alertas.md#textos-de-mediación-revisados-por-legal-24-oct-2026-rama-contrato-compacto-sin-publicar).
 
+## Legal, ronda 3 (24 oct 2026)
+
+Sin cambios en el contrato compacto. Los textos «Nadie puede…» de avisos, Detalle, pago, Entrar, recorrido y README pasan a «Ni el dueño ni el inquilino…»; la nota de la mediación del modo de una persona y la cláusula 4.1 a) de Términos (1.6-demo) también cambian. Detalle en `docs/alertas.md`, «Legal, ronda 3».
+
 ## El depósito: texto de Legal, ronda 2 (24 oct 2026)
 
 La sección «El depósito» del contrato (tarjeta, panel, hoja y «Descargar o imprimir») ya no dice «ni Lockumi». Ahora: «El depósito queda guardado hasta el final. Ni el dueño ni el inquilino pueden tomarlo solos. En esta prueba, si hay un reclamo, la cuenta de Lockumi es la que ejecuta el reparto que se elige en la simulación.» (`// LEGAL: revisado (24/10)`). En el modo con servidor, los botones de la persona mediadora dicen «Registrar el acuerdo» y la cláusula 6.7 de los Términos pasó a 1.6-demo. Detalle en [`alertas.md`](alertas.md#legal-ronda-2-24-oct-2026-rama-contrato-compacto-sin-publicar).
