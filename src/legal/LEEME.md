@@ -37,3 +37,6 @@ como `{ version, fecha }` y en el usuario (`lockumi.usuario` → `terminos`, `pr
 - **1.6-demo, ronda 4 (24 oct 2026, misma versión y fecha, sin publicar):** 5.3 (Cavos) pasa al texto exacto de Legal («Tu billetera
   la protege Cavos con tus aparatos, y Lockumi no tiene tus llaves. … Si eso cambia, actualizaremos estos Términos antes de usarla.»).
   Ya no nombra a Cavos, LLC ni enlaza sus términos. Prueba que lo respalda: `src/__tests__/cavos-sin-firma-silenciosa.test.ts`.
+- **1.6-demo, ronda 5 (24 oct 2026, misma versión y fecha, sin publicar):** 6.5 dice «Si no reclama, después de ese plazo se libera todo al
+  inquilino.». 5.3 no cambia en la rama, pero **no se publica** hasta que Katherine decida la variante (a) o (b): ver PLAN.md y
+  `docs/alertas.md`, «Legal, ronda 5».

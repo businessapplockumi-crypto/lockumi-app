@@ -25,6 +25,8 @@ import { etapaDeAvance, type EtapaPago } from '../espera'
 type P = { a: Alquiler; rol: Rol }
 const ahoraISO = (a: Alquiler) => new Date(ahoraDe(a)).toISOString()
 /** Botones que tocan la red de prueba: no se pueden tocar dos veces, muestran el avance y explican el error. */
+/** «24 oct 2026, 02:18 a. m.» ya termina en punto: no agregar otro. */
+const conPunto = (t: string) => t.endsWith('.') ? t : t + '.'
 function useProceso() {
   const [ocupado, setOcupado] = useState(false); const [avance, setAvance] = useState(''); const [err, setErr] = useState('')
   const correr = async (f: (av: (t: string) => void) => Promise<unknown>) => {
@@ -138,13 +140,14 @@ function Ventana({ a, rol }: P) {
     <div className="cuenta" role="timer"><span className="cuenta__n">{dias}</span> días <span className="cuenta__n">{horas}</span> horas</div>
     {modoSolo ? <p className="nota">En esta prueba no hay que esperar el plazo: si todo está bien, el dueño de prueba aprueba y el depósito vuelve al inquilino en la red de prueba.</p>
       // LEGAL: revisado (24/10) · la devolución la dispara la app abierta (efecto de arriba) y la firma el servidor de Lockumi
-      : escrowReal ? <p className="nota">Termina el {fechaHora(fin)}. Si no hay reclamo en 7 días, el depósito de prueba se devuelve completo al inquilino la próxima vez que alguien abra el alquiler. Ninguna de las partes tiene que aprobarlo: lo ejecuta la cuenta de Lockumi.</p>
-      : <p className="nota">Termina el {fechaHora(fin)}. Si no hay reclamos, el depósito vuelve completo al inquilino, sin que nadie tenga que aprobarlo.</p>}
+      : escrowReal ? <p className="nota">Termina el {conPunto(fechaHora(fin))} Si no hay reclamo en {textoPlazo(a)}, el depósito de prueba se devuelve completo al inquilino la próxima vez que alguien abra el alquiler. Ninguna de las partes tiene que aprobarlo: lo ejecuta la cuenta de Lockumi.</p>
+      // LEGAL: revisado (24/10) · demo local sin red
+      : <p className="nota">Termina el {conPunto(fechaHora(fin))} Si no hay reclamos, después de {textoPlazo(a)} el depósito se devuelve completo al inquilino. En esta demo local no hay red: es solo una simulación.</p>}
     {resta === 0 && !a.reclamo && !modoSolo && (p.ocupado ? <div className="espera" role="status"><span aria-hidden="true">⏳</span><p>{p.avance || 'Devolviendo el depósito…'}</p></div>
       : p.err ? <>{p.error}<button type="button" className="boton boton--primario boton--ancho" onClick={() => void devolver()}>Volver a intentar la devolución</button></> : null)}
     {modoSolo && <CierreReal a={a} rol={rol} />}
     {modoVideo && resta > 0 && rol === 'inquilino' && (form ? <FormReclamo a={a} onCancelar={() => setForm(false)} /> : <div className="pila">
-      <p className="nota">La regla: el dueño tiene {textoPlazo(a)} para reclamar. Si no reclama, el depósito vuelve al inquilino.</p>
+      <p className="nota">La regla: el dueño tiene {textoPlazo(a)} para reclamar. Si no reclama, después de ese plazo el depósito se devuelve al inquilino.</p>{/* LEGAL: revisado (24/10) */}
       {adelantoPermitido() && <button type="button" className="boton boton--primario boton--ancho boton--grande" disabled={p.ocupado} onClick={adelantar}>Solo red de prueba: adelantar el plazo</button>}
       <button type="button" className="boton boton--secundario boton--ancho" disabled={p.ocupado} onClick={() => setForm(true)}>Hacer un reclamo como dueño de prueba</button>
       <p className="nota">«Adelantar el plazo» termina los {textoPlazo(a)} ahora y te devuelve el depósito. «Hacer un reclamo» lo haces en nombre del dueño de prueba.</p>
@@ -152,10 +155,10 @@ function Ventana({ a, rol }: P) {
     {resta > 0 && !(modoVideo && rol === 'inquilino') && (rol === 'dueno'
       ? (form ? <FormReclamo a={a} onCancelar={() => setForm(false)} /> : <>
         {/* LEGAL: revisado (24/10) · el reclamo abre resolve/dispute real (acciones.reclamar → escrow.disputar) */}
-        {modoSolo ? <p className="nota">¿Encontraste un daño? Puedes reclamar. <Simulado /> El reclamo abre una disputa en la red de prueba y bloquea el depósito de prueba. La mediación es simulada.</p>
+        {modoSolo ? <p className="nota">¿Encontraste un daño? Puedes reclamar. <Simulado texto="Red de prueba" /> El reclamo abre una disputa en la red de prueba y bloquea el depósito de prueba. La mediación es simulada.</p>
           : <p>¿Encontraste un daño que no estaba en las fotos de entrada? Puedes reclamar. Si todo está bien, no hagas nada.</p>}
         <button type="button" className={'boton boton--ancho ' + (modoSolo ? 'boton--secundario' : 'boton--primario boton--grande')} onClick={() => setForm(true)}>Reclamar un daño</button></>)
-      : <Espera texto={`Esperando. Si el dueño no reclama en ${textoPlazo(a)}, recibes tu depósito${escrowReal ? '' : ' completo'}.`} />)}
+      : <Espera texto={`Esperando. Si el dueño no reclama, después de ${textoPlazo(a)} se te devuelve el depósito.`} />)}{/* LEGAL: revisado (24/10) */}
     <EscrowReal a={a} rol={rol} />
     {/* Adelanta el reloj de la app: al llegar a 0 corre la devolución de arriba (real en la red de prueba). La cuenta segura no tiene plazo propio. */}
     {!modoServidor && !modoSolo && resta > 0 && adelantoPermitido() && !(modoVideo && rol === 'inquilino') && <button type="button" className="enlace" disabled={p.ocupado} onClick={adelantar}>Solo red de prueba: adelantar el plazo</button>}
@@ -198,7 +201,7 @@ function Evidencia({ a }: { a: Alquiler }) {
 function Reclamo({ a, rol }: P) {
   const r = a.reclamo!; const p = useProceso()
   const aceptar = () => p.correr(av => acciones.responder(a, true, av))
-  return <section className="pila"><div className="cab"><h2>Reclamo del dueño</h2>{modoPrueba && <Simulado />}</div><Evidencia a={a} />
+  return <section className="pila"><div className="cab"><h2>Reclamo del dueño</h2>{modoPrueba && <Simulado texto="Mediación simulada" />}</div>{/* LEGAL: revisado (24/10) */}<Evidencia a={a} />
     {/* LEGAL: revisado (24/10) · acciones.reclamar → escrow.disputar (disputa real en la red de prueba) */}
     {modoSolo && <p className="nota">El reclamo se registra en la red de prueba y bloquea el depósito de prueba hasta que se resuelva. La mediación es simulada.</p>}
     {modoVideo && <p className="nota">El dueño de prueba es una cuenta de Lockumi. Su reclamo quedó registrado en la cuenta segura de la red de prueba: el depósito no se mueve hasta que se resuelva.</p>}

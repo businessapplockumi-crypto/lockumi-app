@@ -150,8 +150,8 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
       paso: 'salida-confirmada', titulo: 'Fotos de salida confirmadas',
       hecho: `Los dos confirmaron las fotos de salida. Empiezan los ${textoPlazo(ahora)} para reclamos.`,
       // LEGAL: revisar
-      sigue: c.video ? `Si el dueño de prueba no reclama en ${textoPlazo(ahora)}, el depósito vuelve al inquilino. En esta prueba puedes adelantar el plazo o hacer un reclamo en nombre del dueño de prueba.`
-        : `Si el dueño no reclama en ${textoPlazo(ahora)}, el depósito vuelve al inquilino.`,
+      sigue: c.video ? `Si el dueño de prueba no reclama, después de ${textoPlazo(ahora)} el depósito se devuelve al inquilino. En esta prueba puedes adelantar el plazo o hacer un reclamo en nombre del dueño de prueba.`
+        : `Si el dueño no reclama, después de ${textoPlazo(ahora)} el depósito se devuelve al inquilino.`,   // LEGAL: revisado (24/10)
       linea: { et: 'Sigue:', texto: `${textoPlazo(ahora)} para hacer un reclamo` },   // LEGAL: revisado (24/10) · {textoPlazo} sale del alquiler
     }
     case 'reclamo': return !ahora.reclamo ? null : {

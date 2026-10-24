@@ -35,8 +35,8 @@ export function Documento({ a, impresion, plegado }: { a: Alquiler; impresion?: 
     </section>
 
     <section className="ct__sec"><h3>7 días para reclamos</h3>
-      {/* LEGAL: revisar. Resumen de la cláusula 6.5 de los Términos 1.6-demo. */}
-      <p className="ct__texto">Al terminar el alquiler, el dueño tiene 7 días para hacer un reclamo, con fotos y una factura o un presupuesto. Si no reclama, el depósito vuelve completo al inquilino. El inquilino tiene 7 días para responder.</p>
+      {/* LEGAL: revisar. Resumen de la cláusula 6.5 de los Términos 1.6-demo. LEGAL: revisado (24/10) · «después de 7 días…» */}
+      <p className="ct__texto">Al terminar el alquiler, el dueño tiene 7 días para hacer un reclamo, con fotos y una factura o un presupuesto. Si no reclama, después de 7 días el depósito se devuelve completo al inquilino. El inquilino tiene 7 días para responder.</p>
     </section>
 
     <section className="ct__sec"><h3>Mediación</h3>
