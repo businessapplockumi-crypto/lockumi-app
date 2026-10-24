@@ -7,6 +7,7 @@
 import { chromium } from 'playwright'
 import { Keypair, StrKey } from '@stellar/stellar-sdk'
 import { randomBytes } from 'node:crypto'
+import { llenarFormulario } from '../_formulario.mjs'
 const APP_ID = (process.env.VITE_CAVOS_APP_ID || '').trim(), OUT = process.env.OUT || 'alertas-preview-', B = 'http://localhost:5173/', B2 = 'http://localhost:5174/'
 const DUENO = Keypair.random().publicKey(), INQ = Keypair.random().publicKey()
 const hash = () => randomBytes(32).toString('hex')
@@ -118,10 +119,9 @@ async function fotos(p, cual) {
 
 /** Crear → firmar → pagar → fotos de entrada → salida, hasta los 7 días para reclamos. */
 async function hastaVentana(p, n, cap) {
-  const d = k => { const x = new Date(); x.setDate(x.getDate() + k); return [x.getDate(), x.getMonth() + 1, x.getFullYear()].map((v, i) => String(v).padStart(i < 2 ? 2 : 4, '0')).join('') }
   await p.goto(B + '#/crear'); await p.waitForTimeout(1000)
-  await p.fill('#f-direccion', 'Apartamento en Barreal de Heredia'); await p.fill('#f-monto', '20'); await p.fill('#f-inicio', d(0)); await p.fill('#f-fin', d(182))
-  const crear = p.getByRole('button', { name: 'Crear alquiler de prueba' }); await crear.click()
+  await llenarFormulario(p)
+  const crear = p.locator('.fz-pie').getByRole('button', { name: 'Crear alquiler', exact: true }); await crear.click()
   await alerta(p, n, 'crear', 'Alquiler creado', cap)
   ok(await p.locator('.turno').count() === 1 && await p.locator('.turno').isHidden(), `turno (${n}): la caja «Qué toca ahora» no se ve en el modo video`)
   await p.getByLabel('Leí el contrato y estoy de acuerdo.').check(); await p.getByRole('button', { name: 'Firma como inquilino' }).click()

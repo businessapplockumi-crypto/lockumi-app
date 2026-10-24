@@ -1,0 +1,55 @@
+# Formulario «Nuevo alquiler»: una pregunta por pantalla
+
+Rama `ux-guiada` (24 oct 2026), solo vista previa. Maqueta y textos: `diseno/envio/recorrido-formulario/` (`resumen.jpg`, `textos.md`, revisados por Legal el 23/10).
+
+## Pantallas
+
+| # | Pregunta | Ayuda | Qué se toca | Al terminar |
+|---|---|---|---|---|
+| 1 de 5 | ¿Qué lugar van a alquilar? | Un nombre corto basta. | «Nombre del lugar» (Ej.: Apartamento en Barreal de Heredia) · Tipo: Apartamento, Casa, Estudio, Habitación | Aviso «¡Lugar listo!» · «Faltan 4 pasos.» |
+| 2 de 5 | ¿Cuándo empieza y cuánto dura? | Elige una duración o pon las fechas. | Empieza · 3 meses, 6 meses, 1 año, Otra fecha · Termina | «¡Fechas listas!» · «Faltan 3 pasos.» |
+| 3 de 5 | ¿De cuánto es el depósito? | USDC de prueba, sin valor. Máximo 20. | Montos 1, 2, 3, 5, 10, 20 · Otro monto · Origen: «USDC de prueba de Lockumi» o «Mi propio USDC de prueba» | «¡Monto listo!» · «Faltan 2 pasos.» |
+| 4 de 5 | Reglas del lugar | Toca las que apliquen. Quedan en el contrato. | Sin mascotas, Sin fumar, Sin fiestas, Silencio desde las 10 p. m., Máximo 2 personas, Cuidar el jardín, + Otra regla | Botón «Revisar el contrato» → celebración «¡Reglas listas!» · «Falta un paso: revisar y crear.» · «Seguir» |
+| 5 de 5 | Revisar el contrato | Revisa los datos antes de crear. | Resumen con «Cambiar» en cada dato · «Crear alquiler» | Aviso «Alquiler creado» · «Ahora: leer y firmar el contrato» |
+
+- Botones: Siguiente · Atrás · Revisar el contrato · Seguir · Crear alquiler · ✕ (`aria-label="Cerrar"`, vuelve a Inicio).
+- La duración con chips calcula el fin como inicio + N meses (`sumarMeses`, igual que la validación). «Otra fecha» abre el calendario de «Termina».
+- Los montos se muestran con `usd(...)`: «3 USDC» en la red de prueba, «USD 3,00» en el modo sin red.
+- El tipo de lugar es solo de interfaz: no se guarda.
+- La validación (`src/validacion.ts`) y la creación (`crearAcuerdo`, aviso `alertaCreado`) no cambiaron. El inicio de sesión tampoco.
+
+## Errores (cada uno dice cómo arreglarlo)
+
+- Lugar vacío: «Escribe la dirección o un nombre para el lugar.»
+- Sin inicio: «Elige el día en que empieza.» · Sin fin: «Elige una duración (3 meses, 6 meses o 1 año) o toca «Otra fecha».»
+- Sin monto: «Toca un monto o escríbelo en «Otro monto».» · Arriba del tope: el mensaje de siempre con el máximo.
+- Regla vacía: «Escribe la regla y toca «Agregar».» · Repetida: «Esa regla ya está. Escribe otra o toca «Cancelar».»
+
+## Movimiento
+
+- Entre pantallas: la barra se llena con un brillo y la casita hace un pop de 300 ms.
+- «¡Reglas listas!»: la casita salta 14 px, la llave gira una vez y 10 puntos de la paleta (salvia, terracota, coral, verde bosque y miel) salen y caen con fundido en 0,9 s.
+- Con movimiento reducido no hay brillo, pop, salto ni puntos; los textos siguen iguales.
+
+## Accesibilidad
+
+- Una sola `h1` por pantalla; el foco pasa a la pregunta nueva (salvo durante el recorrido guiado) o al primer campo con error.
+- Chips de tipo, duración y monto: `role="radiogroup"`/`role="radio"`, un solo Tab y flechas. Reglas: botones con `aria-pressed`. Todos de 44 px de alto, con foco visible.
+- Barra: `role="progressbar"` con `aria-valuenow` y «Paso N de 5».
+- Enter pasa a la pantalla siguiente; Esc cierra «+ Otra regla».
+
+## Notas de Legal
+
+- Textos exactos de la maqueta (`// LEGAL: revisado el 23/10`).
+- Chips de duración: se pueden usar en la red de prueba; **antes de usar dinero real hay que revisarlos con un abogado (Ley 7527, art. 70)**.
+- «+ Otra regla» es texto libre: **moderar antes de producción** (`OTRA_REGLA_SIN_MODERAR` en `src/formulario.ts`).
+- Al crear se usa el título aprobado «Alquiler creado» (la maqueta dice «¡Alquiler creado!»).
+
+## Recorrido guiado
+
+El paso 2 («Los datos del alquiler») abre la pantalla 1 y el paso 3 («Las reglas del dueño») abre la pantalla 4, con `pedirPantalla(i)` (`pantalla` en `PASOS_RECORRIDO`).
+
+## Pruebas
+
+- Unitarias: `src/__tests__/formulario.test.tsx` (textos, chips, cuentas, errores, notas de Legal, `usd(...)`, accesibilidad).
+- Navegador: `scripts/formulario/capturar.mjs` sobre la app construida (390 px, 1280 px y movimiento reducido). Los demás scripts recorren el formulario con `scripts/_formulario.mjs`.

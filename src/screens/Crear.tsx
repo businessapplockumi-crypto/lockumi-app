@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { es } from 'react-day-picker/locale'
 import 'react-day-picker/style.css'
@@ -6,7 +6,10 @@ import { acciones } from '../acciones'
 import { cuentaPropia } from './Invitacion'
 import { ir } from '../router'
 import type { Usuario } from '../types'
-import { LogoAnimado } from '../LogoAnimado'
+import { CASITA_AVISO_SVG } from '../LogoAviso'
+import { usd } from '../ui'
+import { recorridoActivo } from '../recorrido'
+import { PANTALLAS, TOTAL_PANTALLAS, TIPOS_LUGAR, EJEMPLO_LUGAR, DURACIONES, OTRA_FECHA, finConDuracion, duracionDe, MONTOS, REGLAS_CHIP, REGLAS_INICIALES, OTRA_REGLA, MAX_REGLA, faltan, alertaPantallaLista, errorFechas, tomarPantallaPedida, suscribirPantalla } from '../formulario'
 import { modoSolo, modoPrueba, escrowReal } from '../servidor/config'
 import { DUENO_PRUEBA } from './Real'
 /** Primera letra en minúscula, sin tocar el resto («cuenta de Lockumi» conserva la L). */
@@ -114,10 +117,43 @@ function CampoCalendario({ id, etiqueta, valor, min, max, error, contexto, alDer
 
 type InfoClave = 'red' | 'usdc' | 'fechas'
 
+/** Chips de una sola opción (role="radio"): flechas para moverse y elegir; Tab entra y sale del grupo. */
+function Chips<T extends string | number>({ ops, valor, onElegir, desact, id }: { id: string; ops: { v: T; t: string; aria?: string }[]; valor: T | null; onElegir: (v: T) => void; desact?: (v: T) => boolean }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const libres = ops.filter(o => !desact?.(o.v))
+  const tecla = (e: KeyboardEvent) => {
+    const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0; if (!d) return
+    e.preventDefault(); const k = libres.findIndex(o => o.v === valor); const o = libres[(k + d + libres.length) % libres.length]
+    onElegir(o.v); requestAnimationFrame(() => ref.current?.querySelector<HTMLElement>(`[data-v="${o.v}"]`)?.focus())
+  }
+  const enfocable = libres.some(o => o.v === valor) ? valor : libres[0]?.v
+  return <div ref={ref} className="fz-chips" role="radiogroup" aria-labelledby={id} onKeyDown={tecla}>
+    {ops.map(o => <button key={String(o.v)} type="button" role="radio" data-v={o.v} aria-checked={o.v === valor} aria-label={o.aria} disabled={desact?.(o.v)}
+      tabIndex={o.v === enfocable ? 0 : -1} className={'fz-chip' + (o.v === valor ? ' is-sel' : '')} onClick={() => onElegir(o.v)}>
+      {o.v === valor && <Ico n="check" />}{o.t}</button>)}
+  </div>
+}
+
+/** Casita de Lockumi (la del aviso) con la llave; `fiesta` = salto de 14 px, giro de la llave y 10 puntos de la paleta (0,9 s). */
+const Casita = ({ fiesta, k }: { fiesta?: boolean; k?: number }) => <span key={k} className={'fz-casa' + (fiesta ? ' fz-casa--fiesta' : ' fz-casa--pop')} aria-hidden="true">
+  <span className="fz-casa__svg" dangerouslySetInnerHTML={{ __html: CASITA_AVISO_SVG }} />
+  {fiesta && Array.from({ length: 10 }, (_, i) => <i key={i} className={'fz-punto fz-punto--' + (i % 5)} style={{ ['--a' as string]: `${i * 36 - 90}deg`, ['--d' as string]: `${70 + (i % 3) * 18}px` }} />)}
+</span>
+
+// Campos que revisa cada pantalla antes de seguir.
+const CAMPOS: Record<string, Campo[]> = { lugar: ['direccion'], fechas: ['inicio', 'fin'], monto: ['monto'], reglas: [], revisar: ['direccion', 'inicio', 'fin', 'monto', 'email'] }
+const PANTALLA_DE: Record<Campo, number> = { direccion: 0, inicio: 1, fin: 1, monto: 2, email: 4 } as Record<Campo, number>
+const idDe = (k: Campo) => 'f-' + k + (k === 'inicio' || k === 'fin' ? '-boton' : '')
+
 export function Crear({ u }: { u: Usuario }) {
   const [f, setF] = useState({ direccion: '', monto: '', email: '', inicio: '', fin: '' })
   const [tocado, setTocado] = useState<Partial<Record<Campo, boolean>>>({}); const [enviado, setEnviado] = useState(false)
-  const [reglas, setReglas] = useState<string[]>(['No se permiten mascotas']); const [regla, setRegla] = useState(''); const [ocupado, setOcupado] = useState(false); const [errSrv, setErrSrv] = useState('')
+  const [reglas, setReglas] = useState<string[]>(REGLAS_INICIALES); const [regla, setRegla] = useState(''); const [otra, setOtra] = useState(false); const [errRegla, setErrRegla] = useState('')
+  const [ocupado, setOcupado] = useState(false); const [errSrv, setErrSrv] = useState('')
+  // Una pregunta por pantalla (0 a 4) y la celebración «¡Reglas listas!» antes de revisar.
+  const [pant, setPant] = useState(() => tomarPantallaPedida() ?? 0); const [fiesta, setFiesta] = useState(false); const [pop, setPop] = useState(0)
+  const [tipo, setTipo] = useState<string>(TIPOS_LUGAR[0])
+  const [dur, setDur] = useState<number | 'otra' | null>(null)
   // Red de prueba: tú eres el inquilino y el dueño es una cuenta de prueba de Lockumi.
   // Origen de los USDC de prueba: «USDC de prueba de Lockumi» (sin valor, tope de 20) o tu propia cuenta (el límite es tu saldo real, máximo 50 000).
   const [origen, setOrigen] = useState<'lockumi' | 'propia'>('lockumi')
@@ -126,7 +162,11 @@ export function Crear({ u }: { u: Usuario }) {
   const [freighter, setFreighter] = useState(false)
   const [info, setInfo] = useState<InfoClave | null>(null)
   const [avisoFin, setAvisoFin] = useState('')
+  const titulo = useRef<HTMLHeadingElement>(null); const primera = useRef(true)
   useEffect(() => { if (escrowReal) void hayFreighter().then(setFreighter) }, [])
+  useEffect(() => suscribirPantalla(i => { tomarPantallaPedida(); setFiesta(false); setPant(i) }), [])
+  // Al cambiar de pantalla, el foco va a la pregunta (no al abrir y no mientras corre el recorrido guiado).
+  useEffect(() => { if (primera.current) { primera.current = false; return } if (!recorridoActivo()) titulo.current?.focus({ preventScroll: true }); scrollTo({ top: 0 }) }, [pant, fiesta])
   const usar = async (firma: Firma) => {
     setConectando(firma); setErrCuenta('')
     try { const g = await conectar(firma); setPropia({ g, firma, saldo: await saldoPropio(g) }) }
@@ -136,27 +176,49 @@ export function Crear({ u }: { u: Usuario }) {
   const errores: Errores = modoPrueba ? (() => {
     const e = validarAlquiler({ ...f, email: 'inquilino@ejemplo.com' }, hoyISO()); delete e.email
     const m = montoNumero(f.monto)
-    if (escrowReal && !e.monto && origen === 'lockumi' && !montoValido(m, TOPE_USDC)) e.monto = `Con «USDC de prueba de Lockumi» el depósito es de máximo ${TOPE_USDC} USDC de prueba (no es dinero real). Baja el monto a ${TOPE_USDC} o menos, o elige «Usar mi propio USDC de prueba».`
+    if (escrowReal && !e.monto && origen === 'lockumi' && !montoValido(m, TOPE_USDC)) e.monto = `Con «USDC de prueba de Lockumi» el depósito es de máximo ${TOPE_USDC} USDC de prueba (no es dinero real). Baja el monto a ${TOPE_USDC} o menos, o elige «Mi propio USDC de prueba».`
     if (escrowReal && !e.monto && origen === 'propia') {
       if (!propia) e.monto = 'Primero conecta tu cuenta para ver cuántos USDC de prueba tienes.'
       else if ((propia.saldo ?? 0) < m) e.monto = mensajeSaldoPropio(propia.saldo ?? 0)
     }
     return e })() : validarAlquiler(f, hoyISO(), u.email)
-  const ver = (k: Campo) => (enviado || tocado[k]) ? errores[k] : undefined
+  if (errores.monto && !f.monto.trim()) errores.monto = 'Toca un monto o escríbelo en «Otro monto».'
   const poner = (k: Campo, v: string) => setF(x => ({ ...x, [k]: v }))
   const tocar = (k: Campo) => () => setTocado(t => ({ ...t, [k]: true }))
-  const agregar = () => { if (regla.trim()) { setReglas([...reglas, regla.trim()]); setRegla('') } }
-  // Entrada nueva: si la salida ya no queda entre 1 mes y 5 años después, se borra y se avisa.
+  // Empieza: con un chip de duración, el fin es el inicio + N meses; con «Otra fecha», la salida se conserva si sigue sirviendo.
   const elegirInicio = (iso: string) => setF(x => {
-    const fin = salidaTrasCambiarEntrada(iso, x.fin)
-    setAvisoFin(x.fin && !fin ? 'Con la nueva entrada, esa salida ya no sirve. Elige la salida otra vez.' : '')
+    const fin = typeof dur === 'number' ? finConDuracion(iso, dur) : salidaTrasCambiarEntrada(iso, x.fin)
+    setAvisoFin(x.fin && !fin ? 'Con el nuevo inicio, esa fecha de fin ya no sirve. Elige el fin otra vez.' : '')
     return { ...x, inicio: iso, fin }
   })
-  const elegirFin = (iso: string) => { setAvisoFin(''); poner('fin', iso) }
+  const elegirDur = (v: number | 'otra') => {
+    setDur(v); setAvisoFin('')
+    if (v === 'otra') { requestAnimationFrame(() => document.getElementById('f-fin-boton')?.focus()); return }
+    if (f.inicio) { poner('fin', finConDuracion(f.inicio, v)); tocar('fin')() }
+  }
+  const elegirFin = (iso: string) => { setAvisoFin(''); poner('fin', iso); setDur(f.inicio ? duracionDe(f.inicio, iso) ?? 'otra' : 'otra') }
+  const alternar = (r: string) => setReglas(rs => rs.includes(r) ? rs.filter(x => x !== r) : [...rs, r])
+  const agregar = () => {
+    const t = regla.trim().replace(/\s+/g, ' ')
+    if (!t) { setErrRegla('Escribe la regla y toca «Agregar».'); return }
+    if (reglas.some(r => r.toLowerCase() === t.toLowerCase())) { setErrRegla('Esa regla ya está. Escribe otra o toca «Cancelar».'); return }
+    setReglas([...reglas, t]); setRegla(''); setErrRegla(''); setOtra(false)
+  }
+  const clave = PANTALLAS[pant].clave
+  const errDe = (k: Campo) => k === 'inicio' || k === 'fin' ? errorFechas(errores[k], k) : errores[k]
+  const verDe = (k: Campo) => (enviado || tocado[k]) ? errDe(k) : undefined
+  const malos = (ks: Campo[]) => ks.filter(k => errores[k])
+  const enfocar = (k: Campo) => requestAnimationFrame(() => document.getElementById(idDe(k))?.focus())
+  const siguiente = () => {
+    const ks = CAMPOS[clave]; setTocado(t => ({ ...t, ...Object.fromEntries(ks.map(k => [k, true])) }))
+    const m = malos(ks); if (m.length) { enfocar(m[0]); return }
+    if (clave === 'reglas') { setFiesta(true); return }
+    avisar(alertaPantallaLista(pant)); setPop(x => x + 1); setPant(pant + 1)
+  }
   const crear = async () => {
     setEnviado(true)
-    const primero = (['direccion', 'monto', 'inicio', 'fin', 'email'] as Campo[]).find(k => errores[k])
-    if (primero) { document.getElementById('f-' + primero + (primero === 'inicio' || primero === 'fin' ? '-boton' : ''))?.focus(); return }
+    const primero = (['direccion', 'inicio', 'fin', 'monto', 'email'] as Campo[]).find(k => errores[k])
+    if (primero) { if (PANTALLA_DE[primero] !== pant) setPant(PANTALLA_DE[primero]); enfocar(primero); return }
     setOcupado(true)
     const m = montoNumero(f.monto)
     try {
@@ -165,105 +227,122 @@ export function Crear({ u }: { u: Usuario }) {
         : await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: f.email.trim() }, u.email, await cuentaPropia())
       avisar(alertaCreado({ direccion: f.direccion.trim(), monto: m }))
       ir('/alquiler/' + r.id)
-    } catch (e) { setOcupado(false); setErrSrv(e instanceof Error ? e.message : 'No pudimos crear el alquiler. Intenta de nuevo.') }
+    } catch (e) { setOcupado(false); setErrSrv(e instanceof Error ? e.message : 'No pudimos crear el alquiler. Revisa tu conexión y vuelve a tocar «Crear alquiler».') }
   }
-  // Monto: botones − y + de 1 en 1 (sin pasar el tope de cada origen); también se puede escribir.
   const tope = !escrowReal ? MONTO_MAX : origen === 'lockumi' ? TOPE_USDC : Math.min(propia?.saldo ?? MONTO_MAX_USDC, MONTO_MAX_USDC)
   const mActual = montoNumero(f.monto) || 0
-  const paso = (d: number) => { const n = Math.round((mActual + d) * 100) / 100; poner('monto', String(Math.max(1, Math.min(tope, n)))); tocar('monto')() }
-  const etMonto = !escrowReal ? 'USD' : origen === 'lockumi' ? `Máximo ${TOPE_USDC}` : propia?.saldo != null ? `Saldo ${propia.saldo.toLocaleString('es-CR', { maximumFractionDigits: 7 })}` : 'Hasta tu saldo'
-  const errMonto = ver('monto')
-  const cuantos = Object.keys(errores).length
   const hoy = hoyISO(), le = limitesEntrada(hoy), ls = f.inicio ? limitesSalida(f.inicio) : null
-  const errFin = avisoFin || ver('fin')
+  const errFin = avisoFin || verDe('fin')
+  const P = PANTALLAS[pant]
+  const ayuda = clave === 'monto' && escrowReal && origen === 'propia' ? 'USDC de prueba, sin valor. Hasta tu saldo.' : clave === 'monto' && !escrowReal ? 'Elige un monto o escríbelo.' : P.ayuda
+  const err = (k: Campo) => { const e = verDe(k); return e ? <small id={'f-' + k + '-err'} className="campo__error" role="alert">{e}</small> : null }
+  const atras = () => { if (fiesta) setFiesta(false); else if (pant > 0) setPant(pant - 1) }
+  const enRevisar = clave === 'revisar' && !fiesta
+  const avance = fiesta ? 4 : pant   // pantallas terminadas
 
-  return <main id="contenido" tabIndex={-1} className="cont cont--form na" style={{ paddingBottom: 48 }}>
-    <a href="#/" className="volver">← Tus alquileres</a>
-    <div className="cab titulo"><h1>Nuevo alquiler</h1><LogoAnimado className="logo-pieza logo-pieza--titulo" /></div>
-    {/* LEGAL: revisar. Resumen corto de «Prueba en la red de prueba de Stellar, sin dinero real»; el texto completo está en la hoja ⓘ. */}
-    {modoPrueba && <div className="na-meta"><button type="button" className="na-red" aria-haspopup="dialog" onClick={() => setInfo('red')}><Ico n="matraz" />Red de prueba · sin dinero real<span className="na-red__i" aria-hidden="true"><Ico n="i" /></span><span className="sr">. Ver detalles</span></button></div>}
-
-    {/* Parte 4 (todavía no activa): tú eres el inquilino y el dueño es de prueba. «Soy dueño» e «Invitar» llegan después. */}
-    {modoPrueba && <section className="glass na-p4" aria-label="Tu papel en esta prueba">
-      <div className="roles roles--ancho" role="group" aria-label="Tu papel"><button type="button" aria-pressed="true">Soy inquilino</button><button type="button" aria-pressed="false" disabled title="Pronto">Soy dueño</button></div>
-      <div className="na-modo">
-        <div className="na-modo__op is-sel"><span className="na-modo__ico na-modo__ico--salvia"><Ico n="llave" /></span><span className="na-modo__txt">Simular con dueño de prueba</span><span className="na-marca"><Ico n="check" /></span></div>
-        <div className="na-modo__op is-off" aria-disabled="true"><span className="na-modo__ico"><Ico n="enviar" /></span><span className="na-modo__txt">Invitar a la otra persona</span><span className="na-pronto">Pronto</span></div>
+  return <main id="contenido" tabIndex={-1} className="cont cont--form fz" style={{ paddingBottom: 48 }}>
+    <div className="fz-cab">
+      <a href="#/" className="boton-icono fz-cerrar" aria-label="Cerrar"><Ico n="x" /></a>
+      <div className="fz-barra" role="progressbar" aria-label="Nuevo alquiler" aria-valuemin={1} aria-valuemax={TOTAL_PANTALLAS} aria-valuenow={pant + 1} aria-valuetext={`Paso ${pant + 1} de ${TOTAL_PANTALLAS}`}>
+        <span key={pop} className="fz-barra__lleno" style={{ width: `${Math.max(6, (avance / TOTAL_PANTALLAS) * 100)}%` }} />
       </div>
-    </section>}
+      <span className="fz-n" aria-hidden="true">{pant + 1} de {TOTAL_PANTALLAS}</span>
+    </div>
 
-    <form className="glass glass--fuerte na-form" noValidate onSubmit={e => { e.preventDefault(); crear() }}>
-      <section className="na-sec" data-recorrido="datos">
-        <label htmlFor="f-direccion" className="na-et"><Ico n="lugar" />Lugar</label>
-        <div className={'na-input' + (ver('direccion') ? ' na-input--error' : '')}><input id="f-direccion" value={f.direccion} onChange={e => poner('direccion', e.target.value)} onBlur={tocar('direccion')} placeholder="Ej.: Apartamento 3B, Escazú" autoComplete="off" maxLength={140}
-          aria-invalid={!!ver('direccion')} aria-describedby={ver('direccion') ? 'f-direccion-err' : undefined} /></div>
-        {ver('direccion') && <small id="f-direccion-err" className="campo__error" role="alert">{ver('direccion')}</small>}
-      </section>
+    {fiesta ? <section className="glass glass--fuerte fz-tarjeta fz-fiesta" aria-labelledby="fz-t">
+      <Casita fiesta />
+      <h1 id="fz-t" ref={titulo} tabIndex={-1}>{PANTALLAS[3].listo}</h1>
+      <p className="fz-ayuda">{faltan(3)}</p>
+      <div className="fz-pie"><button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={() => { setFiesta(false); setPop(x => x + 1); setPant(4) }}>Seguir</button></div>
+    </section>
+    : <form className="glass glass--fuerte fz-tarjeta" noValidate aria-labelledby="fz-t" onSubmit={e => { e.preventDefault(); if (enRevisar) void crear(); else siguiente() }}>
+      <div className="fz-preg"><Casita k={pop} /><div>
+        <h1 id="fz-t" ref={titulo} tabIndex={-1}>{P.pregunta}</h1>
+        <p className="fz-ayuda" id="fz-ayuda">{ayuda}</p></div></div>
 
-      {escrowReal && <section className="na-sec">
-        <div className="na-et" id="et-origen"><Ico n="moneda" />USDC de prueba<span className="na-et__der"><Info et="De dónde salen los USDC de prueba" onClick={() => setInfo('usdc')} /></span></div>
-        <div role="radiogroup" aria-labelledby="et-origen">
-          <button type="button" role="radio" aria-checked={origen === 'lockumi'} className={'na-lockumi' + (origen === 'lockumi' ? ' is-sel' : '')} onClick={() => setOrigen('lockumi')}>
-            <span className="na-lockumi__ico"><Ico n="moneda" /></span>
-            <span className="na-lockumi__txt">USDC de prueba de Lockumi<small>Sin valor · hasta {TOPE_USDC}</small></span>
-            <span className="na-marca"><Ico n="check" /></span>
-          </button>
-          <button type="button" role="radio" aria-checked={origen === 'propia'} className={'na-propio' + (origen === 'propia' ? ' is-sel' : '')} onClick={() => setOrigen('propia')}>
-            <Ico n="billetera" c="na-propio__ico" /><span>Usar mi propio USDC de prueba</span>{origen === 'propia' ? <span className="na-marca"><Ico n="check" /></span> : <Ico n="der" c="na-propio__ir" />}
-          </button>
+      {clave === 'lugar' && <div className="fz-campos" data-recorrido="datos">
+        <label htmlFor="f-direccion" className="fz-et">Nombre del lugar</label>
+        <div className={'na-input' + (verDe('direccion') ? ' na-input--error' : '')}><input id="f-direccion" value={f.direccion} onChange={e => poner('direccion', e.target.value)} onBlur={tocar('direccion')} placeholder={EJEMPLO_LUGAR} autoComplete="off" maxLength={140}
+          aria-invalid={!!verDe('direccion')} aria-describedby={verDe('direccion') ? 'f-direccion-err' : 'fz-ayuda'} /></div>
+        {err('direccion')}
+        <p className="fz-et" id="et-tipo">Tipo</p>
+        <Chips id="et-tipo" ops={TIPOS_LUGAR.map(t => ({ v: t, t }))} valor={tipo} onElegir={setTipo} />
+      </div>}
+
+      {clave === 'fechas' && <div className="fz-campos">
+        <CampoCalendario id="f-inicio" etiqueta="Empieza" valor={f.inicio} min={le.min} max={le.max} error={verDe('inicio')} onElegir={elegirInicio} onCerrar={tocar('inicio')} />
+        <p className="fz-et" id="et-dur">Duración<span className="fz-et__der"><Info et="Reglas de las fechas" onClick={() => setInfo('fechas')} /></span></p>
+        {/* LEGAL (23/10): chips de duración solo en la red de prueba; antes de usar dinero real, revisarlos con un abogado (Ley 7527, art. 70). */}
+        <Chips id="et-dur" ops={[...DURACIONES.map(d => ({ v: d.meses as number | 'otra', t: d.texto })), { v: 'otra' as const, t: OTRA_FECHA }]} valor={dur} onElegir={elegirDur} />
+        <CampoCalendario id="f-fin" etiqueta="Termina" valor={f.fin} min={ls?.min ?? le.min} max={ls?.max ?? le.max} error={errFin} onElegir={elegirFin} onCerrar={tocar('fin')}
+          onAbrir={() => { if (f.inicio) return true; setAvisoFin('Primero elige el día en que empieza.'); return false }}
+          contexto={f.inicio && <div className="na-hoja__ctx"><span className="na-ctx"><Ico n="cal" />Empieza <strong>{ddmmaa(f.inicio)}</strong></span>{f.fin && <span className="na-ctx na-ctx--sel">Termina <strong>{ddmmaa(f.fin)}</strong></span>}</div>} />
+      </div>}
+
+      {clave === 'monto' && <div className="fz-campos">
+        <p className="fz-monto" aria-live="polite"><strong>{mActual ? usd(mActual) : usd(0)}</strong>{escrowReal && <small>de prueba</small>}</p>
+        <p className="sr" id="et-monto">Monto del depósito</p>
+        <Chips id="et-monto" ops={MONTOS.map(n => ({ v: n as number, t: usd(n) }))} valor={MONTOS.includes(mActual as never) ? mActual : null} desact={n => n > tope}
+          onElegir={n => { poner('monto', String(n)); tocar('monto')() }} />
+        <label htmlFor="f-monto" className="fz-et">Otro monto</label>
+        <div className={'na-input fz-otro' + (verDe('monto') ? ' na-input--error' : '')}><input id="f-monto" value={f.monto} onChange={e => poner('monto', e.target.value)} onBlur={tocar('monto')} inputMode="decimal" placeholder="0" autoComplete="off"
+          aria-invalid={!!verDe('monto')} aria-describedby={verDe('monto') ? 'f-monto-err' : 'fz-ayuda'} /><small>{escrowReal ? 'USDC de prueba' : 'USD'}</small></div>
+        {err('monto')}
+        {escrowReal && <>
+          <p className="fz-et" id="et-origen">Origen<span className="fz-et__der"><Info et="De dónde salen los USDC de prueba" onClick={() => setInfo('usdc')} /></span></p>
+          <Chips id="et-origen" ops={[{ v: 'lockumi' as const, t: 'USDC de prueba de Lockumi' }, { v: 'propia' as const, t: 'Mi propio USDC de prueba' }]} valor={origen} onElegir={setOrigen} />
+          {origen === 'propia' && (propia
+            ? <p className="na-saldo" id="saldo-propio" role="status"><Ico n="check" />{propia.saldo === null
+                ? <span>Tu cuenta ({abreviar(propia.g)}) todavía no tiene USDC de prueba. Carga USDC de prueba o elige «USDC de prueba de Lockumi».</span>
+                : <span>Cuenta {abreviar(propia.g)} · {NOMBRE_FIRMA[propia.firma]}: <strong>{propia.saldo.toLocaleString('es-CR', { maximumFractionDigits: 7 })} USDC de prueba</strong></span>}</p>
+            : <div className="na-conectar">
+                {hayCavos() && <button type="button" className="boton boton--secundario boton--ancho" disabled={!!conectando} onClick={() => void usar('cavos')}>{conectando === 'cavos' ? 'Conectando…' : 'Usar mi cuenta Lockumi'}</button>}
+                {freighter && <button type="button" className="boton boton--secundario boton--ancho" disabled={!!conectando} onClick={() => void usar('freighter')}>{conectando === 'freighter' ? 'Conectando…' : 'Usar Freighter'}</button>}
+                {!hayCavos() && !freighter && <p>Para usar tu cuenta, instala Freighter (freighter.app) en este navegador y recarga la página.</p>}
+              </div>)}
+          {errCuenta && <p className="error" role="alert">{errCuenta}</p>}
+        </>}
+      </div>}
+
+      {clave === 'reglas' && <div className="fz-campos" data-recorrido="reglas">
+        <p className="sr" id="et-reglas">Reglas</p>
+        <div className="fz-chips" role="group" aria-labelledby="et-reglas">
+          {[...REGLAS_CHIP, ...reglas.filter(r => !(REGLAS_CHIP as readonly string[]).includes(r))].map(r => <button key={r} type="button" aria-pressed={reglas.includes(r)} className={'fz-chip' + (reglas.includes(r) ? ' is-sel' : '')} onClick={() => alternar(r)}>{reglas.includes(r) && <Ico n="check" />}{r}</button>)}
+          {/* MODERAR ANTES DE PRODUCCIÓN (Legal, 23/10): «+ Otra regla» es texto libre. Ver OTRA_REGLA_SIN_MODERAR en formulario.ts. */}
+          {!otra && <button type="button" className="fz-chip fz-chip--otra" aria-expanded={false} onClick={() => { setOtra(true); requestAnimationFrame(() => document.getElementById('f-regla')?.focus()) }}>{OTRA_REGLA}</button>}
         </div>
-        {origen === 'propia' && (propia
-          ? <p className="na-saldo" id="saldo-propio" role="status"><Ico n="check" />{propia.saldo === null
-              ? <span>Tu cuenta ({abreviar(propia.g)}) todavía no tiene USDC de prueba. Carga USDC de prueba o elige «USDC de prueba de Lockumi».</span>
-              : <span>Cuenta {abreviar(propia.g)} · {NOMBRE_FIRMA[propia.firma]}: <strong>{propia.saldo.toLocaleString('es-CR', { maximumFractionDigits: 7 })} USDC de prueba</strong></span>}</p>
-          : <div className="na-conectar">
-              {hayCavos() && <button type="button" className="boton boton--secundario boton--ancho" disabled={!!conectando} onClick={() => void usar('cavos')}>{conectando === 'cavos' ? 'Conectando…' : 'Usar mi cuenta Lockumi'}</button>}
-              {freighter && <button type="button" className="boton boton--secundario boton--ancho" disabled={!!conectando} onClick={() => void usar('freighter')}>{conectando === 'freighter' ? 'Conectando…' : 'Usar Freighter'}</button>}
-              {!hayCavos() && !freighter && <p>Para usar tu cuenta, instala Freighter (freighter.app) en este navegador y recarga la página.</p>}
-            </div>)}
-        {errCuenta && <p className="error" role="alert">{errCuenta}</p>}
-      </section>}
+        {otra && <div className="fz-otra">
+          <label htmlFor="f-regla" className="fz-et">Otra regla</label>
+          <div className={'na-input' + (errRegla ? ' na-input--error' : '')}><input id="f-regla" value={regla} maxLength={MAX_REGLA} onChange={e => { setRegla(e.target.value); setErrRegla('') }} placeholder="Ej.: Sacar la basura los martes" autoComplete="off"
+            aria-invalid={!!errRegla} aria-describedby={errRegla ? 'f-regla-err' : undefined} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } if (e.key === 'Escape') { e.preventDefault(); setOtra(false); setRegla(''); setErrRegla('') } }} /></div>
+          {errRegla && <small id="f-regla-err" className="campo__error" role="alert">{errRegla}</small>}
+          <div className="fz-otra__bot"><button type="button" className="boton boton--secundario" onClick={() => { setOtra(false); setRegla(''); setErrRegla('') }}>Cancelar</button><button type="button" className="boton boton--secundario" onClick={agregar}>Agregar</button></div>
+        </div>}
+      </div>}
 
-      <section className="na-sec">
-        <label htmlFor="f-monto" className="na-et"><Ico n="candado" />Depósito<span className="na-et__der">{etMonto}</span></label>
-        <div className={'na-paso' + (errMonto ? ' na-paso--error' : '')}>
-          <button type="button" aria-label="Restar 1" disabled={mActual <= 1} onClick={() => paso(-1)}><Ico n="menos" /></button>
-          <div className="na-paso__valor"><input id="f-monto" value={f.monto} onChange={e => poner('monto', e.target.value)} onBlur={tocar('monto')} inputMode="decimal" placeholder="0" autoComplete="off"
-            aria-invalid={!!errMonto} aria-describedby={'f-monto-u' + (errMonto ? ' f-monto-err' : '')} /><small id="f-monto-u">{escrowReal ? 'USDC de prueba' : 'USD'}</small></div>
-          <button type="button" aria-label="Sumar 1" disabled={mActual >= tope} onClick={() => paso(1)}><Ico n="mas" /></button>
-        </div>
-        {errMonto && <small id="f-monto-err" className="campo__error" role="alert">{errMonto}</small>}
-      </section>
+      {enRevisar && <div className="fz-campos">
+        {modoPrueba && <div className="na-meta"><button type="button" className="na-red" aria-haspopup="dialog" onClick={() => setInfo('red')}><Ico n="matraz" />Red de prueba · sin dinero real<span className="na-red__i" aria-hidden="true"><Ico n="i" /></span><span className="sr">. Ver detalles</span></button></div>}
+        <dl className="fz-resumen">
+          <div><dt>Lugar</dt><dd>{f.direccion.trim()}</dd><button type="button" className="enlace" aria-label="Cambiar el lugar" onClick={() => setPant(0)}>Cambiar</button></div>
+          <div><dt>Fechas</dt><dd>{f.inicio && ddmmaa(f.inicio)} a {f.fin && ddmmaa(f.fin)}</dd><button type="button" className="enlace" aria-label="Cambiar las fechas" onClick={() => setPant(1)}>Cambiar</button></div>
+          <div><dt>Depósito</dt><dd>{usd(mActual)}{escrowReal && ' de prueba'}{escrowReal && <small>{origen === 'lockumi' ? 'USDC de prueba de Lockumi' : 'Mi propio USDC de prueba'}</small>}</dd><button type="button" className="enlace" aria-label="Cambiar el depósito" onClick={() => setPant(2)}>Cambiar</button></div>
+          <div><dt>Reglas</dt><dd>{reglas.length ? <ul>{reglas.map(r => <li key={r}>{r}</li>)}</ul> : 'Sin reglas'}</dd><button type="button" className="enlace" aria-label="Cambiar las reglas" onClick={() => setPant(3)}>Cambiar</button></div>
+        </dl>
+        {!modoPrueba && <label className={'campo' + (verDe('email') ? ' campo--error' : '')}><span>Correo del inquilino</span>
+          <input id="f-email" type="email" value={f.email} onChange={e => poner('email', e.target.value)} onBlur={tocar('email')} placeholder="inquilino@correo.com" autoComplete="off" aria-invalid={!!verDe('email')} aria-describedby={verDe('email') ? 'f-email-err' : undefined} />
+          {err('email')}</label>}
+        {errSrv && <p className="error na-error" role="alert">{errSrv}</p>}
+        {/* LEGAL: revisar. Texto propuesto por Legal (cambios-1.5-vs-1.4.md, «Línea de la fase 1»), palabra por palabra. */}
+        {modoPrueba ? <p className="na-priv"><Ico n="escudo" /><span>Lugar y fotos: se quedan en tu navegador; a la red solo va una huella de las fotos.</span></p>
+          : <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>}
+      </div>}
 
-      <section className="na-sec">
-        <div className="na-et"><Ico n="cal" />Fechas<span className="na-et__der"><Info et="Reglas de las fechas" onClick={() => setInfo('fechas')} /></span></div>
-        <div className="na-fechas2">
-          <CampoCalendario id="f-inicio" etiqueta="Entrada" valor={f.inicio} min={le.min} max={le.max} error={ver('inicio')} onElegir={elegirInicio} onCerrar={tocar('inicio')} />
-          <CampoCalendario id="f-fin" etiqueta="Salida" valor={f.fin} min={ls?.min ?? le.min} max={ls?.max ?? le.max} error={errFin} alDerecha onElegir={elegirFin} onCerrar={tocar('fin')}
-            onAbrir={() => { if (f.inicio) return true; setAvisoFin('Primero elige la fecha de entrada.'); return false }}
-            contexto={f.inicio && <div className="na-hoja__ctx"><span className="na-ctx"><Ico n="cal" />Entrada <strong>{ddmmaa(f.inicio)}</strong></span>{f.fin && <span className="na-ctx na-ctx--sel">Salida <strong>{ddmmaa(f.fin)}</strong></span>}</div>} />
-        </div>
-      </section>
-
-      <section className="na-sec" data-recorrido="reglas">
-        <div className="na-et" id="et-reglas"><Ico n="reglas" />Reglas</div>
-        <ul className="na-reglas" aria-labelledby="et-reglas">{reglas.map((r, i) => <li key={i}><span className="na-reglas__ico"><Ico n={/mascota/i.test(r) ? 'pata' : 'check'} /></span><span className="na-reglas__txt">{r}</span>
-          <button type="button" className="na-quitar" aria-label={'Quitar regla: ' + r} onClick={() => setReglas(reglas.filter((_, j) => j !== i))}><Ico n="x" /></button></li>)}</ul>
-        <div className="na-agregar"><div className="na-input"><input aria-label="Nueva regla" value={regla} onChange={e => setRegla(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }} placeholder="Agregar una regla" /></div>
-          <button type="button" className="na-mas" aria-label="Agregar regla" onClick={agregar}><Ico n="mas" /></button></div>
-      </section>
-
-      {!modoPrueba && <section className="na-sec"><label className={'campo' + (ver('email') ? ' campo--error' : '')}><span>Correo del inquilino</span>
-        <input id="f-email" type="email" value={f.email} onChange={e => poner('email', e.target.value)} onBlur={tocar('email')} placeholder="inquilino@correo.com" autoComplete="off" aria-invalid={!!ver('email')} aria-describedby={ver('email') ? 'f-email-err' : undefined} />
-        {ver('email') && <small id="f-email-err" className="campo__error" role="alert">{ver('email')}</small>}</label></section>}
-
-      {enviado && cuantos > 0 && <p className="error na-error" role="alert">Revisa {cuantos === 1 ? 'el campo marcado' : `los ${cuantos} campos marcados`} y vuelve a intentarlo.</p>}
-      {errSrv && <p className="error na-error" role="alert">{errSrv}</p>}
-      <button type="submit" className="boton boton--primario boton--ancho boton--grande na-crear" disabled={ocupado}>{ocupado ? 'Creando…' : modoPrueba ? 'Crear alquiler de prueba' : 'Crear alquiler e invitar'}</button>
-      {/* LEGAL: revisar. Texto propuesto por Legal (cambios-1.5-vs-1.4.md, «Línea de la fase 1»), palabra por palabra. */}
-      {modoPrueba ? <p className="na-priv"><Ico n="escudo" /><span>Lugar y fotos: se quedan en tu navegador; a la red solo va una huella de las fotos.</span></p>
-        : <p className="nota">Tú quedas como dueño. La persona invitada entra como inquilino. Lo siguiente es firmar el contrato los dos.</p>}
-    </form>
+      <div className="fz-pie">
+        {pant > 0 && <button type="button" className="boton boton--secundario boton--ancho" onClick={atras}>Atrás</button>}
+        <button type="submit" className="boton boton--primario boton--ancho boton--grande" disabled={ocupado}>
+          {enRevisar ? (ocupado ? 'Creando…' : 'Crear alquiler') : clave === 'reglas' ? 'Revisar el contrato' : 'Siguiente'}</button>
+      </div>
+    </form>}
 
     <Hoja id="info" titulo={info === 'red' ? 'Red de prueba' : info === 'usdc' ? 'USDC de prueba' : 'Fechas'} abierta={!!info} onCerrar={() => setInfo(null)}>
       <div className="na-hoja__texto">

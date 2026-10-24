@@ -81,6 +81,18 @@ No se usan llaves ni secretos. Toda integración simulada lleva la insignia "Dem
 - Sin selector de rol al entrar; dentro de cada alquiler queda el selector «Ver la demo como» (demo en un solo dispositivo).
 - Texto en español neutro con tuteo (sin voseo).
 
+## Formulario «Nuevo alquiler» (24 oct 2026, rama local `formulario`, sin publicar)
+
+- [x] 5 pantallas, una pregunta por pantalla, con los textos exactos de la maqueta (Legal 23/10).
+- [x] Chips de 44 px: tipo, duración (3 meses, 6 meses, 1 año, «Otra fecha»), monto (con `usd(...)`) y reglas («+ Otra regla»).
+- [x] Errores que dicen cómo arreglarlos; foco en la pregunta nueva o en el primer error; flechas en los chips; Enter para seguir.
+- [x] Aviso v2 al terminar cada pantalla y «Alquiler creado» al crear; celebración de 0,9 s en «¡Reglas listas!»; movimiento reducido sin animación.
+- [x] El paso 2 y el 3 del recorrido guiado piden su pantalla (lugar y reglas).
+- [ ] El tipo de lugar no se guarda (no existe en `types.ts`).
+- [ ] El título al crear sigue siendo «Alquiler creado» (aprobado por Legal), no «¡Alquiler creado!» de la maqueta. Cambiarlo requiere el OK de Legal.
+- [ ] **Antes de usar dinero real:** revisar los chips de duración con un abogado (Ley 7527, art. 70) y moderar «+ Otra regla».
+- [ ] Publicar en `master` cuando Katherine dé el OK.
+
 ## Recorrido guiado (24 oct 2026, rama `ux-guiada`)
 
 - [x] 6 pasos con driver.js sobre las pantallas reales; textos exactos de la maqueta.

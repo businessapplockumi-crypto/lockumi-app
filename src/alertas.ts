@@ -33,7 +33,7 @@ export const lineaDe = (a: Alerta): Linea => a.linea ?? { texto: a.sigue ?? a.he
 /** Logros del flujo: el aviso sale en verde y la llave del logo entra y gira una vez. */
 export const LOGROS = new Set(['ingreso', 'contrato-firmado', 'pago', 'entrada-confirmada', 'devolucion', 'acuerdo'])
 /** Tono del aviso: paso (miel), logro (verde) o error (terracota). */
-export const tonoDe = (a: Pick<Alerta, 'paso' | 'tipo'>): 'paso' | 'logro' | 'error' => a.tipo === 'error' ? 'error' : LOGROS.has(a.paso) ? 'logro' : 'paso'
+export const tonoDe = (a: Pick<Alerta, 'paso' | 'tipo'>): 'paso' | 'logro' | 'error' => a.tipo === 'error' ? 'error' : LOGROS.has(a.paso) || a.paso.startsWith('formulario-') ? 'logro' : 'paso'
 
 // ---- Pila (estilo Sonner) ----
 /** Hasta 3 visibles; con el cuarto sale el más viejo. */

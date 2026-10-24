@@ -6,6 +6,7 @@
 import { chromium } from 'playwright'
 import { Keypair } from '@stellar/stellar-sdk'
 import { execFileSync } from 'node:child_process'
+import { llenarFormulario } from '../_formulario.mjs'
 const APP_ID = (process.env.VITE_CAVOS_APP_ID || '').trim(), OUT = process.env.OUT || 'contrato-plegable-', B = 'http://localhost:5173/'
 const DUENO = Keypair.random().publicKey(), INQ = Keypair.random().publicKey()
 const fallas = []; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ✗ ') + m); if (!c) fallas.push(m) }
@@ -29,10 +30,9 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
   await p.goto(B); await p.waitForTimeout(800)
   const entendido = async () => { const e = p.getByRole('button', { name: 'Entendido' }); if (await e.count()) await e.first().click().catch(() => {}) }
   await entendido(); await p.goto(B + '#/crear'); await p.waitForTimeout(1200); await entendido()
-  const d = k => { const x = new Date(); x.setDate(x.getDate() + k); return [x.getDate(), x.getMonth() + 1, x.getFullYear()].map((v, i) => String(v).padStart(i < 2 ? 2 : 4, '0')).join('') }
-  await p.fill('#f-direccion', 'Apartamento en Barreal de Heredia'); await p.fill('#f-monto', '20'); await p.fill('#f-inicio', d(0)); await p.fill('#f-fin', d(182))
+  await llenarFormulario(p)
   const reglas = p.locator('#f-reglas'); if (await reglas.count()) await reglas.fill('No se permiten mascotas\nNo fumar dentro del apartamento').catch(() => {})
-  await p.getByRole('button', { name: 'Crear alquiler de prueba' }).click(); await p.locator('.paso-cab').waitFor({ timeout: 20000 })
+  await p.locator('.fz-pie').getByRole('button', { name: 'Crear alquiler', exact: true }).click(); await p.locator('.paso-cab').waitFor({ timeout: 20000 })
   await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(600)
 
   const revisar = async pantalla => {

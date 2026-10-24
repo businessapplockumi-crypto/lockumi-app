@@ -6,6 +6,7 @@ import { chromium } from 'playwright'
 import { Keypair, StrKey } from '@stellar/stellar-sdk'
 import { randomBytes } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
+import { llenarFormulario } from '../_formulario.mjs'
 const B = process.env.BASE || 'http://localhost:4173/', OUT = process.env.OUT || 'espera-pagar-'
 const DUENO = Keypair.random().publicKey(), INQ = Keypair.random().publicKey(), hash = () => randomBytes(32).toString('hex')
 const fallas = []; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ✗ ') + m); if (!c) fallas.push(m) }
@@ -59,10 +60,9 @@ const medir = (loc) => loc.evaluate(e => { const r = e.getBoundingClientRect(), 
     fondo: s.backgroundColor, blur: s.backdropFilter || s.webkitBackdropFilter, zona: e.closest('[role]:not([role="group"])')?.getAttribute('role'), vivo: e.closest('[role="status"]')?.getAttribute('aria-live') } })
 /** Llega hasta el paso «Pagar». */
 async function hastaPago(p) {
-  const d = k => { const x = new Date(); x.setDate(x.getDate() + k); return [x.getDate(), x.getMonth() + 1, x.getFullYear()].map((v, i) => String(v).padStart(i < 2 ? 2 : 4, '0')).join('') }
   await p.goto(B + '#/crear'); await p.waitForTimeout(800)
-  await p.fill('#f-direccion', 'Apartamento en Barreal de Heredia'); await p.fill('#f-monto', '20'); await p.fill('#f-inicio', d(0)); await p.fill('#f-fin', d(182))
-  await p.getByRole('button', { name: 'Crear alquiler de prueba' }).click(); await cerrarAviso(p, 'Alquiler creado')
+  await llenarFormulario(p)
+  await p.locator('.fz-pie').getByRole('button', { name: 'Crear alquiler', exact: true }).click(); await cerrarAviso(p, 'Alquiler creado')
   await p.getByLabel('Leí el contrato y estoy de acuerdo.').check(); await p.getByRole('button', { name: 'Firma como inquilino' }).click()
 }
 /** Textos del bloque de espera: alto en líneas (se mide cada texto con su line-height real). */

@@ -6,17 +6,18 @@ import 'driver.js/dist/driver.css'
 import type { Alquiler, Estado, Usuario } from './types'
 import { actaVacia } from './store'
 import { CASITA_AVISO_SVG } from './LogoAviso'
+import { pedirPantalla } from './formulario'
 
 export const VERSION_RECORRIDO = 'v1'
 export const RUTA_EJEMPLO = '/ejemplo'
-export interface PasoRecorrido { ruta: string; estado?: Estado; el: string; /** En el teléfono (menos de 720 px), si el bloque es muy alto para el globo. */ elMovil?: string; titulo: string; texto: string; lado?: 'top' | 'bottom' | 'left' | 'right' }
+export interface PasoRecorrido { ruta: string; estado?: Estado; el: string; /** En el teléfono (menos de 720 px), si el bloque es muy alto para el globo. */ elMovil?: string; titulo: string; texto: string; /** Pantalla del formulario «Nuevo alquiler» que tiene que estar a la vista (0 = lugar, 3 = reglas). */ pantalla?: number; lado?: 'top' | 'bottom' | 'left' | 'right' }
 // LEGAL: revisado el 23/10 (textos exactos de la maqueta aprobada; pasos 5 y 6 con las correcciones de Legal).
 export const PASOS_RECORRIDO: PasoRecorrido[] = [
   { ruta: '/', el: '[data-recorrido="nuevo"]', titulo: 'Te damos la bienvenida a Lockumi',
     texto: 'Lockumi guarda el depósito del alquiler en una cuenta de la red de prueba, con USDC de prueba. Empecemos por crear un alquiler.' },
-  { ruta: '/crear', el: '[data-recorrido="datos"]', titulo: 'Los datos del alquiler',
+  { ruta: '/crear', pantalla: 0, el: '[data-recorrido="datos"]', titulo: 'Los datos del alquiler',
     texto: 'El lugar, las fechas y el monto del depósito. Toca una opción: casi no hay que escribir.' },
-  { ruta: '/crear', el: '[data-recorrido="reglas"]', titulo: 'Las reglas del dueño',
+  { ruta: '/crear', pantalla: 3, el: '[data-recorrido="reglas"]', titulo: 'Las reglas del dueño',
     texto: 'Toca las reglas del lugar. Quedan escritas en el contrato que firman los dos.' },
   { ruta: RUTA_EJEMPLO, estado: 'fotos_entrada', el: '.detalle__principal .cuarto .tomar', titulo: 'Fotos y lista de entrada',
     texto: 'Al entrar, una foto de cada espacio y una lista para marcar. Al salir se repite. Así los dos ven cómo estaba el lugar.' },
@@ -63,7 +64,7 @@ export function abrirRecorrido(u: Pick<Usuario, 'email'>, { desde = 0, quien: q 
   if (activo?.isActive()) return activo
   const origen = location.hash.slice(1) || '/'; const quien = q ?? document.activeElement as HTMLElement | null
   const ir = async (i: number) => {
-    const p = PASOS_RECORRIDO[i]; if (p.estado) ponerEjemplo(p.estado)
+    const p = PASOS_RECORRIDO[i]; if (p.estado) ponerEjemplo(p.estado); if (p.pantalla != null) pedirPantalla(p.pantalla)
     if ((location.hash.slice(1) || '/') !== p.ruta) location.hash = p.ruta
     await esperar(selectorDe(p)); d.moveTo(i)
   }
@@ -107,7 +108,7 @@ export function abrirRecorrido(u: Pick<Usuario, 'email'>, { desde = 0, quien: q 
     },
   })
   activo = d
-  const p = PASOS_RECORRIDO[desde]; if (p.estado) ponerEjemplo(p.estado)
+  const p = PASOS_RECORRIDO[desde]; if (p.estado) ponerEjemplo(p.estado); if (p.pantalla != null) pedirPantalla(p.pantalla)
   if ((location.hash.slice(1) || '/') !== p.ruta) location.hash = p.ruta
   void esperar(selectorDe(p)).then(() => d.drive(desde))
   return d

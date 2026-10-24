@@ -5,6 +5,7 @@ import { chromium } from 'playwright'
 import { Keypair, StrKey } from '@stellar/stellar-sdk'
 import { randomBytes } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
+import { llenarFormulario } from '../_formulario.mjs'
 const B = process.env.BASE || 'http://localhost:4173/', OUT = process.env.OUT || 'aviso-v2-'
 const DUENO = Keypair.random().publicKey(), INQ = Keypair.random().publicKey(), hash = () => randomBytes(32).toString('hex')
 const fallas = []; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ✗ ') + m); if (!c) fallas.push(m) }
@@ -58,10 +59,9 @@ const medir = (loc) => loc.evaluate(e => { const r = e.getBoundingClientRect(), 
     fondo: s.backgroundColor, blur: s.backdropFilter || s.webkitBackdropFilter, zona: e.closest('[role]:not([role="group"])')?.getAttribute('role'), vivo: e.closest('[role="status"]')?.getAttribute('aria-live') } })
 /** Llega hasta el paso «Pagar». */
 async function hastaPago(p) {
-  const d = k => { const x = new Date(); x.setDate(x.getDate() + k); return [x.getDate(), x.getMonth() + 1, x.getFullYear()].map((v, i) => String(v).padStart(i < 2 ? 2 : 4, '0')).join('') }
   await p.goto(B + '#/crear'); await p.waitForTimeout(800)
-  await p.fill('#f-direccion', 'Apartamento en Barreal de Heredia'); await p.fill('#f-monto', '20'); await p.fill('#f-inicio', d(0)); await p.fill('#f-fin', d(182))
-  await p.getByRole('button', { name: 'Crear alquiler de prueba' }).click(); await cerrarAviso(p, 'Alquiler creado')
+  await llenarFormulario(p)
+  await p.locator('.fz-pie').getByRole('button', { name: 'Crear alquiler', exact: true }).click(); await cerrarAviso(p, 'Alquiler creado')
   await p.getByLabel('Leí el contrato y estoy de acuerdo.').check(); await p.getByRole('button', { name: 'Firma como inquilino' }).click()
 }
 /** Textos del bloque de espera: alto en líneas (se mide cada texto con su line-height real). */
@@ -75,10 +75,9 @@ const estado = p => p.evaluate(() => document.querySelector('.envio p.sr[role="s
 
 /** Hasta las firmas sin cerrar ningún aviso: quedan «Alquiler creado», «Firmaste el contrato» y «Contrato firmado por los dos» en la pila. */
 async function hastaFirmas(p) {
-  const d = k => { const x = new Date(); x.setDate(x.getDate() + k); return [x.getDate(), x.getMonth() + 1, x.getFullYear()].map((v, i) => String(v).padStart(i < 2 ? 2 : 4, '0')).join('') }
   await p.goto(B + '#/crear'); await p.waitForTimeout(800)
-  await p.fill('#f-direccion', 'Apartamento en Barreal de Heredia'); await p.fill('#f-monto', '20'); await p.fill('#f-inicio', d(0)); await p.fill('#f-fin', d(182))
-  await p.getByRole('button', { name: 'Crear alquiler de prueba' }).click(); await p.locator('.tostada').first().waitFor({ timeout: 15000 })
+  await llenarFormulario(p)
+  await p.locator('.fz-pie').getByRole('button', { name: 'Crear alquiler', exact: true }).click(); await p.locator('.tostada').first().waitFor({ timeout: 15000 })
   await p.getByLabel('Leí el contrato y estoy de acuerdo.').check(); await p.getByRole('button', { name: 'Firma como inquilino' }).click()
   await p.waitForFunction(() => [...document.querySelectorAll('.tostada__t')].some(h => h.textContent === 'Contrato firmado por los dos'), null, { timeout: 15000 })
 }
@@ -173,10 +172,9 @@ if (fallas.length) { console.log('\nFALLAS:\n' + fallas.join('\n')); process.exi
 
 /** Igual que hastaFirmas, guardando cuadros mientras entran los avisos (para el GIF). */
 async function hastaFirmasConCuadros(p) {
-  const d = k => { const x = new Date(); x.setDate(x.getDate() + k); return [x.getDate(), x.getMonth() + 1, x.getFullYear()].map((v, i) => String(v).padStart(i < 2 ? 2 : 4, '0')).join('') }
   await p.goto(B + '#/crear'); await p.waitForTimeout(800)
-  await p.fill('#f-direccion', 'Apartamento en Barreal de Heredia'); await p.fill('#f-monto', '20'); await p.fill('#f-inicio', d(0)); await p.fill('#f-fin', d(182))
-  await p.getByRole('button', { name: 'Crear alquiler de prueba' }).click(); await p.locator('.tostada').first().waitFor({ timeout: 15000 })
+  await llenarFormulario(p)
+  await p.locator('.fz-pie').getByRole('button', { name: 'Crear alquiler', exact: true }).click(); await p.locator('.tostada').first().waitFor({ timeout: 15000 })
   await p.getByLabel('Leí el contrato y estoy de acuerdo.').check(); await p.getByRole('button', { name: 'Firma como inquilino' }).click()
   for (let i = 0; i < 40; i++) { await cuadro(p); if (await p.evaluate(() => [...document.querySelectorAll('.tostada__t')].some(h => h.textContent === 'Contrato firmado por los dos'))) break }
   for (let i = 0; i < 8; i++) await cuadro(p)

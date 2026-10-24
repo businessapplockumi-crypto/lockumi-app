@@ -65,6 +65,18 @@ Publicado el 23 oct 2026 (avisos v2). Ver [`docs/alertas.md`](docs/alertas.md).
 - Los scripts de navegador que pasan por Inicio deben marcarlo como visto en `addInitScript` (ver `scripts/alertas/capturar.mjs`); si no, el recorrido se abre y tapa la pantalla.
 - Prueba en navegador: `VITE_TRUSTLESS=1 npx vite build && npx vite preview --port 4173`, luego `OUT=/tmp/rec/ node scripts/recorrido/capturar.mjs` (teléfono, computadora y movimiento reducido).
 
+## Formulario «Nuevo alquiler» (`src/formulario.ts`, `src/screens/Crear.tsx`)
+
+- Los textos (pregunta, ayuda y «listo» de cada pantalla), los chips y las cuentas están en `src/formulario.ts`; la pantalla, en `src/screens/Crear.tsx`. Los textos son los de la maqueta (`diseno/envio/recorrido-formulario/textos.md`) y `src/__tests__/formulario.test.tsx` los compara palabra por palabra. Un texto nuevo pasa por Legal.
+- Una pregunta por pantalla. Cada error dice cómo arreglarlo («Toca un monto o escríbelo en «Otro monto».»). Sin palabras técnicas.
+- Los montos se muestran siempre con `usd(...)`; nunca escribas «USDC» o «USD» con un número fijo.
+- Chips: `role="radio"` con flechas y un solo Tab (tipo, duración, monto) o `aria-pressed` (reglas), 44 px de alto y foco visible.
+- Notas de Legal: los chips de duración (Ley 7527, art. 70) y «+ Otra regla» (moderar antes de producción) no se usan con dinero real sin su OK.
+- La validación y la creación son las mismas de antes (`src/validacion.ts`, `crearAcuerdo`); no las cambies desde el formulario.
+- El recorrido guiado pide una pantalla con `pedirPantalla(i)` (paso 2: lugar; paso 3: reglas). Deja `data-recorrido="datos"` y `data-recorrido="reglas"`.
+- Los scripts de navegador recorren el formulario con `llenarFormulario(p)` de `scripts/_formulario.mjs`; si cambias las pantallas, cambia esa ayuda.
+- Prueba en navegador: `VITE_TRUSTLESS=1 npx vite build && npx vite preview --port 4173`, luego `OUT=/tmp/f/ node scripts/formulario/capturar.mjs` (teléfono, computadora y movimiento reducido; `GIF=1` guarda cuadros).
+
 ## Agregar un estado del alquiler y su color
 
 «Tus alquileres» pinta cada tarjeta según el **grupo** de su estado: `pendiente` (amarillo miel), `curso` (verde salvia), `reclamo` (terracota) o `terminado` (arena). Para agregar un estado:
