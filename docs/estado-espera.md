@@ -66,3 +66,5 @@ Para correr la prueba en el navegador:
 VITE_TRUSTLESS=1 npx vite build && npx vite preview --port 4173
 OUT=/tmp/ep/ node scripts/espera-pagar/capturar.mjs
 ```
+
+- **Revisión de Legal (23 oct 2026, 10:22 p. m. CR):** textos A1–A13 aprobados. A12 corregido a «La red de prueba está lenta o no respondió. Espera un minuto y vuelve a tocar el botón.» (sin prometer que no se repite). «Al volver a intentar, no se paga dos veces.» queda fuera hasta tener una clave de idempotencia por alquiler en el servidor (pendiente antes de dinero real).
