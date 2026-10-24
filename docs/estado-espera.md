@@ -50,6 +50,10 @@ No se tocó la lógica del ingreso ni la de la cuenta segura o Stellar: solo se 
 - Pasos con «(listo)», «(ahora)», «(falta)» y «(no se pudo)» para lectores de pantalla.
 - Todos los textos nuevos ocupan 2 líneas o menos a 390 px. El mensaje de error existente de la red de prueba ocupa 3; no se cambió.
 
+## El aviso de logro al terminar
+
+Al guardarse el depósito sale el aviso v2 «¡Depósito guardado!», el mismo de `master`: chico y flotante (`.aviso-capa` con `position:fixed`), con la casita completa, sin X ni «Entendido», se esconde a los 5 s y se pausa con el puntero, el dedo o el foco de Tab, y se cierra al tocarlo o con Enter, Espacio o Esc. En el teléfono va debajo del título, o abajo si el título queda bajo. Se comparó con `master` 76373f8 en el mismo caso: a 390 px mide 366×152 en (12, 206) en las dos versiones, y en escritorio 320×171 abajo a la derecha. La captura anterior (`resumen.jpg`, panel 4) se tomó con el foco de Tab puesto y por eso se ve el anillo rojo. Comparación: `diseno/envio/espera-pagar/resumen-v2.jpg`.
+
 ## Archivos
 
 - `src/espera.ts`: textos (`// LEGAL: revisar`), etapas, barrita y estados de los pasos.

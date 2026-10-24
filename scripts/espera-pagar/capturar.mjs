@@ -94,12 +94,26 @@ async function recorrido(n, w) {
   ok(t === '¡Depósito guardado!' && /20 USDC guardados en una cuenta segura/.test(txt), `${n}: aviso de logro «${t}» con el texto publicado sin cambios`)
   const etapas = await p.evaluate(() => window.__etapas); console.log(`  · etapas pintadas: ${etapas.join(' → ')}`)
   ok(etapas[0] === '1' && etapas.includes('2'), `${n}: las etapas siguen el avance real (${etapas.join('→')})`)
+  // Aviso v2 flotante (igual que en master 76373f8): capa position:fixed, fuera del flujo, tamaño normal, casita completa, sin X ni «Entendido».
+  await p.waitForTimeout(450); await p.screenshot({ path: OUT + n + '-aviso.png' })
+  const av = await pop.evaluate(e => { const r = e.getBoundingClientRect(), l = e.querySelector('.aviso-pop__logo svg')?.getBoundingClientRect()
+    let fijo = null; for (let x = e; x; x = x.parentElement) if (getComputedStyle(x).position === 'fixed') { fijo = x.className; break }
+    const h2 = [...document.querySelectorAll('body *')].find(h => !h.children.length && h.textContent.trim() === 'Fotos de entrada')
+    return { x: r.left, y: r.top, w: r.width, h: r.height, fijo, botones: e.querySelectorAll('button').length, vb: e.querySelector('.aviso-pop__logo svg')?.getAttribute('viewBox'),
+      logoDentro: !!l && l.left >= r.left && l.right <= r.right && l.top >= r.top && l.bottom <= r.bottom && l.width >= 40, h2: h2?.getBoundingClientRect().top + scrollY, alto: document.documentElement.scrollHeight, vw: innerWidth, vh: innerHeight } })
+  ok(av.fijo === 'aviso-capa', `${n}: el aviso flota (capa position:fixed «${av.fijo}»), no va en el flujo`)
+  ok(av.botones === 0 && !/Entendido/.test(await pop.textContent()), `${n}: sin X ni «Entendido»`)
+  ok(av.vb === '419.5 65.25 420.25 408.25' && av.logoDentro, `${n}: casita completa (viewBox ${av.vb}), sin recortar`)
+  const tam = n === 'movil' ? av.w === av.vw - 24 && av.h <= 170 : av.w === 320 && av.h <= 190 && av.x + av.w === av.vw - 28 && av.y + av.h === av.vh - 28
+  ok(tam, `${n}: tamaño y lugar v2 como en master (${Math.round(av.x)},${Math.round(av.y)} ${Math.round(av.w)}×${Math.round(av.h)})`)
   // aviso-tab: Tab lo alcanza antes de 5 s, el foco pausa el conteo y Enter lo cierra. Foco visible en la captura.
   await p.waitForTimeout(500); await p.locator('a.skip').focus(); await p.keyboard.press('Tab')
   ok(await pop.evaluate(e => e === document.activeElement), `${n}: el aviso de pago es la parada de Tab después de «Saltar al contenido»`)
   await p.waitForTimeout(800); await p.screenshot({ path: OUT + n + '-aviso-foco.png' })
   await p.waitForTimeout(5000); ok(await pop.isVisible(), `${n}: con el foco no se esconde (pausa)`)
   await p.keyboard.press('Enter'); await p.waitForFunction(() => !document.querySelector('.aviso-pop'), null, { timeout: 3000 }); ok(true, `${n}: Enter lo cierra`)
+  const des = await p.evaluate(() => ({ h2: [...document.querySelectorAll('body *')].find(h => !h.children.length && h.textContent.trim() === 'Fotos de entrada')?.getBoundingClientRect().top + scrollY, alto: document.documentElement.scrollHeight }))
+  ok(des.h2 === av.h2 && des.alto === av.alto, `${n}: al cerrarse no se mueve nada (título del paso ${Math.round(av.h2)}→${Math.round(des.h2)}, alto ${av.alto}→${des.alto})`)
   await ctx.close()
 
   // Error: falla el envío del depósito. El error no se esconde solo y el botón ofrece «Volver a intentar el pago».

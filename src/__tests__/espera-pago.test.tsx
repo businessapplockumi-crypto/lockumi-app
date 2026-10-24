@@ -69,3 +69,16 @@ describe('Estado de espera del pago: botón y accesibilidad', () => {
       expect(src.split('\n').find(l => l.includes(`export const ${t} `) || l.includes(`export const ${t}=`))).toMatch(/\/\/ LEGAL: revisar/)
   })
 })
+
+describe('Aviso v2 flotante con la 2.ª parada de Tab', () => {
+  it('la capa del aviso es position:fixed (no entra al flujo) aunque vaya al inicio del DOM', () => {
+    const css = leer('../index.css')
+    expect(css).toMatch(/\.aviso-capa\{position:fixed;/)
+    expect(css).not.toMatch(/\.skip\s*\+\s*\.aviso|\.aviso-zona\{[^}]*position:(static|relative)/)
+  })
+  it('<Alertas /> va justo después de «Saltar al contenido» en todas las pantallas con sesión o ingreso', () => {
+    const app = leer('../App.tsx')
+    expect(app.match(/\{skip\}\s*<Alertas \/>/g)?.length).toBe(3)
+    expect(app).not.toMatch(/<Pie \/>\s*<Alertas \/>/)
+  })
+})
