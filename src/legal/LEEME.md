@@ -40,3 +40,5 @@ como `{ version, fecha }` y en el usuario (`lockumi.usuario` → `terminos`, `pr
 - **1.6-demo, ronda 5 (24 oct 2026, misma versión y fecha, sin publicar):** 6.5 dice «Si no reclama, después de ese plazo se libera todo al
   inquilino.». 5.3 no cambia en la rama, pero **no se publica** hasta que Katherine decida la variante (a) o (b): ver PLAN.md y
   `docs/alertas.md`, «Legal, ronda 5».
+- **1.6-demo, ronda 6 (24 oct 2026, misma versión y fecha, sin publicar):** 5.3 pasa a «5.3 **Firmas.** …», el texto exacto de Legal
+  (quién firma cada acción; Lockumi no usa la firma sin confirmación de Cavos). Ya no depende del cambio en Cavos (ver PLAN.md).

@@ -21,6 +21,8 @@ describe('Plazo real en la app', () => {
   })
   it('Detalle: sin «7 días» fijo, sin «a. m..», etiquetas de prueba correctas', () => {
     expect(detalle).not.toMatch(/7 días/)
+    // LEGAL: revisado (24/10) · ronda 6: nota de producción con «después de {plazo}»
+    expect(detalle).toContain('Si no hay reclamo, después de {textoPlazo(a)} el depósito de prueba se devuelve completo al inquilino la próxima vez que alguien abra el alquiler. Ninguna de las partes tiene que aprobarlo: lo ejecuta la cuenta de Lockumi.')
     expect(detalle).not.toMatch(/\{fechaHora\(fin\)\}\./)
     expect(detalle).toContain('después de {textoPlazo(a)} el depósito se devuelve completo al inquilino. En esta demo local no hay red: es solo una simulación.')
     expect(detalle).toContain('<h2>Reclamo del dueño</h2>{modoPrueba && <Simulado texto="Mediación simulada" />}')

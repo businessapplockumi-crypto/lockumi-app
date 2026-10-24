@@ -117,12 +117,13 @@ describe('textos legales', () => {
     expect(t).not.toContain('decide un reparto'); expect(TERMINOS.html).not.toContain('LEGAL:')
   })
   // LEGAL: revisado (24/10) · ronda 3: 4.1 a) con el texto de Legal; 5.3 sin cambios (ver docs/alertas.md, «Legal, ronda 3»).
-  it('4.1 a) ronda 3 de Legal: el escrow y el reparto de Lockumi si hay reclamo; 5.3 de la ronda 4', () => {
+  it('4.1 a) ronda 3 de Legal: el escrow y el reparto de Lockumi si hay reclamo; 5.3 de la ronda 6', () => {
     const t = TERMINOS.html.replace(/<[^>]+>/g, '')
     expect(t).toContain('tú firmas el depósito con tu billetera. Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.')
     expect(t).not.toContain('Lockumi no custodia tus tokens de prueba')
-    // LEGAL: revisado (24/10) · ronda 4: 5.3 con el texto exacto de Legal (sin montos)
-    expect(t).toContain('5.3 Tu billetera la protege Cavos con tus aparatos, y Lockumi no tiene tus llaves. Cavos permite que una app firme pagos pequeños sin pedirte confirmación, dentro de un límite por transacción y por día. Lockumi no usa esa función: el depósito y cada acción en el contrato te piden confirmar. Si eso cambia, actualizaremos estos Términos antes de usarla.')
+    // LEGAL: revisado (24/10) · ronda 6: 5.3 «Firmas.» con el texto exacto de Legal (sin montos)
+    expect(t).toContain('5.3 Firmas. Lockumi no tiene las llaves de tu billetera (Cavos o Freighter). Si usas tu propia billetera, con ella firmas el depósito y la compra de USDC de prueba. Las demás acciones del contrato (el reclamo, la respuesta, el reparto, la aprobación y la liberación) las firma en la red de prueba la cuenta de Lockumi, cuando tú o la otra parte tocan el botón en la app. Si no hay reclamo, la devolución se ejecuta después del plazo sin que nadie tenga que tocar nada. Cavos permite que una app firme pagos pequeños con tu billetera sin pedirte confirmación, dentro de un límite por transacción y por día; Lockumi no usa esa función a propósito. Abrir la línea de USDC en tu billetera, que no mueve fondos, se firma sin pedirte confirmación.')
+    expect(t).not.toContain('Lockumi no usa esa función: el depósito y cada acción')
     expect(t).not.toContain('ni Cavos ni Lockumi pueden firmar por ti'); expect(t.slice(t.indexOf('5.3 '), t.indexOf('5.4 '))).not.toMatch(/\d+\s*(USDC|XLM)/)
     expect(TERMINOS.version).toBe('1.6-demo'); expect(TERMINOS.html).not.toContain('LEGAL:')
     expect(renderToStaticMarkup(<Login onOk={() => {}} />)).toContain('Ni el dueño ni el inquilino pueden liberarlo solos.')
