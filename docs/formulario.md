@@ -15,14 +15,16 @@ Rama `formulario` (24 oct 2026, desde `master` en `051c071`), solo vista previa;
 - Botones: Siguiente · Atrás · Revisar el contrato · Seguir · Crear alquiler · ✕ (`aria-label="Cerrar"`, vuelve a Inicio).
 - La duración con chips calcula el fin como inicio + N meses (`sumarMeses`, igual que la validación). «Otra fecha» abre el calendario de «Termina».
 - Los montos se muestran con `usd(...)`: «3 USDC» en la red de prueba, «USD 3,00» en el modo sin red.
-- El tipo de lugar es solo de interfaz: no se guarda.
+- **Tipo de lugar (desde el 24/10):** se guarda en el alquiler (`Alquiler.tipo`: Apartamento, Casa, Estudio o Habitación) y sale en el contrato y en su versión para imprimir o guardar como PDF, en «El alquiler»: «Tipo de lugar: Casa». La línea lleva `// LEGAL: revisar` (falta que Legal la apruebe). Migración: al leer `localStorage`, los alquileres creados antes no tienen tipo y siguen igual (no se les inventa uno; el contrato no muestra la línea); un valor que no sea uno de los 4 se quita. En el modo con servidor (Supabase) el tipo todavía no se envía: no hay columna (queda pendiente).
+- **Monto según el origen (decisión de Katherine del 19/10: la app no limita el monto):** el tope de 20 es solo de «USDC de prueba de Lockumi» (la tesorería). Solo con ese origen la ayuda dice «Máximo 20.», los chips de más de 20 se desactivan y se valida `≤ 20`. Con «Mi propio USDC de prueba» no hay tope de 20: la ayuda dice «USDC de prueba, sin valor. Hasta tu saldo.» y el límite es el saldo real de la cuenta. El servidor (`/api/solo`) sigue igual: exige el tope de 20 de la tesorería y, para cualquier origen, su máximo técnico de 50 000 (`MONTO_MAX_USDC`). Esta rama no cambia la lógica del depósito.
+- **Al cambiar el origen se revalida el monto en el acto** (sin tocar «Siguiente»). Ej.: con 30 escrito, volver a «USDC de prueba de Lockumi» muestra «Con «USDC de prueba de Lockumi» el depósito es de máximo 20 USDC de prueba (no es dinero real). Baja el monto a 20 o menos, o elige «Mi propio USDC de prueba».»
 - La validación (`src/validacion.ts`) y la creación (`crearAcuerdo`, aviso `alertaCreado`) no cambiaron. El inicio de sesión tampoco.
 
 ## Errores (cada uno dice cómo arreglarlo)
 
 - Lugar vacío: «Escribe la dirección o un nombre para el lugar.»
 - Sin inicio: «Elige el día en que empieza.» · Sin fin: «Elige una duración (3 meses, 6 meses o 1 año) o toca «Otra fecha».»
-- Sin monto: «Toca un monto o escríbelo en «Otro monto».» · Arriba del tope: el mensaje de siempre con el máximo.
+- Sin monto: «Toca un monto o escríbelo en «Otro monto».» · Arriba del tope (solo con «USDC de prueba de Lockumi»): el mensaje con el máximo de 20 y cómo arreglarlo · Con «Mi propio USDC de prueba» arriba del saldo: «Tu cuenta tiene N USDC de prueba. Escribe un monto de N o menos, o usa «Obtener USDC de prueba».»
 - Regla vacía: «Escribe la regla y toca «Agregar».» · Repetida: «Esa regla ya está. Escribe otra o toca «Cancelar».»
 
 ## Movimiento

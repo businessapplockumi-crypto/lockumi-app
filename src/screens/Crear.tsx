@@ -5,6 +5,7 @@ import 'react-day-picker/style.css'
 import { acciones } from '../acciones'
 import { cuentaPropia } from './Invitacion'
 import { ir } from '../router'
+import { tipoValido } from '../types'
 import type { Usuario } from '../types'
 import { CASITA_AVISO_SVG } from '../LogoAviso'
 import { usd } from '../ui'
@@ -185,6 +186,9 @@ export function Crear({ u }: { u: Usuario }) {
   if (errores.monto && !f.monto.trim()) errores.monto = 'Toca un monto o escríbelo en «Otro monto».'
   const poner = (k: Campo, v: string) => setF(x => ({ ...x, [k]: v }))
   const tocar = (k: Campo) => () => setTocado(t => ({ ...t, [k]: true }))
+  // Al cambiar el origen se revalida el monto en el acto: el tope de 20 es solo de «USDC de prueba de Lockumi» (tesorería);
+  // con «Mi propio USDC de prueba» el límite es el saldo de la cuenta (y el máximo técnico del servidor, MONTO_MAX_USDC).
+  const cambiarOrigen = (o: 'lockumi' | 'propia') => { setOrigen(o); if (f.monto.trim()) setTocado(t => ({ ...t, monto: true })) }
   // Empieza: con un chip de duración, el fin es el inicio + N meses; con «Otra fecha», la salida se conserva si sigue sirviendo.
   const elegirInicio = (iso: string) => setF(x => {
     const fin = typeof dur === 'number' ? finConDuracion(iso, dur) : salidaTrasCambiarEntrada(iso, x.fin)
@@ -223,8 +227,8 @@ export function Crear({ u }: { u: Usuario }) {
     const m = montoNumero(f.monto)
     try {
       const r = modoPrueba
-        ? await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: u.email, ...(escrowReal && origen === 'propia' && propia && { propia: { g: propia.g, firma: propia.firma } }) }, DUENO_PRUEBA)
-        : await acciones.crear({ direccion: f.direccion.trim(), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: f.email.trim() }, u.email, await cuentaPropia())
+        ? await acciones.crear({ direccion: f.direccion.trim(), tipo: tipoValido(tipo), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: u.email, ...(escrowReal && origen === 'propia' && propia && { propia: { g: propia.g, firma: propia.firma } }) }, DUENO_PRUEBA)
+        : await acciones.crear({ direccion: f.direccion.trim(), tipo: tipoValido(tipo), monto: m, inicio: f.inicio, fin: f.fin, reglas, inquilinoEmail: f.email.trim() }, u.email, await cuentaPropia())
       avisar(alertaCreado({ direccion: f.direccion.trim(), monto: m }))
       ir('/alquiler/' + r.id)
     } catch (e) { setOcupado(false); setErrSrv(e instanceof Error ? e.message : 'No pudimos crear el alquiler. Revisa tu conexión y vuelve a tocar «Crear alquiler».') }
@@ -290,7 +294,7 @@ export function Crear({ u }: { u: Usuario }) {
         {err('monto')}
         {escrowReal && <>
           <p className="fz-et" id="et-origen">Origen<span className="fz-et__der"><Info et="De dónde salen los USDC de prueba" onClick={() => setInfo('usdc')} /></span></p>
-          <Chips id="et-origen" ops={[{ v: 'lockumi' as const, t: 'USDC de prueba de Lockumi' }, { v: 'propia' as const, t: 'Mi propio USDC de prueba' }]} valor={origen} onElegir={setOrigen} />
+          <Chips id="et-origen" ops={[{ v: 'lockumi' as const, t: 'USDC de prueba de Lockumi' }, { v: 'propia' as const, t: 'Mi propio USDC de prueba' }]} valor={origen} onElegir={cambiarOrigen} />
           {origen === 'propia' && (propia
             ? <p className="na-saldo" id="saldo-propio" role="status"><Ico n="check" />{propia.saldo === null
                 ? <span>Tu cuenta ({abreviar(propia.g)}) todavía no tiene USDC de prueba. Carga USDC de prueba o elige «USDC de prueba de Lockumi».</span>

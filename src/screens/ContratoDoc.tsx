@@ -61,6 +61,7 @@ export function Documento({ a, impresion, plegado }: { a: Alquiler; impresion?: 
     <section className="ct__sec"><h3>El alquiler</h3>
       <dl className="ct__datos">
         <div className="ct__ancho"><dt>Lugar</dt><dd>{a.direccion}</dd></div>
+        {a.tipo && <div><dt>Tipo de lugar</dt><dd>{a.tipo}</dd></div>}   {/* LEGAL: revisar. Línea nueva del contrato: «Tipo de lugar: {tipo}» (24/10); los alquileres viejos sin tipo no la muestran. */}
         <div><dt>Depósito</dt><dd>{usd(a.monto)}</dd></div>
         <div><dt>Entrada</dt><dd>{fecha(a.inicio)}</dd></div>
         <div><dt>Salida</dt><dd>{fecha(a.fin)}</dd></div>

@@ -15,8 +15,8 @@ export const PANTALLAS: Pantalla[] = [
 ]
 export const TOTAL_PANTALLAS = PANTALLAS.length
 
-/** Tipo de lugar: solo de interfaz (no existe en types.ts y no se guarda). */
-export const TIPOS_LUGAR = ['Apartamento', 'Casa', 'Estudio', 'Habitación'] as const
+/** Tipo de lugar: se guarda en el alquiler (`Alquiler.tipo`) y sale en el contrato. */
+export { TIPOS_LUGAR } from './types'
 export const EJEMPLO_LUGAR = 'Ej.: Apartamento en Barreal de Heredia'
 
 // LEGAL (23/10): los chips de duración se pueden usar en la red de prueba. Antes de usar dinero real hay que revisarlos

@@ -6,7 +6,7 @@ import { NOMBRE_PASO, ORDEN, esHash } from './services/comprobantes'
 import { unaVez } from './services/pasos'
 import { firmar as firmarLocal, ambos, NOMBRE } from './flujo'
 import { usd } from './ui'
-import type { Alquiler, Foto, Rol } from './types'
+import type { Alquiler, Foto, Rol, TipoLugar } from './types'
 import { modoServidor, modoTrustless, modoSolo } from './servidor/config'
 import { trustless } from './services/trustless'
 import { servidor } from './servidor/repositorio'
@@ -22,7 +22,7 @@ export function textoPlazo(a: Pick<Alquiler, 'ventanaSegundos'>) {
 
 
 export interface Acciones {
-  crear(d: { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string; propia?: { g: string; firma: 'cavos' | 'freighter' } }, email: string, cuenta?: string): Promise<{ id: string; link?: string }>
+  crear(d: { direccion: string; tipo?: TipoLugar; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string; propia?: { g: string; firma: 'cavos' | 'freighter' } }, email: string, cuenta?: string): Promise<{ id: string; link?: string }>
   firmar(a: Alquiler, etapa: Etapa, rol: Rol): Promise<void>
   marcar(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, item: number, estado: 'bien' | 'detalle'): Promise<void>
   nota(a: Alquiler, etapa: 'entrada' | 'salida', cuarto: number, nota: string): Promise<void>

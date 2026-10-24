@@ -92,6 +92,13 @@ const cuadros = async (p, n, ms = 90) => { for (let i = 0; i < n; i++) { await c
   s = await estado(p); ok(s.errores.includes('Toca un monto o escríbelo en «Otro monto».'), 'pantalla 3 vacía: el error dice cómo arreglarlo')
   await p.locator('[role="radio"]').nth(4).click(); await p.waitForTimeout(150)
   const grande = await p.locator('.fz-monto strong').textContent(); ok(/10/.test(grande), 'el monto grande sigue al chip → ' + grande)
+  // Monto según el origen (decisión del 19/10): «Máximo 20» solo con «USDC de prueba de Lockumi»; al cambiar el origen se revalida en el acto
+  await p.getByRole('radio', { name: 'Mi propio USDC de prueba' }).click(); await p.waitForTimeout(150)
+  s = await estado(p); ok(s.ayuda === 'USDC de prueba, sin valor. Hasta tu saldo.', 'origen propio: la ayuda no dice «Máximo 20» → ' + s.ayuda)
+  await p.fill('#f-monto', '30'); await p.getByRole('radio', { name: 'USDC de prueba de Lockumi' }).click(); await p.waitForTimeout(200)
+  s = await estado(p); ok(s.ayuda === 'USDC de prueba, sin valor. Máximo 20.' && s.errores.some(e => /máximo 20 USDC de prueba.*Baja el monto a 20 o menos, o elige «Mi propio USDC de prueba»\./.test(e)), 'volver a Lockumi con 30: «Máximo 20» y el error dice cómo arreglarlo, sin tocar «Siguiente» → ' + s.errores.join(' | '))
+  await p.locator('[role="radio"]').nth(4).click(); await p.waitForTimeout(150)
+  s = await estado(p); ok(!s.errores.length, 'con 10 el error se va')
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(150)   // el chip deja la página bajada: la captura va con la pregunta arriba
   await p.screenshot({ path: OUT + 'm-3-monto.png' }); await cuadros(p, 5)
   await pie(p, 'Siguiente').click(); await esperarAviso(p, '¡Monto listo!')
@@ -123,6 +130,7 @@ const cuadros = async (p, n, ms = 90) => { for (let i = 0; i < n; i++) { await c
   await pie(p, 'Crear alquiler').click()
   const ac = await esperarAviso(p, 'Alquiler creado'); ok(!!ac, 'al crear: aviso v2 «Alquiler creado» → ' + JSON.stringify(ac))
   await p.waitForURL(/#\/alquiler\//, { timeout: 15000 }).catch(() => {}); ok(/#\/alquiler\//.test(p.url()), 'crear funciona: abre el alquiler nuevo')
+  const datos = await p.locator('.ct__datos').first().innerText().catch(() => ''); ok(/Tipo de lugar\s*Casa/.test(datos), 'el tipo elegido («Casa») se guarda y sale en el contrato → ' + datos.replace(/\s+/g, ' '))
   await cuadros(p, 8)
   await p.screenshot({ path: OUT + 'm-7-creado.png' })
   ok(!(await p.content()).includes('katherine'), 'sin el correo real en la pantalla')

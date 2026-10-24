@@ -89,7 +89,10 @@ No se usan llaves ni secretos. Toda integración simulada lleva la insignia "Dem
 - [x] Aviso v2 al terminar cada pantalla y «Alquiler creado» al crear; celebración de 0,9 s en «¡Reglas listas!»; movimiento reducido sin animación.
 - [x] El paso 2 y el 3 del recorrido guiado piden su pantalla (lugar y reglas).
 - [x] Pruebas: unitarias, script nuevo `scripts/formulario/capturar.mjs` y los scripts que pasan por el formulario (espera-pagar, aviso-v2, alertas, contrato-plegable y recorrido), adaptados con `scripts/_formulario.mjs`. Ver `docs/formulario.md`.
-- [ ] El tipo de lugar no se guarda (no existe en `types.ts`).
+- [x] El tipo de lugar se guarda (`Alquiler.tipo`, opcional; migración en `leer()`: los viejos siguen sin tipo) y sale en el contrato y su PDF («Tipo de lugar: …», con `// LEGAL: revisar`).
+- [ ] Legal: aprobar la línea «Tipo de lugar» del contrato.
+- [ ] Modo con servidor: el tipo no se envía todavía (falta la columna en Supabase).
+- [x] Monto según el origen (decisión del 19/10): «Máximo 20» y el tope solo con «USDC de prueba de Lockumi»; con «Mi propio USDC de prueba», hasta el saldo. Al cambiar el origen se revalida en el acto. `/api/solo` sin cambios (tope de 20 de la tesorería y máximo técnico de 50 000).
 - [ ] El título al crear sigue siendo «Alquiler creado» (aprobado por Legal), no «¡Alquiler creado!» de la maqueta. Cambiarlo requiere el OK de Legal.
 - [ ] **Antes de usar dinero real:** revisar los chips de duración con un abogado (Ley 7527, art. 70) y moderar «+ Otra regla».
 - [ ] Publicar en `master` cuando Katherine dé el OK.

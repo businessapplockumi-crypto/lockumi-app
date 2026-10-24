@@ -2,6 +2,7 @@ import { modoServidor, modoSolo, modoPrueba, escrowReal } from './servidor/confi
 import { repositorio } from './servidor/repositorio'
 import { useSyncExternalStore } from 'react'
 import type { Acta, Alquiler, Rol } from './types'
+import { tipoValido, migrar } from './types'
 import { fotoEjemplo } from './demoFotos'
 // v3: flujo nuevo (contrato y firmas antes del depósito). Fase 1 en testnet: almacén aparte y sin ejemplos ficticios.
 // Cada modo guarda aparte: los alquileres de la fase 1 mínima (5 pasos) no se mezclan con los del flujo completo.
@@ -26,7 +27,7 @@ const semilla = (): Alquiler[] => modoPrueba ? [] : [
     reglas:['Jardín a cargo del inquilino'], duenoEmail:'katherine@ejemplo.cr', inquilinoEmail:'otra@ejemplo.cr',
     estado:'firmas', rendimiento:false, escrowId:'sim-a2', contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados:0, historial:[{fecha:'2026-10-15T15:00:00Z',texto:'Alquiler creado'}] },
 ]
-const leer = (): Alquiler[] => { try { const s = localStorage.getItem(K); return s ? JSON.parse(s) : semilla() } catch { return semilla() } }
+const leer = (): Alquiler[] => { try { const s = localStorage.getItem(K); return s ? migrar(JSON.parse(s)) : semilla() } catch { return semilla() } }
 let datos: Alquiler[] = leer()
 const subs = new Set<() => void>()
 let avisoEspacio = false
@@ -47,8 +48,9 @@ export const store = {
   /** El alquiler tal como está guardado ahora (incluye cambios de otras pestañas). */
   fresco: (id: string) => { recargar(); return datos.find(a => a.id === id) },
   sinEspacio: () => avisoEspacio,
-  crear(a: Pick<Alquiler,'direccion'|'monto'|'inicio'|'fin'|'reglas'|'duenoEmail'|'inquilinoEmail'>) {
-    const n: Alquiler = { ...a, moneda: escrowReal ? 'USDC' : 'USD', id: escrowReal ? crypto.randomUUID() : 'a' + Date.now().toString(36), estado:'firmas', rendimiento:false, contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados: 0,
+  crear(a: Pick<Alquiler,'direccion'|'monto'|'inicio'|'fin'|'reglas'|'duenoEmail'|'inquilinoEmail'> & { tipo?: unknown }) {
+    const { tipo, ...d } = a; const t = tipoValido(tipo)
+    const n: Alquiler = { ...d, ...(t && { tipo: t }), moneda: escrowReal ? 'USDC' : 'USD', id: escrowReal ? crypto.randomUUID() : 'a' + Date.now().toString(36), estado:'firmas', rendimiento:false, contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados: 0,
       historial:[{fecha:ahoraReal(),texto:'Alquiler creado'}] }
     recargar(); datos = [n, ...datos]; guardar(); return n
   },
