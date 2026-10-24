@@ -160,3 +160,20 @@ Montos: los de devolución y reparto ya vienen con la comisión de la red de pru
   - guarda `capturas/alertas-preview-<paso>-{movil,escritorio}.png`.
 
   Uso: `VITE_CAVOS_APP_ID=… OUT=…/alertas-preview- CHROME=/usr/bin/google-chrome node scripts/alertas/capturar.mjs`, con Vite en 5173 (con `VITE_TRUSTLESS=1` y `VITE_CAVOS_APP_ID`) y en 5174 (solo `VITE_TRUSTLESS=1`, para el ingreso simulado).
+
+## Textos de mediación revisados por Legal (24 oct 2026, rama `contrato-compacto`, sin publicar)
+
+Regla: la persona mediadora **ayuda** a buscar un acuerdo; **no decide**. Reemplazan los textos de producción que decían que la persona mediadora «decide». Los avisos de esta página ya cumplían la regla y no cambian.
+
+| Dónde | Texto nuevo |
+|---|---|
+| Contrato, «Mediación» (`src/screens/ContratoDoc.tsx`; también en «Descargar o imprimir» y en el panel del contrato compacto) | «Si no se ponen de acuerdo, una persona mediadora revisa con ustedes las fotos de entrada y de salida y les ayuda a buscar un acuerdo sobre el reparto del depósito. No decide por ustedes.» En la prueba se agrega: «En esta prueba, la mediación es una simulación y el reparto se elige con el botón «Resolver el reclamo (simulación)».» |
+| Reclamo del dueño, inquilino (`src/screens/Detalle.tsx`) | «… Si no estás de acuerdo, una persona mediadora revisa las fotos con ustedes y les ayuda a buscar un acuerdo.» |
+| Pantalla de mediación (`src/screens/Detalle.tsx`) | «No hubo acuerdo. Una persona mediadora revisa con ustedes las fotos de entrada y salida y les ayuda a buscar un acuerdo sobre el reparto.» |
+| «Sigue» del reclamo, inquilino (`src/flujo.ts`) | «Si lo rechazas, una persona mediadora les ayuda a buscar un acuerdo.» |
+| «Sigue» del reclamo, dueño (`src/flujo.ts`) | «Si lo rechaza, una persona mediadora les ayuda a buscar un acuerdo.» |
+| «Sigue» de la mediación (`src/flujo.ts`) | «La persona mediadora les ayuda a acordar cómo se reparte el depósito.» |
+| Línea «Ahora» de la prueba en mediación (`src/flujo.ts`) | «Ahora toca la mediación (simulada). En esta prueba, el reparto lo decides tú con el botón de abajo.» |
+
+Cada uno lleva `// LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide`. Pruebas: `src/services/__tests__/flujo.test.ts` («mediación: la persona mediadora ayuda, no decide»), `src/screens/__tests__/contrato-compacto.test.tsx` («Mediación en el contrato») y `contrato-plegable.test.tsx`; el script `scripts/contrato-plegable/capturar.mjs` revisa el PDF.
+

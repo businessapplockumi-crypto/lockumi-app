@@ -44,3 +44,7 @@ El paso 6 («Los pasos») sigue apuntando bien con la columna reordenada, en com
 - `/api/solo` y `/api/tw` los responde el script; no se toca la red de prueba.
 
 **Arreglo encontrado en la prueba:** en Chrome, el segundo arrastre de la hoja se cancelaba (el navegador lo tomaba como selección de texto). La cabecera ahora no selecciona texto y el arrastre evita la acción por defecto.
+
+## Mediación: texto revisado por Legal (24 oct 2026)
+
+En esta misma rama, la sección «Mediación» del contrato (y los demás textos de mediación) dicen que la persona mediadora ayuda a buscar un acuerdo y no decide. Lista completa en [`alertas.md`](alertas.md#textos-de-mediación-revisados-por-legal-24-oct-2026-rama-contrato-compacto-sin-publicar).

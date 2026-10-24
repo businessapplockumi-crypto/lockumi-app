@@ -19,7 +19,7 @@ Un solo cambio en `ContratoDoc` (`src/screens/ContratoDoc.tsx`), que afecta dos 
 - **Plegado por defecto:** Reglas, El depósito, 7 días para reclamos, Mediación y Firmas. Abierto, el botón dice «Ocultar contrato completo» y la flecha gira.
 - **Empieza cerrado cada vez** que se abre la pantalla; el estado no se guarda. Al firmar el dueño de prueba, el contrato pasa del panel principal a la columna lateral y vuelve a empezar cerrado.
 - **Casilla:** opción (a) de la maqueta. Funciona igual que hoy aunque el contrato esté cerrado. Cualquier otra opción la decide Legal.
-- **Textos legales:** sin cambios (incluidos los marcados `// LEGAL: revisar`). Solo cambia la presentación; las secciones se mueven a un bloque plegable sin tocar su texto ni su orden.
+- **Textos legales:** sin cambios (incluidos los marcados `// LEGAL: revisar`). *24 oct 2026 (rama `contrato-compacto`, sin publicar):* Legal cambió la sección «Mediación»: «Si no se ponen de acuerdo, una persona mediadora revisa con ustedes las fotos de entrada y de salida y les ayuda a buscar un acuerdo sobre el reparto del depósito. No decide por ustedes.» (en la prueba, más «En esta prueba, la mediación es una simulación y el reparto se elige con el botón «Resolver el reclamo (simulación)».»). Ver [`alertas.md`](alertas.md#textos-de-mediación-revisados-por-legal-24-oct-2026-rama-contrato-compacto-sin-publicar). Solo cambia la presentación; las secciones se mueven a un bloque plegable sin tocar su texto ni su orden.
 
 ## Accesibilidad
 
