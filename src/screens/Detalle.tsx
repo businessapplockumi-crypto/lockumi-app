@@ -17,7 +17,9 @@ import { ContratoDoc } from './ContratoDoc'
 import { TomarFoto } from '../Camara'
 import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE, ahoraPrueba } from '../flujo'
 import { adelantoPermitido } from '../../api/_lib/red'
-import { avisar, quitarAvisos, alertaPorCambio, alertaErrorRed, ERROR_RED, instantanea, type Instantanea } from '../alertas'
+import { ListaEspacios } from './Espacios'
+import { listaFija } from '../espacios'
+import { EVENTO_ESPACIO, avisar, quitarAvisos, alertaPorCambio, alertaErrorRed, ERROR_RED, instantanea, type Instantanea } from '../alertas'
 import { EsperaPago } from '../EsperaPago'
 import { etapaDeAvance, type EtapaPago } from '../espera'
 
@@ -82,7 +84,18 @@ function PagoSimulado({ a, rol }: P) {
 function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
   const acta = a[cual]!; const n = acta.cuartos.length
   const falta = acta.cuartos.findIndex(c => !cuartoListo(c))
-  const [i, setI] = useState(acta.firmas[rol] || falta === -1 ? n : falta); const [err, setErr] = useState('')
+  const [i0, setI] = useState(acta.firmas[rol] || falta === -1 ? n : falta); const [err, setErr] = useState('')
+  const i = Math.min(i0, n)   // si se quitó un espacio, no se pasa del final
+  // Aviso «Espacio agregado» → «Tomar foto →» abre ese espacio; aviso «Espacio quitado» → «Deshacer».
+  const ref = useRef({ a, acta }); useEffect(() => { ref.current = { a, acta } })
+  useEffect(() => {
+    const f = (e: Event) => {
+      const { que, id } = (e as CustomEvent<{ que: string; id?: string }>).detail ?? {}; const { a: x, acta: ac } = ref.current
+      if (que === 'espacio') { const k = ac.cuartos.findIndex(c => c.id === id); if (k >= 0) setI(k) }
+      if (que === 'deshacer-espacio' && id && acciones.deshacerQuitar) acciones.deshacerQuitar(x, id).catch(er => avisar({ paso: 'espacio-error', tipo: 'error', titulo: 'No se pudo deshacer', hecho: er instanceof Error ? er.message : 'Intenta de nuevo.' }))
+    }
+    addEventListener(EVENTO_ESPACIO, f); return () => removeEventListener(EVENTO_ESPACIO, f)
+  }, [])
   useEffect(() => { window.scrollTo(0, 0) }, [i])
   const firmaCuarto = JSON.stringify(acta.cuartos[i] ?? null)
   useEffect(() => { setErr('') }, [firmaCuarto])
@@ -98,6 +111,7 @@ function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
       {Array.from({ length: n + 1 }, (_, k) => <span key={k} className={k < i ? 'hecho' : k === i ? 'actual' : ''} />)}</div>
     {i < n ? <>
       <p className="mini">{titulo} · Espacio {i + 1} de {n}</p>
+      <button type="button" className="enlace esp__ver" onClick={() => { setErr(''); setI(n) }}>{cual === 'entrada' && !listaFija(a) ? `Ver la lista de espacios (${n}) o agregar uno` : `Ver la lista de espacios (${n})`}</button>
       <CuartoEditor a={a} cual={cual} idx={i} rol={rol} />
       {err && <p className="error" role="alert">{err}</p>}
       <div className="pie-paso">
@@ -105,6 +119,7 @@ function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
         <button type="button" className="boton boton--primario boton--grande pie-paso__principal" onClick={siguiente}>{i + 1 < n ? 'Siguiente espacio' : 'Revisar y confirmar'}</button>
       </div>
     </> : <>
+      <ListaEspacios a={a} cual={cual} rol={rol} onAbrir={k => { setErr(''); setI(k) }} />
       <Firma key={cual + '-' + rol} a={a} que={cual} rol={rol} titulo={'Confirmar ' + titulo.toLowerCase()}
         texto={cual === 'entrada' ? 'Revisa que las fotos muestren cómo está el lugar hoy.' : 'Revisa que las fotos muestren cómo quedó el lugar.'}
         casilla={cual === 'entrada' ? 'Las fotos muestran cómo está el lugar al entrar.' : 'Las fotos muestran cómo quedó el lugar al salir.'} />

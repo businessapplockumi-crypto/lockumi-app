@@ -8,7 +8,8 @@ export interface Evento { fecha: string; texto: string; tx?: string }
  *  `huella`: SHA-256 del archivo original, para detectar cambios. `origen`: cámara dentro de la app o archivo. */
 export interface Foto { id?: string; ruta?: string; huellaGuardada?: string; src: string; por: Rol; fecha: string; tomadaEn?: number; fechaArchivo?: number; huella?: string; origen?: 'camara' | 'archivo' | 'ejemplo'; posibleGaleria?: boolean }
 export type EstadoItem = 'bien' | 'detalle' | null
-export interface Cuarto { nombre: string; items: { texto: string; estado: EstadoItem }[]; fotos: Foto[]; nota: string }
+/** Espacio del acta. `id` fijo (los 4 de siempre: sala, cocina, dormitorio, bano); `propio`: agregado con «+ Agregar espacio». */
+export interface Cuarto { id: string; propio?: boolean; agregadoPor?: Rol; nombre: string; items: { texto: string; estado: EstadoItem }[]; fotos: Foto[]; nota: string }
 export interface Acta { cuartos: Cuarto[]; firmas: Partial<Record<Rol, string>> }
 export interface Reclamo { monto: number; motivo: string; fotos: Foto[]; fecha: string; respuesta?: 'aceptado' | 'rechazado' }
 export interface Resultado { inquilino: number; dueno: number; via: 'automatico' | 'acuerdo' | 'mediacion'; fecha: string }
@@ -22,6 +23,8 @@ export interface Alquiler {
   escrowId?: string; contrato: { firmas: Partial<Record<Rol, string>> }; entrada: Acta; salida?: Acta; pago?: string
   ventanaInicio?: string; diasSimulados: number
   reclamo?: Reclamo; resultado?: Resultado
+  /** Espacios quitados de la entrada con sus fotos: quedan como respaldo en el historial del alquiler (corrección de Legal del 23/10). */
+  quitados?: { cuarto: Cuarto; pos: number; fecha: string; por: Rol }[]
   /** Fase 1 (testnet real, una sola persona): cuenta segura (C…), cuentas G… y hashes de cada paso en la red de prueba. */
   red?: RedPrueba
 }

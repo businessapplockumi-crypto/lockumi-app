@@ -24,7 +24,17 @@ export interface Alerta {
 }
 export interface Linea { et?: string; texto: string }
 /** `ir`: «panel» = la tarjeta del paso (enfoca su botón principal); «detalles» = abre «Detalles» (historial y montos). */
-export interface Accion { texto: string; etiqueta: string; ir: 'panel' | 'detalles' }
+export interface Accion { texto: string; etiqueta: string; ir: 'panel' | 'detalles' | 'espacio' | 'deshacer-espacio'; /** id del espacio (para «espacio» y «deshacer-espacio»). */ dato?: string }
+/** Evento de ventana con el que el aviso pide abrir un espacio o deshacer «Quitar espacio» (lo escucha la pantalla de fotos). */
+export const EVENTO_ESPACIO = 'lockumi:espacio'
+
+// ---- «+ Agregar espacio» (textos de la spec con las correcciones de Legal del 23/10) ----
+export const alertaEspacioAgregado = (nombre: string, id: string): Alerta => ({ paso: 'espacio-agregado', titulo: 'Espacio agregado', // LEGAL: revisado (23/10)
+  hecho: `${nombre} está en la lista.`, linea: { texto: `${nombre} está en la lista. Ahora: una foto` }, // LEGAL: revisado (23/10)
+  accion: { texto: 'Tomar foto →', etiqueta: `Tomar foto de ${nombre}`, ir: 'espacio', dato: id } }) // LEGAL: revisado (23/10)
+export const alertaNombreCambiado = (nombre: string): Alerta => ({ paso: 'espacio-nombre', titulo: 'Nombre cambiado', hecho: `Ahora se llama ${nombre}`, linea: { texto: `Ahora se llama ${nombre}` } }) // LEGAL: revisado (23/10)
+export const alertaEspacioQuitado = (nombre: string, id: string): Alerta => ({ paso: 'espacio-quitado', titulo: 'Espacio quitado', // LEGAL: revisado (23/10)
+  hecho: `${nombre} salió de la lista`, linea: { texto: `${nombre} salió de la lista` }, accion: { texto: 'Deshacer', etiqueta: `Deshacer: volver a poner ${nombre}`, ir: 'deshacer-espacio', dato: id } }) // LEGAL: revisado (23/10)
 /** Texto aprobado por Legal (A12) del error de red; el mismo de services/escrow.ts. */
 export const ERROR_RED = 'La red de prueba está lenta o no respondió. Espera un minuto y vuelve a tocar el botón.' // LEGAL: revisado A12 (24/10)
 /** Línea que muestra el aviso v2. */

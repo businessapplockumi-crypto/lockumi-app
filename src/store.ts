@@ -3,18 +3,13 @@ import { repositorio } from './servidor/repositorio'
 import { useSyncExternalStore } from 'react'
 import type { Acta, Alquiler, Rol } from './types'
 import { fotoEjemplo } from './demoFotos'
+import { CUARTOS, actaVacia, migrarEspacios } from './espacios'
 // v3: flujo nuevo (contrato y firmas antes del depósito). Fase 1 en testnet: almacén aparte y sin ejemplos ficticios.
 // Cada modo guarda aparte: los alquileres de la fase 1 mínima (5 pasos) no se mezclan con los del flujo completo.
 const K = modoSolo ? 'lockumi.alquileres.testnet.v1' : modoPrueba ? 'lockumi.alquileres.prueba.v2' : 'lockumi.alquileres.v3'
 export const DIA = 86_400_000
-const CUARTOS: [string, string[]][] = [
-  ['Sala', ['Paredes y pintura', 'Piso', 'Ventanas y cortinas']],
-  ['Cocina', ['Cocina y horno', 'Fregadero y grifería', 'Muebles']],
-  ['Dormitorio', ['Paredes y pintura', 'Clóset', 'Puerta y llavín']],
-  ['Baño', ['Ducha', 'Inodoro y lavamanos', 'Azulejos']],
-]
-export const actaVacia = (): Acta => ({ firmas: {}, cuartos: CUARTOS.map(([nombre, items]) => ({ nombre, nota: '', fotos: [], items: items.map(texto => ({ texto, estado: null })) })) })
-const actaLista = (fecha: string): Acta => ({ firmas: { dueno: fecha, inquilino: fecha }, cuartos: CUARTOS.map(([nombre, items], i) => ({ nombre, nota: '',
+export { actaVacia } from './espacios'
+const actaLista = (fecha: string): Acta => ({ firmas: { dueno: fecha, inquilino: fecha }, cuartos: CUARTOS.map(({ id, nombre, items }, i) => ({ id, nombre, nota: '',
   fotos: [{ src: fotoEjemplo(nombre, 'entrada', i), por: i % 2 ? 'inquilino' : 'dueno', fecha, origen: 'ejemplo' as const }], items: items.map(texto => ({ texto, estado: 'bien' as const })) })) })
 // Datos de ejemplo (ficticios) para la demo.
 const semilla = (): Alquiler[] => modoPrueba ? [] : [
@@ -26,7 +21,7 @@ const semilla = (): Alquiler[] => modoPrueba ? [] : [
     reglas:['Jardín a cargo del inquilino'], duenoEmail:'katherine@ejemplo.cr', inquilinoEmail:'otra@ejemplo.cr',
     estado:'firmas', rendimiento:false, escrowId:'sim-a2', contrato:{ firmas:{} }, entrada: actaVacia(), diasSimulados:0, historial:[{fecha:'2026-10-15T15:00:00Z',texto:'Alquiler creado'}] },
 ]
-const leer = (): Alquiler[] => { try { const s = localStorage.getItem(K); return s ? JSON.parse(s) : semilla() } catch { return semilla() } }
+const leer = (): Alquiler[] => { try { const s = localStorage.getItem(K); return s ? (JSON.parse(s) as Alquiler[]).map(migrarEspacios) : semilla() } catch { return semilla() } }
 let datos: Alquiler[] = leer()
 const subs = new Set<() => void>()
 let avisoEspacio = false

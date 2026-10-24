@@ -60,7 +60,7 @@ describe('Aviso v2: toast (componente)', () => {
     const c = leer('../Aviso.tsx'), z = leer('../Alertas.tsx')
     expect(c).toContain("onClick={() => { if (!recienArrastrado.current) cerrar() }}")
     expect(c).toContain("if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')")
-    expect(c).toContain('onClick={e => { e.stopPropagation(); cerrar(false); irA(accion.ir) }}')
+    expect(c).toContain('onClick={e => { e.stopPropagation(); cerrar(false); irA(accion.ir, accion.dato) }}')
     for (const x of ['onPointerOver', 'onPointerOut', 'onPointerDown', 'onFocus', 'onBlur', "e.key === 'Escape' && !e.defaultPrevented"]) expect(z).toContain(x)
     expect(z).toContain('pausa={abierta}')
     expect(c).not.toMatch(/autoFocus/)

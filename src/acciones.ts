@@ -1,6 +1,7 @@
 // Acciones del flujo. Las pantallas llaman a estas funciones; según la configuración van al servidor compartido
 // (Supabase, dos aparatos) o al almacenamiento local de la demo (un aparato, con "Ver como").
-import { store, ahoraDe, actaVacia } from './store'
+import { store, ahoraDe } from './store'
+import { actaDesde, cuartoNuevo, errorNombre, limpiar, listaFija, ERR } from './espacios'
 import { escrow, type Guardar, type Avance } from './services/escrow'
 import { NOMBRE_PASO, ORDEN, esHash } from './services/comprobantes'
 import { unaVez } from './services/pasos'
@@ -30,6 +31,13 @@ export interface Acciones {
   // `avance` recibe textos cortos mientras un paso trabaja en la red de prueba (para mostrarlos en el botón).
   pagar(a: Alquiler, avance?: Avance): Promise<void>
   iniciarSalida(a: Alquiler): Promise<void>
+  /** «+ Agregar espacio» (solo la entrada, antes de que los dos la confirmen). Por ahora solo en los modos locales: en el modo servidor
+   *  faltan las RPC (escritas en supabase/migrations/20261024000000_lk_espacios.sql, sin aplicar). Devuelven el id del espacio. */
+  agregarCuarto?(a: Alquiler, nombre: string, items: string[], por: Rol): Promise<string>
+  renombrarCuarto?(a: Alquiler, id: string, nombre: string): Promise<void>
+  quitarCuarto?(a: Alquiler, id: string, por: Rol): Promise<void>
+  /** «Deshacer» del aviso «Espacio quitado»: vuelve a su lugar con sus fotos. */
+  deshacerQuitar?(a: Alquiler, id: string): Promise<void>
   reclamar(a: Alquiler, monto: number, motivo: string, fotos: Foto[], avance?: Avance): Promise<void>
   responder(a: Alquiler, acepta: boolean, avance?: Avance): Promise<void>
   cerrarSinReclamo(a: Alquiler, avance?: Avance): Promise<void>
@@ -89,7 +97,43 @@ const local: Acciones = {
     await escrow.depositar(x, guardarEn(a.id), avance)
     store.cambiar(a.id, y => { if (y.estado !== 'pendiente_pago') return; y.estado = 'fotos_entrada'; y.pago = iso(y); y.historial.push({ fecha: iso(y), texto: `Depósito de ${usd(y.monto)} pagado y guardado` }) })
   }),
-  async iniciarSalida(a) { store.cambiar(a.id, x => { x.estado = 'salida'; x.salida = actaVacia() }, 'Empezaron las fotos de salida') },
+  async iniciarSalida(a) { store.cambiar(a.id, x => { x.estado = 'salida'; x.salida = actaDesde(x.entrada) }, 'Empezaron las fotos de salida') },   // la salida copia los espacios de la entrada
+  // Espacios: se valida sobre lo recién leído (otra pestaña pudo agregar el mismo nombre) y cualquier cambio borra las confirmaciones de la entrada.
+  async agregarCuarto(a, nombre, items, por) {
+    const x = store.fresco(a.id); if (!x) throw new Error('No encontramos este alquiler.')
+    if (listaFija(x)) throw new Error(ERR.fija)
+    const e = errorNombre(x.entrada, nombre); if (e) throw new Error(e)
+    const c = cuartoNuevo(nombre, items, por)
+    store.cambiar(a.id, y => { y.entrada.cuartos.push(c); y.entrada.firmas = {} }, `Se agregó el espacio ${c.nombre}`)
+    return c.id
+  },
+  async renombrarCuarto(a, id, nombre) {
+    const x = store.fresco(a.id); if (!x) throw new Error('No encontramos este alquiler.')
+    if (listaFija(x)) throw new Error(ERR.fija)
+    const c = x.entrada.cuartos.find(k => k.id === id); if (!c) throw new Error('Ese espacio ya no está en la lista.')
+    const e = errorNombre(x.entrada, nombre, id); if (e) throw new Error(e)
+    const n = limpiar(nombre); if (n === c.nombre) return
+    store.cambiar(a.id, y => { const k = y.entrada.cuartos.find(q => q.id === id)!; k.nombre = n; y.entrada.firmas = {} }, `Se cambió el nombre del espacio ${c.nombre} a ${n}`)
+  },
+  async quitarCuarto(a, id, por) {
+    const x = store.fresco(a.id); if (!x) throw new Error('No encontramos este alquiler.')
+    if (listaFija(x)) throw new Error(ERR.fija)
+    const pos = x.entrada.cuartos.findIndex(k => k.id === id); if (pos < 0) return
+    if (x.entrada.cuartos.length <= 1) throw new Error(ERR.ultimo)
+    const c = x.entrada.cuartos[pos]
+    store.cambiar(a.id, y => {
+      const [q] = y.entrada.cuartos.splice(pos, 1); y.entrada.firmas = {};
+      (y.quitados ??= []).push({ cuarto: q, pos, fecha: iso(y), por })    // las fotos quedan como respaldo (Legal, 23/10)
+    }, c.fotos.length ? `Se quitó el espacio ${c.nombre}; sus ${c.fotos.length} fotos quedan como respaldo en el historial` : `Se quitó el espacio ${c.nombre}`)
+  },
+  async deshacerQuitar(a, id) {
+    const x = store.fresco(a.id); const q = x?.quitados?.findLast(k => k.cuarto.id === id); if (!x || !q || listaFija(x) || x.entrada.cuartos.some(k => k.id === id)) return
+    if (x.entrada.cuartos.length >= 12) throw new Error(ERR.maximo)
+    store.cambiar(a.id, y => {
+      const i = y.quitados!.findLastIndex(k => k.cuarto.id === id); const [r] = y.quitados!.splice(i, 1); if (!y.quitados!.length) delete y.quitados
+      y.entrada.cuartos.splice(Math.min(r.pos, y.entrada.cuartos.length), 0, r.cuarto); y.entrada.firmas = {}
+    }, `Volvió el espacio ${q.cuarto.nombre} (se deshizo «Quitar espacio»)`)
+  },
   // Reclamo del dueño: primero se registra en la cuenta segura (disputa) y después cambia la pantalla.
   reclamar: (a, monto, motivo, fotos, avance = nada) => paso(a, 'reclamo', async x => {
     if (x.estado !== 'ventana_reclamo' || x.reclamo) return

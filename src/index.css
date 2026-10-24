@@ -785,6 +785,59 @@ html.sin-scroll{overflow:hidden}
 .ejemplo-cinta{margin:0 0 8px;padding:6px 12px;border-radius:999px;display:inline-block;background:var(--estado-pendiente-fondo);font:700 13px/18px Inter,system-ui,sans-serif;color:var(--cafe)}
 @media (prefers-reduced-motion:reduce){.driver-popover.recorrido{animation:aviso-fade 120ms linear!important}.driver-overlay,.driver-active-element{transition:none!important}}
 
+/* ── «+ Agregar espacio» (src/screens/Espacios.tsx; docs/espacios.md). Lista de espacios, hoja o panel lateral, menú «⋯» y celebración corta ── */
+.esp__lista{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.esp__fila{position:relative;display:flex;align-items:center;gap:6px;background:var(--tarjeta);border:1.5px solid var(--linea);border-radius:var(--r-tarjeta);padding:6px 6px 6px 8px}
+.esp__abrir{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:56px;background:none;border:0;padding:4px;text-align:left;font:inherit;color:inherit;cursor:pointer;border-radius:14px}
+.esp__mini{width:44px;height:44px;border-radius:12px;object-fit:cover;flex:none}
+.esp__mini--vacia{display:grid;place-items:center;background:var(--alterna);font-size:18px}
+.esp__txt{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
+.esp__txt strong{font-family:var(--f-titulo);font-size:16px;overflow-wrap:anywhere}
+.esp__txt small{flex-basis:100%;color:var(--cafe-suave);font-size:13px;line-height:18px}
+.esp__agregado{background:var(--alterna);color:var(--enlace)}
+.esp__antes{display:flex;gap:4px}.esp__antes img{width:28px;height:28px;border-radius:8px;object-fit:cover}
+.esp__menu{position:relative}
+.esp__mas-op{width:44px;height:44px;border:0;background:none;border-radius:12px;font-size:20px;line-height:1;color:var(--cafe);cursor:pointer}
+.esp__mas-op:hover{background:var(--alterna)}
+.esp__ops{position:absolute;right:0;top:46px;z-index:5;min-width:190px;display:grid;background:var(--tarjeta);border-radius:16px;box-shadow:var(--sombra-2);padding:6px}
+.esp__ops button{min-height:44px;text-align:left;border:0;background:none;font:600 15px/20px var(--f-texto);color:var(--cafe);padding:0 12px;border-radius:10px;cursor:pointer}
+.esp__ops button:hover,.esp__ops button:focus-visible{background:var(--alterna)}
+.esp__agregar{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border:2px dashed var(--borde);border-radius:var(--r-tarjeta);background:transparent;font:700 16px/22px var(--f-titulo);color:var(--enlace);cursor:pointer}
+.esp__agregar:disabled{opacity:.55;cursor:not-allowed}
+.esp__mas{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accion);color:var(--tarjeta);font-size:18px}
+.esp__ayuda{text-align:center}
+.esp__nota{font-size:14px;line-height:20px;color:var(--cafe-suave)}
+.esp__nota--info{background:rgba(111,191,138,.16);border-radius:14px;padding:10px 12px;color:var(--cafe)}
+.esp__nota--aviso{background:var(--alterna);border-radius:14px;padding:10px 12px;color:var(--cafe)}
+.esp__ver{align-self:flex-start}
+.esp-hoja{display:grid;gap:14px}
+.esp-hoja__t{font-size:20px}
+.esp__et{display:flex;justify-content:space-between;gap:8px}
+.esp__cont{color:var(--cafe-suave);font-weight:400}.esp__cont--mal{color:var(--error)}
+.esp-chips{display:flex;flex-wrap:wrap;gap:8px}
+.esp-chip{min-height:44px;padding:0 16px;border-radius:var(--r-pildora);border:1.5px solid var(--borde);background:var(--tarjeta);font:600 15px/20px var(--f-texto);color:var(--cafe);cursor:pointer}
+.esp-chip[aria-pressed="true"]{background:rgba(111,191,138,.22);border-color:var(--exito);color:var(--exito)}
+.esp-chip:disabled{opacity:.45;cursor:not-allowed}
+.esp-puntos{border:0;margin:0;padding:0;display:grid;gap:6px}
+.esp-puntos legend{display:flex;justify-content:space-between;width:100%;font-weight:600;margin-bottom:4px}
+.esp-puntos legend small{color:var(--cafe-suave);font-weight:400}
+.esp-otro{justify-self:start;min-height:44px}
+.esp-otro__campo{display:grid;gap:8px}
+.esp-hoja__pie,.esp-dlg__pie{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.esp-dlg{display:grid;gap:14px}.esp-dlg__pie{flex-direction:column}
+@media (min-width:1024px){.velo--lado{justify-content:flex-end;align-items:stretch;background:rgba(61,42,34,.08)}.velo--lado .esp-hoja{max-width:460px;max-height:100vh;border-radius:28px 0 0 28px;animation:esp-lado 280ms var(--ease)}}
+@keyframes esp-lado{from{transform:translateX(40px);opacity:0}}
+/* Celebración: la fila nueva entra desde abajo (200 ms), brilla en salvia 1 vez y salen 6 puntos (0,6 s). Con «reducir movimiento», solo el brillo. */
+.esp__fila--nueva{animation:esp-entra 200ms var(--ease),esp-brillo 600ms var(--ease);border-color:var(--salvia)}
+.esp__puntos{position:absolute;inset:0;pointer-events:none}
+.esp__punto{position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:50%;opacity:0;animation:esp-punto 600ms var(--ease) forwards}
+.esp__punto--0{background:var(--salvia);--dx:-70px;--dy:-26px}.esp__punto--1{background:var(--accion);--dx:-30px;--dy:-34px}.esp__punto--2{background:var(--coral);--dx:20px;--dy:-30px}
+.esp__punto--3{background:var(--exito);--dx:64px;--dy:-22px}.esp__punto--4{background:var(--salvia);--dx:-50px;--dy:24px}.esp__punto--5{background:var(--coral);--dx:52px;--dy:26px}
+@keyframes esp-entra{from{transform:translateY(16px);opacity:0}}
+@keyframes esp-brillo{0%{box-shadow:0 0 0 0 rgba(111,191,138,0)}40%{box-shadow:0 0 0 6px rgba(111,191,138,.45)}100%{box-shadow:0 0 0 0 rgba(111,191,138,0)}}
+@keyframes esp-punto{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)))}}
+@media (prefers-reduced-motion:reduce){.esp__fila--nueva{animation:esp-brillo 600ms linear}.velo--lado .esp-hoja{animation:none}}
+
 /* ── Estado de espera v2 del pago (src/EsperaPago.tsx; docs/estado-espera.md). Copiado de la maqueta aprobada
    diseno/estado-espera/v2/espera.css; solo usa variables de la paleta. ── */
 .envio{display:grid;gap:10px}

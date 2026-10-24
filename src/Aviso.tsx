@@ -1,6 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { LogoAviso } from './LogoAviso'
-import { lineaDe, tonoDe, type AlertaEnPila, type Accion } from './alertas'
+import { lineaDe, tonoDe, EVENTO_ESPACIO, type AlertaEnPila, type Accion } from './alertas'
 
 export type Tono = 'paso' | 'logro' | 'error'
 
@@ -14,7 +14,8 @@ export const UMBRAL_LADO = 1 / 3, UMBRAL_ABAJO = 40, UMBRAL_VELOCIDAD = 0.5
 const reducir = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lleva al paso del botón de acción: la tarjeta del paso (enfoca su botón principal) o «Detalles» abierto. */
-export function irA(destino: Accion['ir']) {
+export function irA(destino: Accion['ir'], dato?: string) {
+  if (destino === 'espacio' || destino === 'deshacer-espacio') { dispatchEvent(new CustomEvent(EVENTO_ESPACIO, { detail: { que: destino, id: dato } })); return }
   const behavior: ScrollBehavior = reducir() ? 'auto' : 'smooth'
   if (destino === 'detalles') {
     const d = document.querySelector<HTMLDetailsElement>('details.detalles')
@@ -107,7 +108,7 @@ export function Tostada({ a, indice, pausa, abierta, desplazar, onCerrar, onAlto
       <p id={id + 'd'} className="tostada__l">{linea.et && <b>{linea.et}</b>}{linea.et && ' '}{linea.texto}</p>
     </div>
     {accion && <button type="button" className="tostada__accion" aria-label={accion.etiqueta}
-      onClick={e => { e.stopPropagation(); cerrar(false); irA(accion.ir) }}
+      onClick={e => { e.stopPropagation(); cerrar(false); irA(accion.ir, accion.dato) }}
       onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar() } }}>{accion.texto}</button>}
     {dur != null && <span className="tostada__tiempo" aria-hidden="true" style={{ animationDuration: dur + 'ms' }} />}
     <span className="tostada__manija" aria-hidden="true" />

@@ -1,5 +1,7 @@
 // Ilustraciones SVG generadas para la demo (no son fotos reales).
 const COLORES = ['#FFE8DA', '#E6F4EA', '#FFF1B8', '#F3E6DF']
+/** Texto libre (nombre de un espacio propio) escapado antes de entrar al SVG. */
+const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 export function fotoEjemplo(cuarto: string, momento: 'entrada' | 'salida', i = 0): string {
   const fondo = COLORES[(cuarto.length + i) % COLORES.length]
   const mancha = momento === 'salida' && i % 2 === 0
@@ -8,7 +10,7 @@ export function fotoEjemplo(cuarto: string, momento: 'entrada' | 'salida', i = 0
 <rect x="0" y="160" width="320" height="60" fill="#E9D3C6"/><rect x="40" y="40" width="90" height="70" rx="6" fill="#fff" stroke="#3D2A22" stroke-width="3"/>
 <path d="M85 40v70M40 75h90" stroke="#3D2A22" stroke-width="2"/><rect x="170" y="105" width="110" height="60" rx="10" fill="#FF6B35" opacity=".85"/>
 <path d="M60 160c0-20 10-30 22-34-2 14-8 24-22 34z" fill="#6FBF8A"/>${mancha}
-<text x="16" y="205" font-family="Inter,sans-serif" font-size="16" font-weight="600" fill="#3D2A22">${cuarto} · ${momento} · ejemplo</text></svg>`
+<text x="16" y="205" font-family="Inter,sans-serif" font-size="16" font-weight="600" fill="#3D2A22">${esc(cuarto)} · ${momento} · ejemplo</text></svg>`
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
 }
 export async function reducirImagen(f: File, max = 560): Promise<string> {

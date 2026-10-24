@@ -5,6 +5,7 @@ import { modoServidor, modoPrueba } from '../servidor/config'
 import type { Alquiler, Rol, Cuarto, Foto } from '../types'
 import { NOMBRE_ROL } from '../types'
 import { fotoEjemplo } from '../demoFotos'
+import { parEnEntrada, puntoPar } from '../espacios'
 import { Icono } from '../ui'
 import { TomarFoto } from '../Camara'
 import { textoFoto } from '../fotos'
@@ -26,7 +27,8 @@ export function CuartoEditor({ a, cual, idx, rol }: { a: Alquiler; cual: 'entrad
   const [err, setErr] = useState('')
   const hacer = (p: Promise<void>) => { setErr(''); p.catch(e => setErr(e instanceof Error ? e.message : 'No pudimos guardar. Intenta de nuevo.')) }
   const agregar = (f: Foto) => hacer(acciones.agregarFoto(a, cual, idx, f))
-  const ent = cual === 'salida' ? a.entrada.cuartos[idx] : null
+  // La comparación empareja por id del espacio (no por posición): agregar o quitar espacios no mezcla fotos.
+  const ent = cual === 'salida' ? parEnEntrada(a, c) ?? null : null
   return <section className="pila cuarto" aria-labelledby={`c-${cual}-${idx}`}>
     <h2 id={`c-${cual}-${idx}`}>{c.nombre}</h2>
     {ent && <div><p className="mini">Así estaba al entrar</p><FotoLista fotos={ent.fotos} /></div>}
@@ -35,7 +37,7 @@ export function CuartoEditor({ a, cual, idx, rol }: { a: Alquiler; cual: 'entrad
     {!modoServidor && <button type="button" className="enlace" onClick={() => agregar({ src: fotoEjemplo(c.nombre, cual, c.fotos.length + idx), por: rol, fecha: new Date(ahoraDe(a)).toISOString(), tomadaEn: ahoraDe(a), origen: 'ejemplo' })}>Demo: usar una foto de ejemplo</button>}
     <fieldset className="campo"><legend>¿Cómo está cada cosa?</legend>
       <ul className="lista checklist">{c.items.map((it, j) => {
-        const e0 = ent?.items[j].estado
+        const e0 = puntoPar(ent ?? undefined, it.texto, j)?.estado
         return <li key={j}><span>{it.texto}{ent && <small className="nota"> · al entrar: {e0 === 'bien' ? 'bien' : e0 === 'detalle' ? 'con detalle' : '—'}</small>}</span>
           <span className="seg" role="group" aria-label={it.texto}>
             <button type="button" aria-pressed={it.estado === 'bien'} onClick={() => hacer(acciones.marcar(a, cual, idx, j, 'bien'))}>Bien</button>
