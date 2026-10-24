@@ -83,3 +83,13 @@ describe('contrato compacto: pantalla y estilos', () => {
     expect(reglas).toMatch(/\.cc-panel\{display:none!important\}/)
   })
 })
+
+// LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide.
+describe('Mediación en el contrato', () => {
+  it('la persona mediadora ayuda a buscar un acuerdo; no decide por ustedes', () => {
+    const t = renderToStaticMarkup(<PanelContrato a={A} abierto onCerrar={() => {}} hoja={false} />)
+    expect(t).toContain('Si no se ponen de acuerdo, una persona mediadora revisa con ustedes las fotos de entrada y de salida y les ayuda a buscar un acuerdo sobre el reparto del depósito. No decide por ustedes.')
+    expect(t).not.toMatch(/mediadora[^.]*decide cómo/)
+  })
+})
+

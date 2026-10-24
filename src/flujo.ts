@@ -39,7 +39,7 @@ export function ahoraPrueba(a: Alquiler): string {
     case 'salida': return s.inquilino ? dueno('confirmar las fotos de salida') : 'Ahora te toca: tomar las fotos de salida y confirmarlas.'
     case 'ventana_reclamo': return 'Ahora: corren los 7 días para reclamos. Puedes adelantar el plazo o hacer un reclamo en nombre del dueño de prueba.'
     case 'reclamo': return 'Ahora te toca: responder el reclamo del dueño de prueba.'
-    case 'mediacion': return 'Ahora le toca a la persona mediadora (simulada): decidir el reparto. Lo decides tú con el botón de abajo.'
+    case 'mediacion': return 'Ahora toca la mediación (simulada). En esta prueba, el reparto lo decides tú con el botón de abajo.' // LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide
     case 'cerrado': return 'Listo: el alquiler terminó. No tienes nada pendiente.'
   }
 }
@@ -71,9 +71,9 @@ export function turno(a: Alquiler, yo: Rol): { tu: string; otra: string; sigue: 
       ? { tu: 'Si encontraste un daño, puedes reclamar. Si todo está bien, no hagas nada.', otra: 'El inquilino espera.', sigue: 'Si no reclamas en 7 días, el depósito vuelve al inquilino.' }
       : { tu: 'No tienes que hacer nada.', otra: 'El dueño puede reclamar si encontró un daño.', sigue: 'Si no hay reclamo en 7 días, recibes tu depósito.' }
     case 'reclamo': return yo === 'inquilino'
-      ? { tu: 'Responde el reclamo: acéptalo o recházalo.', otra: 'El dueño espera tu respuesta.', sigue: 'Si lo rechazas, una persona mediadora decide.' }
-      : { tu: 'No tienes que hacer nada por ahora.', otra: 'El inquilino tiene que responder tu reclamo.', sigue: 'Si lo rechaza, una persona mediadora decide.' }
-    case 'mediacion': return { tu: 'No tienes que hacer nada.', otra: 'Una persona mediadora está revisando las fotos.', sigue: 'La persona mediadora decide cómo se reparte el depósito.' }
+      ? { tu: 'Responde el reclamo: acéptalo o recházalo.', otra: 'El dueño espera tu respuesta.', sigue: 'Si lo rechazas, una persona mediadora les ayuda a buscar un acuerdo.' } // LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide
+      : { tu: 'No tienes que hacer nada por ahora.', otra: 'El inquilino tiene que responder tu reclamo.', sigue: 'Si lo rechaza, una persona mediadora les ayuda a buscar un acuerdo.' } // LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide
+    case 'mediacion': return { tu: 'No tienes que hacer nada.', otra: 'Una persona mediadora está revisando las fotos.', sigue: 'La persona mediadora les ayuda a acordar cómo se reparte el depósito.' } // LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide
     case 'cerrado': return { tu: 'Listo. No tienes nada pendiente.', otra: 'Listo.', sigue: 'El alquiler terminó.' }
   }
 }

@@ -198,7 +198,7 @@ function Reclamo({ a, rol }: P) {
     {modoSolo && <p className="nota">El reclamo es simulado: no se registra en la red de prueba y el depósito de prueba sigue bloqueado en la cuenta segura.</p>}
     {modoVideo && <p className="nota">El dueño de prueba es una cuenta de Lockumi. Su reclamo quedó registrado en la cuenta segura de la red de prueba: el depósito no se mueve hasta que se resuelva.</p>}
     {rol === 'inquilino' ? <>
-      <p>Si aceptas, recibes {usd(a.monto - r.monto)} y el dueño {usd(r.monto)}{escrowReal ? ` (menos ${COMISION_TEXTO} de comisión de la red de prueba)` : ''}. Si no estás de acuerdo, una persona mediadora revisa las fotos y decide.</p>
+      <p>Si aceptas, recibes {usd(a.monto - r.monto)} y el dueño {usd(r.monto)}{escrowReal ? ` (menos ${COMISION_TEXTO} de comisión de la red de prueba)` : ''}. Si no estás de acuerdo, una persona mediadora revisa las fotos con ustedes y les ayuda a buscar un acuerdo.</p>{/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide */}
       {p.error}
       <button type="button" className="boton boton--primario boton--ancho boton--grande" disabled={p.ocupado} onClick={() => void aceptar()}>{p.texto('Aceptar reclamo')}</button>
       <button type="button" className="boton boton--secundario boton--ancho" disabled={p.ocupado} onClick={() => void p.correr(() => acciones.responder(a, false))}>No estoy de acuerdo</button>
@@ -215,7 +215,8 @@ function Mediacion({ a }: P) {
   return <section className="pila"><div className="cab"><h2>Con una persona mediadora</h2>{modoPrueba && <Simulado />}</div>
     {modoSolo && <p className="nota">La persona mediadora es simulada: su decisión no se registra en la red de prueba ni mueve el depósito de prueba.</p>}
     {modoVideo && <p className="nota">En esta prueba la persona mediadora es simulada: decides tú con «Resolver el reclamo (simulación)». El reparto que elijas sí se hace de verdad en la red de prueba.</p>}
-    <p>No hubo acuerdo. Una persona mediadora revisa las fotos de entrada y salida y decide cómo se reparte el depósito.</p>
+    {/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide */}
+    <p>No hubo acuerdo. Una persona mediadora revisa con ustedes las fotos de entrada y salida y les ayuda a buscar un acuerdo sobre el reparto.</p>
     {!modoVideo && <Espera texto="No tienes que hacer nada. Te avisaremos cuando haya una decisión." />}
     <Evidencia a={a} />
     {mediador && (!panel ? <button type="button" className={modoVideo ? 'boton boton--primario boton--ancho boton--grande' : 'enlace'} onClick={() => setPanel(true)}>{modoServidor ? 'Decidir como mediador' : modoVideo ? 'Resolver el reclamo (simulación)' : 'Demo: decidir como mediador'}</button>

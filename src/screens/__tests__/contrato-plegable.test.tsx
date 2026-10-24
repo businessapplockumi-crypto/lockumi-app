@@ -23,7 +23,7 @@ const A: Alquiler = {
 const SIEMPRE = ['Contrato', 'Pendiente de firmas', 'Referencia 3F2A9C1B', 'El alquiler', 'Apartamento en Barreal de Heredia', 'Partes', 'demo@lockumi.com',
   'Este contrato se guarda solo en tu navegador. El lugar y las fotos no salen de él.', 'Descargar o imprimir']
 const PLEGADO = ['Reglas', 'No se permiten mascotas', 'El depósito', 'Nadie puede tomarlo solo: ni el dueño, ni el inquilino, ni Lockumi.',
-  '7 días para reclamos', 'Mediación', 'Si no se ponen de acuerdo, una persona mediadora revisa las fotos', 'Firmas', 'Pendiente</span>']
+  '7 días para reclamos', 'Mediación', 'Si no se ponen de acuerdo, una persona mediadora revisa con ustedes las fotos', 'Firmas', 'Pendiente</span>']
 
 /** Parte el HTML en lo que queda a la vista y lo que está dentro del bloque plegado (`<div class="cp-completo" …>`). */
 const partir = (html: string) => {

@@ -39,8 +39,8 @@ export function Documento({ a, impresion, plegado }: { a: Alquiler; impresion?: 
     </section>
 
     <section className="ct__sec"><h3>Mediación</h3>
-      {/* LEGAL: revisar. Resumen de la cláusula 6.7 de los Términos 1.5-demo. */}
-      <p className="ct__texto">Si no se ponen de acuerdo, una persona mediadora revisa las fotos de entrada y de salida y decide cómo se reparte el depósito.{modoPrueba ? ' En esta prueba, la persona mediadora es simulada.' : ''}</p>
+      {/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide. Resumen de la cláusula 6.7 de los Términos 1.5-demo. */}
+      <p className="ct__texto">Si no se ponen de acuerdo, una persona mediadora revisa con ustedes las fotos de entrada y de salida y les ayuda a buscar un acuerdo sobre el reparto del depósito. No decide por ustedes.{modoPrueba ? ' En esta prueba, la mediación es una simulación y el reparto se elige con el botón «Resolver el reclamo (simulación)».' : ''}</p>
     </section>
 
     <section className="ct__sec"><h3>Firmas</h3>
