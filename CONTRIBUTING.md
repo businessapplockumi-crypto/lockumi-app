@@ -67,6 +67,8 @@ Publicado el 23 oct 2026 (avisos v2). Ver [`docs/alertas.md`](docs/alertas.md).
 
 ## Formulario «Nuevo alquiler» (`src/formulario.ts`, `src/screens/Crear.tsx`)
 
+Rama `formulario`, sin publicar. En `master`, «Nuevo alquiler» sigue siendo la pantalla de siempre.
+
 - Los textos (pregunta, ayuda y «listo» de cada pantalla), los chips y las cuentas están en `src/formulario.ts`; la pantalla, en `src/screens/Crear.tsx`. Los textos son los de la maqueta (`diseno/envio/recorrido-formulario/textos.md`) y `src/__tests__/formulario.test.tsx` los compara palabra por palabra. Un texto nuevo pasa por Legal.
 - Una pregunta por pantalla. Cada error dice cómo arreglarlo («Toca un monto o escríbelo en «Otro monto».»). Sin palabras técnicas.
 - Los montos se muestran siempre con `usd(...)`; nunca escribas «USDC» o «USD» con un número fijo.
@@ -74,7 +76,8 @@ Publicado el 23 oct 2026 (avisos v2). Ver [`docs/alertas.md`](docs/alertas.md).
 - Notas de Legal: los chips de duración (Ley 7527, art. 70) y «+ Otra regla» (moderar antes de producción) no se usan con dinero real sin su OK.
 - La validación y la creación son las mismas de antes (`src/validacion.ts`, `crearAcuerdo`); no las cambies desde el formulario.
 - El recorrido guiado pide una pantalla con `pedirPantalla(i)` (paso 2: lugar; paso 3: reglas). Deja `data-recorrido="datos"` y `data-recorrido="reglas"`.
-- Los scripts de navegador recorren el formulario con `llenarFormulario(p)` de `scripts/_formulario.mjs`; si cambias las pantallas, cambia esa ayuda.
+- Los scripts de navegador recorren el formulario con `llenarFormulario(p)` de `scripts/_formulario.mjs`; si cambias las pantallas, cambia esa ayuda. La regla que viene marcada es «Sin mascotas» (`REGLAS_INICIALES`): los scripts que buscan las reglas en el contrato la buscan a ella.
+- No dejes `BASE` exportada en la terminal: los scripts la usan como dirección de la app y, si apunta a producción, corren contra app.lockumi.com.
 - Prueba en navegador: `VITE_TRUSTLESS=1 npx vite build && npx vite preview --port 4173`, luego `OUT=/tmp/f/ node scripts/formulario/capturar.mjs` (teléfono, computadora y movimiento reducido; `GIF=1` guarda cuadros).
 
 ## Agregar un estado del alquiler y su color

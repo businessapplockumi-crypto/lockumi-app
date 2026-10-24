@@ -1,6 +1,6 @@
 # Formulario «Nuevo alquiler»: una pregunta por pantalla
 
-Rama `ux-guiada` (24 oct 2026), solo vista previa. Maqueta y textos: `diseno/envio/recorrido-formulario/` (`resumen.jpg`, `textos.md`, revisados por Legal el 23/10).
+Rama `formulario` (24 oct 2026, desde `master` en `051c071`), solo vista previa; no está en app.lockumi.com. Maqueta y textos: `diseno/envio/recorrido-formulario/` (`resumen.jpg`, `textos.md`, revisados por Legal el 23/10).
 
 ## Pantallas
 
@@ -53,3 +53,11 @@ El paso 2 («Los datos del alquiler») abre la pantalla 1 y el paso 3 («Las reg
 
 - Unitarias: `src/__tests__/formulario.test.tsx` (textos, chips, cuentas, errores, notas de Legal, `usd(...)`, accesibilidad).
 - Navegador: `scripts/formulario/capturar.mjs` sobre la app construida (390 px, 1280 px y movimiento reducido). Los demás scripts recorren el formulario con `scripts/_formulario.mjs`.
+
+### Resultados (24 oct 2026, rama `formulario`)
+
+- Unitarias: 212/212 (13 nuevas en `formulario.test.tsx`).
+- `scripts/formulario/capturar.mjs`: 43 ✓ / 0 ✗ (390 px, 1280 px y movimiento reducido).
+- Recorrido 97 ✓ (los pasos 2 y 3 abren la pantalla de lugar y la de reglas), alertas 949 ✓ / 0 ✗, espera-pagar y aviso-v2 TODO BIEN, contrato-plegable 88 ✓ / 0 ✗.
+- contrato-plegable: las 2 fallas del PDF eran de la prueba. Buscaba la regla «No se permiten mascotas», que era la regla inicial del formulario anterior; el formulario nuevo empieza con «Sin mascotas» (texto de la maqueta). Se cambió la prueba y se quitó un relleno de `#f-reglas`, campo que ya no existe.
+- Imagen: `diseno/envio/ux-guiada/3-formulario.jpg` y `3-formulario.gif` (demo@lockumi.com).

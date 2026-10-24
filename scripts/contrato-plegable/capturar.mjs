@@ -30,8 +30,7 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
   await p.goto(B); await p.waitForTimeout(800)
   const entendido = async () => { const e = p.getByRole('button', { name: 'Entendido' }); if (await e.count()) await e.first().click().catch(() => {}) }
   await entendido(); await p.goto(B + '#/crear'); await p.waitForTimeout(1200); await entendido()
-  await llenarFormulario(p)
-  const reglas = p.locator('#f-reglas'); if (await reglas.count()) await reglas.fill('No se permiten mascotas\nNo fumar dentro del apartamento').catch(() => {})
+  await llenarFormulario(p)   // regla inicial del formulario: «Sin mascotas» (REGLAS_INICIALES)
   await p.locator('.fz-pie').getByRole('button', { name: 'Crear alquiler', exact: true }).click(); await p.locator('.paso-cab').waitFor({ timeout: 20000 })
   await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(600)
 
@@ -97,7 +96,7 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
     ok(await p.locator('.cp-abrir').getAttribute('aria-expanded') === 'false', 'después de imprimir sigue cerrado')
     for (const f of ['impresion-menu-cerrado', 'impresion-boton-cerrado']) {
       const t = execFileSync('pdftotext', [`${OUT}${f}.pdf`, '-']).toString().replace(/\s+/g, ' ').toLowerCase()
-      const faltan = ['El alquiler', 'Partes', 'Reglas', 'No se permiten mascotas', 'El depósito', 'Nadie puede tomarlo solo', '7 días para reclamos', 'Mediación', 'persona mediadora es simulada', 'Firmas', 'No reemplaza un contrato de alquiler', 'Este contrato se guarda solo en tu navegador']
+      const faltan = ['El alquiler', 'Partes', 'Reglas', 'Sin mascotas', 'El depósito', 'Nadie puede tomarlo solo', '7 días para reclamos', 'Mediación', 'persona mediadora es simulada', 'Firmas', 'No reemplaza un contrato de alquiler', 'Este contrato se guarda solo en tu navegador']
         .filter(x => !t.includes(x.toLowerCase()))
       if (f === 'impresion-boton-cerrado') ok(!t.includes('firmas del contrato') && !t.includes('tus alquileres'), `PDF ${f}: solo el contrato (sin el resto de la pantalla)`)
       ok(!faltan.length && !t.includes('ver contrato completo'), `PDF ${f}: contrato completo${faltan.length ? ' (faltan: ' + faltan.join(', ') + ')' : ''}`)

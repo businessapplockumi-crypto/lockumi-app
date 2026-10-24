@@ -92,6 +92,7 @@ const cuadros = async (p, n, ms = 90) => { for (let i = 0; i < n; i++) { await c
   s = await estado(p); ok(s.errores.includes('Toca un monto o escríbelo en «Otro monto».'), 'pantalla 3 vacía: el error dice cómo arreglarlo')
   await p.locator('[role="radio"]').nth(4).click(); await p.waitForTimeout(150)
   const grande = await p.locator('.fz-monto strong').textContent(); ok(/10/.test(grande), 'el monto grande sigue al chip → ' + grande)
+  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(150)   // el chip deja la página bajada: la captura va con la pregunta arriba
   await p.screenshot({ path: OUT + 'm-3-monto.png' }); await cuadros(p, 5)
   await pie(p, 'Siguiente').click(); await esperarAviso(p, '¡Monto listo!')
   s = await estado(p); ok(s.h1[0] === 'Reglas del lugar' && s.n === '4 de 5', 'pantalla 4: «Reglas del lugar», «4 de 5»')

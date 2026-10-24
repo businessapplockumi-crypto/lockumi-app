@@ -43,4 +43,4 @@ Los pasos 4 a 6 abren `#/ejemplo`: un alquiler inventado («Apartamento en Barre
 
 - La maqueta también pone el recorrido en el menú de la cuenta (avatar). La app todavía no tiene ese menú; por ahora están el botón del encabezado y la tarjeta de Inicio.
 
-- Los pasos 2 y 3 abren su pantalla del formulario «Nuevo alquiler» (una pregunta por pantalla) con `pantalla` en `PASOS_RECORRIDO` y `pedirPantalla(i)` de `src/formulario.ts`: el 2 la de lugar (`data-recorrido="datos"`) y el 3 la de reglas (`data-recorrido="reglas"`). Ver [`formulario.md`](formulario.md).
+- Rama `formulario` (sin publicar): los pasos 2 y 3 abren su pantalla del formulario «Nuevo alquiler» (una pregunta por pantalla) con `pantalla` en `PASOS_RECORRIDO` y `pedirPantalla(i)` de `src/formulario.ts`: el 2 la de lugar (`data-recorrido="datos"`) y el 3 la de reglas (`data-recorrido="reglas"`). Ver [`formulario.md`](formulario.md).
