@@ -1,6 +1,6 @@
 # Recorrido guiado
 
-Estado: **publicado el 24 oct 2026** en app.lockumi.com (rama `ux-guiada` unida a `master` con merge `--no-ff`).
+Estado: **publicado el 24 oct 2026** en app.lockumi.com (rama `ux-guiada` unida a `master` con merge `--no-ff` en `1ab36ae` (master anterior `76373f8`); deploy de producción `dpl_EkFHfSn82SwL2JGvD7GmwXUGo38K`).
 
 ## Qué es
 

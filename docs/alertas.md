@@ -2,7 +2,7 @@
 
 **Publicado el 23 oct 2026** en app.lockumi.com (el aviso al inicio del orden de Tab y el aviso v2 · toast se publicaron el 24 oct 2026; ver abajo): rama `contrato-plegable` unida a `master` por avance rápido desde `ad1578f` en `abdfd9b` (código `afe15ae` y `abdfd9b`, docs `2312401`); deploy de producción `dpl_ARoWYrXEBftUcz1L4NoRiQNA9N6v`. Pruebas antes de publicar: 163/163 unitarias y 855/855 del recorrido en navegador.
 
-## Aviso v2 · toast (publicado el 24 oct 2026; rama `ux-guiada` unida a `master` con merge `--no-ff`)
+## Aviso v2 · toast (publicado el 24 oct 2026; rama `ux-guiada` unida a `master` con merge `--no-ff` en `1ab36ae` (master anterior `76373f8`); deploy de producción `dpl_EkFHfSn82SwL2JGvD7GmwXUGo38K`)
 
 Aprobado por Katherine (maquetas `diseno/aviso-compacto/` y `diseno/recorrido-formulario/`). Reemplaza la tarjeta de los avisos v2 en **todos** los logros, pasos y errores:
 
