@@ -14,6 +14,7 @@ import { fotoEjemplo } from '../demoFotos'
 import { Demo, Simulado, Icono, LineaTiempo, usd, fecha, fechaHora } from '../ui'
 import { CuartoEditor, Firma, FotoLista, cuartoListo } from './Acta'
 import { ContratoDoc } from './ContratoDoc'
+import { ContratoCompacto, useEscritorio } from './ContratoCompacto'
 import { TomarFoto } from '../Camara'
 import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE, ahoraPrueba } from '../flujo'
 import { adelantoPermitido } from '../../api/_lib/red'
@@ -277,7 +278,7 @@ function Cerrado({ a, rol }: P) {
 
 /** `ejemplo`: alquiler de ejemplo del recorrido guiado (solo lectura: sin red, sin avisos, sin el dueño de prueba automático). */
 export function Detalle({ id, u, ejemplo }: { id: string; u: Usuario; ejemplo?: Alquiler }) {
-  useAlquileres(); const a = ejemplo ?? obtener(id)
+  useAlquileres(); const a = ejemplo ?? obtener(id); const escritorio = useEscritorio()
   const real: Rol = a ? rolDe(a, u.email) : 'dueno'
   const rol: Rol = a ? vistaDe(a, u.email) : 'dueno'
   useEffect(() => { window.scrollTo(0, 0) }, [a?.estado, rol])
@@ -317,6 +318,7 @@ export function Detalle({ id, u, ejemplo }: { id: string; u: Usuario; ejemplo?: 
     {modoServidor && rol === 'dueno' && a.inquilinoUnido === false && <Invitacion a={a} />}
     <div className="paso-cab"><p className="paso-cab__n">{a.estado === 'cerrado' ? 'Terminado' : pasoTexto(a)}</p><p className="paso-cab__t">{ETAPAS[etapa]}</p>
       <div className="barra-paso" aria-hidden="true"><span style={{ width: `${((etapa + (a.estado === 'cerrado' ? 1 : 0.5)) / ETAPAS.length) * 100}%` }} /></div></div>
+    {a.estado !== 'firmas' && !escritorio && <div className="cc-arriba" inert={!!ejemplo}><ContratoCompacto a={a} como="barra" /></div>}
     <div className="detalle" inert={!!ejemplo}>
       <div className="detalle__principal pila">
         {modoVideo && <p className="ahora" role="status" aria-live="polite">{ahoraPrueba(a)}</p>}
@@ -330,9 +332,9 @@ export function Detalle({ id, u, ejemplo }: { id: string; u: Usuario; ejemplo?: 
         <div className="glass glass--fuerte tarjeta">{panel}</div>
       </div>
       <aside className="detalle__lado pila">
+        {a.estado !== 'firmas' && escritorio && <ContratoCompacto a={a} como="tarjeta" />}
         {escrowReal && <Comprobantes a={a} />}
         <section className="glass tarjeta" aria-labelledby="t-estado" data-recorrido="pasos"><h3 id="t-estado">Los pasos</h3><LineaTiempo a={a} /></section>
-        {a.estado !== 'firmas' && <section className="glass tarjeta" aria-label="Contrato"><ContratoDoc a={a} /></section>}
         <details className="glass tarjeta detalles"><summary>Detalles</summary>
           <ul className="lista"><li><span>Dueño</span><span className="cortar">{a.duenoEmail}</span></li><li><span>Inquilino</span><span className="cortar">{a.inquilinoEmail}</span></li>
             <li><span>Depósito</span><span>{usd(a.monto)}</span></li><li><span>Fechas</span><span>{fecha(a.inicio)} → {fecha(a.fin)}</span></li></ul>

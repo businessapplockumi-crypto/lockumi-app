@@ -89,8 +89,9 @@ export function Documento({ a, impresion, plegado }: { a: Alquiler; impresion?: 
   </article>
 }
 
-/** Contrato (resumen fijo y resto plegable) con el botón «Descargar o imprimir», que siempre imprime el contrato completo. El navegador abre su ventana de impresión, donde también se puede guardar como PDF. */
-export function ContratoDoc({ a }: { a: Alquiler }) {
+/** Contrato (resumen fijo y resto plegable) con el botón «Descargar o imprimir», que siempre imprime el contrato completo. El navegador abre su ventana de impresión, donde también se puede guardar como PDF.
+ *  `completo`: sin plegar (lo usa el panel de «Ver contrato» del contrato compacto); el texto es el mismo. */
+export function ContratoDoc({ a, completo: todo }: { a: Alquiler; completo?: boolean }) {
   const [imprimiendo, setImprimiendo] = useState(false)
   // Siempre empieza cerrado (no se guarda en ningún lado). Al imprimir con el menú del navegador, @media print muestra lo plegado
   // igual; además se abre aquí para que pantalla e impresión coincidan, y al terminar vuelve a como estaba.
@@ -113,7 +114,7 @@ export function ContratoDoc({ a }: { a: Alquiler }) {
     return () => { clearTimeout(t); removeEventListener('afterprint', fin); document.documentElement.classList.remove('imprimiendo') }
   }, [imprimiendo])
   return <div className="pila">
-    <Documento a={a} plegado={{ abierto, alternar: () => setAbierto(v => !v), id }} />
+    {todo ? <Documento a={a} /> : <Documento a={a} plegado={{ abierto, alternar: () => setAbierto(v => !v), id }} />}
     <button type="button" className="boton boton--secundario boton--ancho ct__imprimir" onClick={() => setImprimiendo(true)}>Descargar o imprimir</button>
     <p className="nota centro">Se abre la ventana de impresión. Para descargarlo, elige «Guardar como PDF».</p>
     {imprimiendo && createPortal(<div className="impresion"><Documento a={a} impresion /></div>, document.body)}
