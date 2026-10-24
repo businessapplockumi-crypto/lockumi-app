@@ -217,13 +217,14 @@ function Mediacion({ a }: P) {
     {modoVideo && <p className="nota">En esta prueba la persona mediadora es simulada: decides tú con «Resolver el reclamo (simulación)». El reparto que elijas sí se hace de verdad en la red de prueba.</p>}
     {/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide */}
     <p>No hubo acuerdo. Una persona mediadora revisa con ustedes las fotos de entrada y salida y les ayuda a buscar un acuerdo sobre el reparto.</p>
-    {!modoVideo && <Espera texto="No tienes que hacer nada. Te avisaremos cuando haya una decisión." />}
+    {/* LEGAL: revisado (24/10) · botones y espera: «registrar el acuerdo», sin «decidir» */}
+    {!modoVideo && <Espera texto="No tienes que hacer nada. Te avisaremos cuando haya un acuerdo." />}
     <Evidencia a={a} />
-    {mediador && (!panel ? <button type="button" className={modoVideo ? 'boton boton--primario boton--ancho boton--grande' : 'enlace'} onClick={() => setPanel(true)}>{modoServidor ? 'Decidir como mediador' : modoVideo ? 'Resolver el reclamo (simulación)' : 'Demo: decidir como mediador'}</button>
+    {mediador && (!panel ? <button type="button" className={modoVideo ? 'boton boton--primario boton--ancho boton--grande' : 'enlace'} onClick={() => setPanel(true)}>{modoServidor ? 'Registrar el acuerdo' : modoVideo ? 'Resolver el reclamo (simulación)' : 'Demo: registrar el acuerdo'}</button>
       : <div className="mediador pila"><label className="campo"><span>Para el dueño: {usd(aDueno)} · para el inquilino: {usd(a.monto - aDueno)}</span>
           <input type="range" min={0} max={r.monto} step={escrowReal ? 0.01 : 10} value={aDueno} onChange={e => setAD(Number(e.target.value))} aria-valuetext={`${usd(aDueno)} para el dueño`} /></label>
         {p.error}
-        <button type="button" className="boton boton--primario boton--ancho" disabled={p.ocupado} onClick={() => void decidir()}>{p.texto(modoVideo ? 'Confirmar el reparto' : 'Decidir')}</button>
+        <button type="button" className="boton boton--primario boton--ancho" disabled={p.ocupado} onClick={() => void decidir()}>{p.texto(modoVideo ? 'Confirmar el reparto' : 'Registrar el acuerdo')}</button>
         {escrowReal && p.ocupado && NOTA_TIEMPO}</div>)}
   </section>
 }

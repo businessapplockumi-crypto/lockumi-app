@@ -97,7 +97,7 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
     ok(await p.locator('.cp-abrir').getAttribute('aria-expanded') === 'false', 'después de imprimir sigue cerrado')
     for (const f of ['impresion-menu-cerrado', 'impresion-boton-cerrado']) {
       const t = execFileSync('pdftotext', [`${OUT}${f}.pdf`, '-']).toString().replace(/\s+/g, ' ').toLowerCase()
-      const faltan = ['El alquiler', 'Partes', 'Reglas', 'No se permiten mascotas', 'El depósito', 'Nadie puede tomarlo solo', '7 días para reclamos', 'Mediación', 'la mediación es una simulación', 'No decide por ustedes', 'Firmas', 'No reemplaza un contrato de alquiler', 'Este contrato se guarda solo en tu navegador']
+      const faltan = ['El alquiler', 'Partes', 'Reglas', 'No se permiten mascotas', 'El depósito', 'Ni el dueño ni el inquilino pueden tomarlo solos', '7 días para reclamos', 'Mediación', 'la mediación es una simulación', 'No decide por ustedes', 'Firmas', 'No reemplaza un contrato de alquiler', 'Este contrato se guarda solo en tu navegador']
         .filter(x => !t.includes(x.toLowerCase()))
       if (f === 'impresion-boton-cerrado') ok(!t.includes('firmas del contrato') && !t.includes('tus alquileres'), `PDF ${f}: solo el contrato (sin el resto de la pantalla)`)
       ok(!faltan.length && !t.includes('ver contrato completo'), `PDF ${f}: contrato completo${faltan.length ? ' (faltan: ' + faltan.join(', ') + ')' : ''}`)

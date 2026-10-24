@@ -2,7 +2,7 @@
 
 > Versión demo en red de prueba. Este texto puede actualizarse; te avisaremos de los cambios importantes.
 
-**Versión 1.5-demo · 20 de octubre de 2026**
+**Versión 1.6-demo · 24 de octubre de 2026**
 
 Estos términos aplican a la app app.lockumi.com y están publicados en https://app.lockumi.com/terminos.
 
@@ -63,7 +63,8 @@ Estas reglas describen cómo funciona la simulación. En la demo no generan dere
 6.4 **Pruebas.** Cada monto reclamado debe indicar su motivo e ir acompañado de las fotos y de una factura o un presupuesto.
 6.5 **Plazos.** El dueño tiene **7 días naturales** desde la entrega de las llaves para reclamar. Si no reclama, se libera todo al inquilino. El inquilino tiene **7 días naturales** para responder. Si no responde, se entiende que **no acepta** el reclamo. La demo permite adelantar el tiempo para mostrar estos plazos.
 6.6 **Tope.** Lo retenido nunca supera el depósito.
-6.7 **Desacuerdo.** En la demo, si el inquilino no acepta el reclamo, el caso pasa a una persona mediadora **simulada** que decide un reparto simulado. En un servicio real, la mediación la haría una persona neutral que no decide por las partes, y cualquiera de las partes podría acudir a los tribunales.
+<!-- LEGAL: revisado (24/10) · 6.7 con el texto de Legal (ronda 2) -->
+6.7 **Desacuerdo.** En la demo, si el inquilino no acepta el reclamo, el caso pasa a una mediación simulada y el reparto se elige con el botón «Resolver el reclamo (simulación)». En un servicio real, una persona mediadora neutral les ayudaría a buscar un acuerdo, sin decidir por las partes. Si no hay acuerdo, el depósito seguiría guardado y cualquiera de las partes podría acudir a los tribunales de Costa Rica.
 
 ## 7. Uso aceptable
 No está permitido: a) intentar usar la app con la red principal de Stellar o con activos reales, o enviar fondos reales a las cuentas de la demo; b) usar la app para alquileres o depósitos reales, ni para hacerle creer a otra persona que la demo tiene valor; c) subir fotos de personas, documentos de identidad, datos sensibles o contenido ilegal u ofensivo; d) intentar vulnerar la seguridad de la app, de sus proveedores o de la red; e) automatizar el uso de la app de forma abusiva; f) hacerse pasar por otra persona. Si alguien incumple estas reglas, Lockumi puede suspender su acceso a la demo y le informará el motivo.

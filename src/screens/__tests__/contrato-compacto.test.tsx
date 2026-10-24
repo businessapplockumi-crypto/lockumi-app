@@ -21,7 +21,7 @@ const A: Alquiler = {
   contrato: { firmas: { dueno: '2026-10-24T07:00:00.000Z', inquilino: '2026-10-24T07:00:00.000Z' } }, entrada: { cuartos: [], firmas: {} }, diasSimulados: 0,
 }
 const ids = (html: string) => [...html.matchAll(/ id="([^"]+)"/g)].map(m => m[1])
-const COMPLETO = ['El alquiler', 'Partes', 'Reglas', 'No se permiten mascotas', 'El depósito', 'Nadie puede tomarlo solo: ni el dueño, ni el inquilino, ni Lockumi.',
+const COMPLETO = ['El alquiler', 'Partes', 'Reglas', 'No se permiten mascotas', 'El depósito', 'Ni el dueño ni el inquilino pueden tomarlo solos. En esta prueba, si hay un reclamo, la cuenta de Lockumi es la que ejecuta el reparto que se elige en la simulación.',
   '7 días para reclamos', 'Mediación', 'Firmas', 'Este contrato se guarda solo en tu navegador. El lugar y las fotos no salen de él.']
 
 describe('contrato compacto: tarjeta (escritorio)', () => {
@@ -37,7 +37,7 @@ describe('contrato compacto: tarjeta (escritorio)', () => {
     expect(html.match(/<dialog/g)).toHaveLength(1)
     expect(html).toContain('cc-panel--lado'); expect(html).not.toContain('cc-panel--hoja')
     expect(html).toContain(`aria-label="${TEXTO_CERRAR}"`)
-    expect(html.slice(html.indexOf('<dialog'), html.indexOf('</dialog>'))).not.toContain('Nadie puede tomarlo solo')
+    expect(html.slice(html.indexOf('<dialog'), html.indexOf('</dialog>'))).not.toContain('pueden tomarlo solos')
   })
   it('sin ids repetidos', () => { const x = ids(html); expect(new Set(x).size).toBe(x.length) })
   it('imprimir con el menú del navegador da el contrato completo (bloque solo para el papel)', () => {
@@ -91,5 +91,15 @@ describe('Mediación en el contrato', () => {
     expect(t).toContain('Si no se ponen de acuerdo, una persona mediadora revisa con ustedes las fotos de entrada y de salida y les ayuda a buscar un acuerdo sobre el reparto del depósito. No decide por ustedes.')
     expect(t).not.toMatch(/mediadora[^.]*decide cómo/)
   })
+  // LEGAL: revisado (24/10) · ronda 2: el depósito ya no promete «ni Lockumi» y los botones registran el acuerdo, no deciden.
+  it('ronda 2 de Legal: depósito, botones de la persona mediadora y comprobante', async () => {
+    const doc = fs.readFileSync(new URL('../ContratoDoc.tsx', import.meta.url), 'utf8')
+    expect(doc).toContain('Ni el dueño ni el inquilino pueden tomarlo solos. En esta prueba, si hay un reclamo, la cuenta de Lockumi es la que ejecuta el reparto que se elige en la simulación.')
+    expect(doc).not.toContain('ni Lockumi')
+    for (const t of ["'Registrar el acuerdo'", "'Demo: registrar el acuerdo'", 'Te avisaremos cuando haya un acuerdo.']) expect(detalle).toContain(t)
+    expect(detalle).not.toMatch(/Decidir como mediador|decidir como mediador|: 'Decidir'\)|haya una decisión/)
+    const { NOMBRE_PASO } = await import('../../services/comprobantes')
+    expect(NOMBRE_PASO.resolucion).toBe('Reparto del depósito')
+    expect(fs.readFileSync(new URL('../../acciones.ts', import.meta.url), 'utf8')).not.toContain('mediadora decidió')
+  })
 })
-

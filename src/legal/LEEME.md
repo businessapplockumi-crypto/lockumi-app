@@ -6,7 +6,7 @@ su ruta (`terminos.md` → `/terminos`) y su enlace en el pie.
 
 | Archivo         | Ruta          | Origen |
 |-----------------|---------------|--------|
-| `terminos.md`   | `/terminos`   | `/workspace/lockumi-landing/terminos-app-1.5-borrador.md`, copia exacta (1.5-demo) |
+| `terminos.md`   | `/terminos`   | `/workspace/lockumi-landing/terminos-app-1.5-borrador.md`, copia exacta (1.5-demo), con la cláusula 6.7 cambiada por Legal el 24/10/2026 (ronda 2) → **1.6-demo · 24 de octubre de 2026**. El borrador de `lockumi-landing` no tiene ese cambio. |
 | `privacidad.md` | `/privacidad` | `/workspace/lockumi-landing/privacidad-app-1.5-borrador.md`, copia exacta (1.5-demo, sin nota interna) |
 
 ## Reemplazar un texto
@@ -21,3 +21,12 @@ Sustituir el archivo `.md` (sin editar su contenido; en privacidad, quitar la "N
 
 Las aceptaciones se guardan en `localStorage` (`lockumi.terminos.aceptacion`, `lockumi.privacidad.consentimiento`)
 como `{ version, fecha }` y en el usuario (`lockumi.usuario` → `terminos`, `privacidad`). Este LEEME no es una página.
+
+## Cambios de Legal dentro del texto
+
+- **1.6-demo (24 oct 2026, rama `contrato-compacto`, sin publicar):** solo la cláusula 6.7 «Desacuerdo», con el texto exacto de Legal
+  (la mediación es simulada y el reparto se elige con «Resolver el reclamo (simulación)»; en un servicio real, una persona mediadora
+  neutral ayuda sin decidir y, sin acuerdo, se puede acudir a los tribunales de Costa Rica). Marcado con una nota interna
+  `<!-- LEGAL: revisado (24/10) … -->`, que no se publica. Como cambió la versión, quien aceptó la 1.5-demo vuelve a ver la casilla de
+  Términos sin marcar la próxima vez que pase por «Entrar». El Aviso de privacidad sigue en 1.5-demo y su consentimiento sigue valiendo.
+  Publicar necesita el OK de Katherine.

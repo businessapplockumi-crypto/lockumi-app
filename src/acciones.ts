@@ -121,7 +121,8 @@ const local: Acciones = {
     if (x.estado !== 'mediacion') return
     const r = await escrow.resolver(x, aDueno, guardarEn(a.id), avance)
     store.cambiar(a.id, y => { if (y.estado !== 'mediacion') return; y.estado = 'cerrado'; y.resultado = { dueno: r.dueno, inquilino: r.inquilino, via: 'mediacion', fecha: iso(y) }
-      y.historial.push({ fecha: iso(y), texto: `La persona mediadora decidió: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino` }) })
+      // LEGAL: revisado (24/10) · mismo texto que el evento del servidor, sin «decidió»
+      y.historial.push({ fecha: iso(y), texto: `Acuerdo registrado: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino` }) })
   }),
 }
 

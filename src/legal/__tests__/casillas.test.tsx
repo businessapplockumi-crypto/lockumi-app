@@ -65,21 +65,23 @@ describe('casillas obligatorias de Términos y Privacidad', () => {
 })
 
 describe('textos legales', () => {
-  it('carga Términos y Privacidad 1.5-demo con su fecha, tomadas del texto', () => {
-    for (const d of [TERMINOS, PRIVACIDAD!]) { expect(d.version).toBe('1.5-demo'); expect(d.fecha).toBe('20 de octubre de 2026'); expect(d.metaEnTexto).toBe(true) }
+  // LEGAL: revisado (24/10) · Términos 1.6-demo (cláusula 6.7); el Aviso de privacidad sigue en 1.5-demo.
+  const VER: Record<string, [string, string]> = { terminos: ['1.6-demo', '24 de octubre de 2026'], privacidad: ['1.5-demo', '20 de octubre de 2026'] }
+  it('carga Términos 1.6-demo y Privacidad 1.5-demo con su fecha, tomadas del texto', () => {
+    for (const d of [TERMINOS, PRIVACIDAD!]) { expect(d.version).toBe(VER[d.slug][0]); expect(d.fecha).toBe(VER[d.slug][1]); expect(d.metaEnTexto).toBe(true) }
     expect(Object.keys(DOCS).sort()).toEqual(['privacidad', 'terminos'])
   })
   it('la página muestra la versión y la fecha una sola vez, y el aviso de una línea de arriba', () => {
     for (const slug of ['terminos', 'privacidad']) {
       const html = renderToStaticMarkup(<PaginaLegal slug={slug} />)
-      expect(html.split('1.5-demo').length - 1).toBe(1); expect(html).not.toContain('1.4-demo'); expect(html).not.toContain('1.3-demo'); expect(html).not.toContain('1.2-demo'); expect(html).not.toContain('1.1-demo')
-      expect(html.split('20 de octubre de 2026').length - 1).toBe(1)
+      expect(html.split(VER[slug][0]).length - 1).toBe(1); if (slug === 'terminos') expect(html).not.toContain('1.5-demo'); expect(html).not.toContain('1.4-demo'); expect(html).not.toContain('1.3-demo'); expect(html).not.toContain('1.2-demo'); expect(html).not.toContain('1.1-demo')
+      expect(html.split(VER[slug][1]).length - 1).toBe(1)
       expect(html).toMatch(/<blockquote><p>Versión demo[^<]*\. Este texto puede actualizarse; te avisaremos de los cambios importantes\.<\/p><\/blockquote>/)
       expect(html).toContain('Pendiente de revisión por abogado')
     }
   })
   it('la nota interna no se publica', () => { for (const d of [TERMINOS, PRIVACIDAD!]) expect(d.html).not.toMatch(/nota interna/i) })
-  it('los textos 1.5-demo no traen corchetes ni repiten la línea de versión', () => {
+  it('los textos legales no traen corchetes ni repiten la línea de versión', () => {
     for (const d of [TERMINOS, PRIVACIDAD!]) {
       const crudo = renderToStaticMarkup(<PaginaLegal slug={d.slug} />).replace(/<[^>]+>/g, '')
       expect(crudo).not.toMatch(/[\[\]]/)
@@ -96,12 +98,23 @@ describe('textos legales', () => {
     const html = renderToStaticMarkup(<Login onOk={() => {}} />)
     expect(html).not.toMatch(/id="acepto-terminos"[^>]*checked/); expect(html).not.toMatch(/id="acepto-privacidad"[^>]*checked/)
   })
-  it('las dos casillas guardan { version: "1.5-demo", fecha }', () => {
+  it('las dos casillas guardan { version, fecha }: Términos 1.6-demo y Privacidad 1.5-demo', () => {
     const ahora = new Date('2026-10-18T18:00:00Z')
-    expect(guardarAceptacion('terminos', TERMINOS.version, ahora)).toEqual({ version: '1.5-demo', fecha: '2026-10-18T18:00:00.000Z' })
+    expect(guardarAceptacion('terminos', TERMINOS.version, ahora)).toEqual({ version: '1.6-demo', fecha: '2026-10-18T18:00:00.000Z' })
     expect(guardarAceptacion('privacidad', PRIVACIDAD!.version, ahora)).toEqual({ version: '1.5-demo', fecha: '2026-10-18T18:00:00.000Z' })
     expect(JSON.parse(localStorage.getItem('lockumi.privacidad.consentimiento')!)).toEqual({ version: '1.5-demo', fecha: '2026-10-18T18:00:00.000Z' })
     expect(aceptoVersion('terminos', TERMINOS.version)).toBe(true)
+  })
+  it('una aceptación de Términos 1.5-demo ya no cuenta: la casilla de Términos sale sin marcar; la de privacidad 1.5-demo sigue marcada', () => {
+    guardarAceptacion('terminos', '1.5-demo'); guardarAceptacion('privacidad', '1.5-demo')
+    expect(aceptoVersion('terminos', TERMINOS.version)).toBe(false); expect(aceptoVersion('privacidad', PRIVACIDAD!.version)).toBe(true)
+    const html = renderToStaticMarkup(<Login onOk={() => {}} />)
+    expect(html).not.toMatch(/id="acepto-terminos"[^>]*checked/); expect(html).toMatch(/id="acepto-privacidad"[^>]*checked/)
+  })
+  it('6.7 Desacuerdo: texto de Legal (24/10); la mediación no decide y no hay persona mediadora que decida en la demo', () => {
+    const t = TERMINOS.html.replace(/<[^>]+>/g, '')
+    expect(t).toContain('6.7 Desacuerdo. En la demo, si el inquilino no acepta el reclamo, el caso pasa a una mediación simulada y el reparto se elige con el botón «Resolver el reclamo (simulación)». En un servicio real, una persona mediadora neutral les ayudaría a buscar un acuerdo, sin decidir por las partes. Si no hay acuerdo, el depósito seguiría guardado y cualquiera de las partes podría acudir a los tribunales de Costa Rica.')
+    expect(t).not.toContain('decide un reparto'); expect(TERMINOS.html).not.toContain('LEGAL:')
   })
   it('una aceptación de la versión 1.2-demo no cuenta: las casillas salen sin marcar', () => {
     guardarAceptacion('terminos', '1.2-demo'); guardarAceptacion('privacidad', '1.2-demo')

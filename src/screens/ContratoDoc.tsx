@@ -30,16 +30,17 @@ export function Documento({ a, impresion, plegado }: { a: Alquiler; impresion?: 
 
     <section className="ct__sec"><h3>El depósito</h3>
       {/* Texto que ya mostraba la app en «El contrato». */}
-      <p className="ct__texto">El depósito queda guardado hasta el final. Nadie puede tomarlo solo: ni el dueño, ni el inquilino, ni Lockumi.</p>
+      {/* LEGAL: revisado (24/10) */}
+      <p className="ct__texto">El depósito queda guardado hasta el final. Ni el dueño ni el inquilino pueden tomarlo solos. En esta prueba, si hay un reclamo, la cuenta de Lockumi es la que ejecuta el reparto que se elige en la simulación.</p>
     </section>
 
     <section className="ct__sec"><h3>7 días para reclamos</h3>
-      {/* LEGAL: revisar. Resumen de la cláusula 6.5 de los Términos 1.5-demo. */}
+      {/* LEGAL: revisar. Resumen de la cláusula 6.5 de los Términos 1.6-demo. */}
       <p className="ct__texto">Al terminar el alquiler, el dueño tiene 7 días para hacer un reclamo, con fotos y una factura o un presupuesto. Si no reclama, el depósito vuelve completo al inquilino. El inquilino tiene 7 días para responder.</p>
     </section>
 
     <section className="ct__sec"><h3>Mediación</h3>
-      {/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide. Resumen de la cláusula 6.7 de los Términos 1.5-demo. */}
+      {/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide. Resumen de la cláusula 6.7 de los Términos 1.6-demo. */}
       <p className="ct__texto">Si no se ponen de acuerdo, una persona mediadora revisa con ustedes las fotos de entrada y de salida y les ayuda a buscar un acuerdo sobre el reparto del depósito. No decide por ustedes.{modoPrueba ? ' En esta prueba, la mediación es una simulación y el reparto se elige con el botón «Resolver el reclamo (simulación)».' : ''}</p>
     </section>
 
@@ -81,7 +82,7 @@ export function Documento({ a, impresion, plegado }: { a: Alquiler; impresion?: 
       </div>
     </> : completo}
 
-    {/* LEGAL: revisar. Resumen de las cláusulas 2.5 y 2.6 de los Términos 1.5-demo y de la línea de privacidad aprobada. */}
+    {/* LEGAL: revisar. Resumen de las cláusulas 2.5 y 2.6 de los Términos 1.6-demo y de la línea de privacidad aprobada. */}
     <footer className="ct__pie">
       {modoPrueba && <p>Es una prueba en la red de prueba de Stellar, sin dinero real. No reemplaza un contrato de alquiler.</p>}
       <p>Este contrato se guarda solo en tu navegador. El lugar y las fotos no salen de él.</p>
