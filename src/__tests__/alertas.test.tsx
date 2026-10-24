@@ -164,7 +164,7 @@ describe('aviso v2: textos aprobados por Legal (23/10) y montos del reparto real
   })
   it('los textos nuevos del aviso v2 están marcados «LEGAL: revisado el 23/10»', () => {
     const src = leer('../alertas.ts').split('\n')
-    for (const l of src.filter(l => /^\s+linea: \{/.test(l))) expect(l).toMatch(/LEGAL: revisado el 23\/10/)
+    for (const l of src.filter(l => /^\s+linea: \{/.test(l))) expect(l).toMatch(/LEGAL: revisado (el 23\/10|\(24\/10\))/)
   })
 })
 
@@ -202,7 +202,7 @@ describe('cada paso del flujo dispara su aviso', () => {
     expect(r.paso).toBe('reclamo'); expect(r.sigue).toContain('(simulación)')
     expect((await paso(id, () => acciones.responder(store.fresco(id)!, false))).paso).toBe('mediacion')
     const m = await paso(id, () => acciones.decidir(store.fresco(id)!, 25))
-    expect(m.paso).toBe('reparto'); expect(m.hecho).toContain('La persona mediadora (simulación) decidió')
+    expect(m.paso).toBe('reparto'); expect(m.titulo).toBe('Reparto del depósito'); expect(m.hecho).toMatch(/^Se repartió el depósito( en la red de prueba)?: .+ al dueño y .+ al inquilino\.$/); expect(m.hecho).not.toMatch(/decid/)
     const id2 = await hasta()
     await paso(id2, () => acciones.reclamar(store.fresco(id2)!, 40, 'mancha en la pared', []))
     expect((await paso(id2, () => acciones.responder(store.fresco(id2)!, true))).paso).toBe('acuerdo')
@@ -227,7 +227,8 @@ describe('textos de los avisos', () => {
     const p = al.alertaPorCambio({ ...base, estado: 'pendiente_pago' } as never, { ...base, estado: 'fotos_entrada' } as never, 'inquilino', VIDEO)!
     expect(p.titulo).toBe('¡Depósito guardado!'); expect(p.hecho).toMatch(/^[^a-z]*20[^a-z]* guardados en una cuenta segura de la red de prueba\. Nadie puede sacarlos solo\.$/)   // «20 USDC» en la app (formato de usd())
     const m = al.alertaPorCambio({ ...base, estado: 'reclamo' } as never, { ...base, estado: 'mediacion' } as never, 'inquilino', VIDEO)!
-    expect(m.sigue).toBe('En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».')
+    expect(m.sigue).toBe('Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito. En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».')
+    expect(al.lineaDe(m)).toEqual({ et: 'En esta prueba:', texto: 'decides tú el reparto (simulación)' })
     expect(leer('../screens/Detalle.tsx')).toContain("'Resolver el reclamo (simulación)'"); expect(leer('../screens/Detalle.tsx')).not.toContain('Decidir como persona mediadora')
   })
   const todas = () => {
@@ -260,7 +261,7 @@ describe('textos de los avisos', () => {
     const e = al.alertaIngresoFallo(); expect(e.tipo).toBe('error'); expect(e.titulo).toBe('El ingreso no terminó'); expect(e.hecho).toBe('Toca Entrar y elige tu cuenta.')
   })
   it('los textos con sentido legal están marcados para Legal', () => {
-    expect(leer('../alertas.ts').match(/\/\/ LEGAL: revisar/g)!.length).toBeGreaterThanOrEqual(8)
+    expect(leer('../alertas.ts').match(/\/\/ LEGAL: revis(ar|ado)/g)!.length).toBeGreaterThanOrEqual(8)
   })
 })
 
@@ -297,5 +298,37 @@ describe('aviso al inicio del orden de Tab', () => {
     expect(av).not.toMatch(/autoFocus/)
     expect(av).toContain('tabIndex={0}')
     expect(av).not.toMatch(/\.focus\(\)[^\n]*tostada/)
+  })
+})
+
+describe('líneas cortas del aviso v2 (Legal, 24/10)', () => {
+  const base = { id: '1', direccion: 'Casa', monto: 20, ventanaSegundos: 604800, diasSimulados: 0, contrato: { firmas: {} }, entrada: { firmas: {} }, salida: { firmas: {} } }
+  const de = (x: object, y: object, c = VIDEO, rol: 'inquilino' | 'dueno' = 'inquilino') => al.lineaDe(al.alertaPorCambio({ ...base, ...x } as never, { ...base, ...y } as never, rol, c)!)
+  it('las 11 líneas, palabra por palabra', () => {
+    expect(al.lineaDe(al.alertaCreado({ direccion: 'Casa', monto: 20 }))).toEqual({ et: 'Ahora:', texto: 'leer y firmar el contrato' })
+    expect(de({ estado: 'firmas' }, { estado: 'firmas', contrato: { firmas: { inquilino: 'x' } } })).toEqual({ et: 'Sigue:', texto: 'la firma del dueño de prueba' })
+    expect(de({ estado: 'firmas' }, { estado: 'firmas', contrato: { firmas: { inquilino: 'x' } } }, LOCAL)).toEqual({ et: 'Sigue:', texto: 'la firma de la otra persona' })
+    expect(de({ estado: 'firmas' }, { estado: 'firmas', contrato: { firmas: { dueno: 'x' } } }, LOCAL)).toEqual({ et: 'Ahora:', texto: 'tu firma' })
+    expect(de({ estado: 'fotos_entrada' }, { estado: 'fotos_entrada', entrada: { firmas: { inquilino: 'x' } } })).toEqual({ et: 'Sigue:', texto: 'la otra persona confirma las fotos' })
+    expect(de({ estado: 'en_curso' }, { estado: 'salida' })).toEqual({ et: 'Ahora:', texto: 'una foto de cada espacio' })
+    expect(de({ estado: 'salida' }, { estado: 'salida', salida: { firmas: { inquilino: 'x' } } })).toEqual({ et: 'Sigue:', texto: 'la otra persona confirma las fotos' })
+    expect(de({ estado: 'salida' }, { estado: 'ventana_reclamo' })).toEqual({ et: 'Sigue:', texto: '7 días para hacer un reclamo' })
+    expect(de({ estado: 'ventana_reclamo' }, { estado: 'reclamo', reclamo: { monto: 5 } })).toEqual({ et: 'Sigue:', texto: 'el inquilino acepta o no el reclamo' })
+    expect(de({ estado: 'reclamo' }, { estado: 'mediacion' })).toEqual({ et: 'En esta prueba:', texto: 'decides tú el reparto (simulación)' })
+    expect(de({ estado: 'reclamo' }, { estado: 'mediacion' }, LOCAL)).toEqual({ et: 'Sigue:', texto: 'una persona mediadora les ayuda a buscar un acuerdo' })
+    const rep = al.alertaPorCambio({ ...base, estado: 'mediacion' } as never, { ...base, estado: 'cerrado', resultado: { via: 'mediacion', dueno: 5, inquilino: 15, fecha: '' } } as never, 'inquilino', VIDEO)!
+    expect(rep.titulo).toBe('Reparto del depósito'); expect(rep.linea!.texto).toMatch(/^\D*5[^ ]* al dueño y \D*15[^ ]* al inquilino$/); expect(rep.accion!.texto).toBe('Ver detalle →')
+    expect(rep.hecho).toMatch(/^Se repartió el depósito en la red de prueba: .+ al dueño y .+ al inquilino\.$/)
+    expect(de({ estado: 'ventana_reclamo' }, { estado: 'ventana_reclamo', diasSimulados: 7 })).toEqual({ et: 'Solo en la prueba:', texto: 'terminó el plazo para reclamos' })
+  })
+  it('mediación: ayuda a buscar un acuerdo, no decide; los montos salen de usd()', () => {
+    expect(al.MEDIACION_LARGO).toBe('Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito.')
+    const m = al.alertaPorCambio({ ...base, estado: 'reclamo' } as never, { ...base, estado: 'mediacion' } as never, 'inquilino', LOCAL)!
+    expect(m.sigue).toBe(al.MEDIACION_LARGO); expect([m.sigue, al.lineaDe(m).texto].join(' ')).not.toMatch(/decide/)
+    const src = leer('../alertas.ts'); expect(src).not.toContain('Reparto decidido'); expect(src).toContain('${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino')
+    expect(src.match(/LEGAL: revisado \(24\/10\)/g)!.length).toBeGreaterThanOrEqual(8)
+  })
+  it('tarjeta de Inicio: «Pagar el depósito · Luego, fotos de entrada» (sin «Depósito protegido»)', () => {
+    const ini = leer('../screens/Inicio.tsx'); expect(ini).toContain("t: 'Pagar el depósito', s: 'Luego, fotos de entrada' },   // LEGAL: revisado (24/10)"); expect(ini).not.toContain('Depósito protegido')
   })
 })

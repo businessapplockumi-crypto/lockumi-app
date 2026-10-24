@@ -157,7 +157,7 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]].filter(([n]) => !pro
   await p.getByRole('button', { name: 'No estoy de acuerdo' }).click()
   await alerta(p, n, 'mediacion', 'Pasa a una persona mediadora')
   await p.getByRole('button', { name: 'Resolver el reclamo (simulación)' }).click(); await p.getByRole('button', { name: 'Confirmar el reparto' }).click()
-  await alerta(p, n, 'reparto', 'Reparto decidido')
+  await alerta(p, n, 'reparto', 'Reparto del depósito')
   // C) reclamo aceptado
   await hastaVentana(p, n, { capturar: false })
   await p.getByRole('button', { name: 'Hacer un reclamo como dueño de prueba' }).click()

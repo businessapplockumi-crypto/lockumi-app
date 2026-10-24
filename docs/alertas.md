@@ -18,7 +18,24 @@ Aprobado por Katherine (maquetas `diseno/aviso-compacto/` y `diseno/recorrido-fo
 
 Código: `src/alertas.ts` (`linea`, `accion`, pila, `alertaErrorRed`, `quitarAvisos`), `src/Aviso.tsx` (`Tostada`, `irA`), `src/Alertas.tsx` (zonas, lugar libre, pausa), `src/index.css`, `src/screens/Detalle.tsx`. Pruebas: `src/__tests__/alertas.test.tsx`; en el navegador `scripts/aviso-v2/capturar.mjs` (nuevo), `scripts/espera-pagar/capturar.mjs` y `scripts/alertas/capturar.mjs` (adaptados a la pila).
 
-**Pendiente:** los pasos crear, firmas, salida, reclamo, mediación, reparto y adelantar no tienen línea corta aprobada; usan su texto «sigue» o «hecho» de siempre.
+**Líneas cortas de los demás pasos (Legal, 24 oct, 12:22 a. m.; marcadas `// LEGAL: revisado (24/10)` en `src/alertas.ts`):**
+
+| Paso | Título | Línea |
+|---|---|---|
+| `crear` | Alquiler creado | **Ahora:** leer y firmar el contrato |
+| `contrato-firma-inquilino` | Firmaste el contrato | **Sigue:** la firma del dueño de prueba *(sin dueño de prueba: «la firma de la otra persona»)* |
+| `contrato-firma-dueno` (falta tu firma) | El dueño firmó el contrato | **Ahora:** tu firma |
+| `entrada-firma-*` / `salida-firma-*` (confirmaste tú) | Confirmaste las fotos de entrada / de salida | **Sigue:** la otra persona confirma las fotos |
+| `salida-inicio` | Empezaron las fotos de salida | **Ahora:** una foto de cada espacio |
+| `salida-confirmada` | Fotos de salida confirmadas | **Sigue:** {textoPlazo} para hacer un reclamo (sale del alquiler, p. ej. «7 días») |
+| `reclamo` | Reclamo enviado | **Sigue:** el inquilino acepta o no el reclamo |
+| `mediacion` | Pasa a una persona mediadora | Demo: **En esta prueba:** decides tú el reparto (simulación). Dos personas: **Sigue:** una persona mediadora les ayuda a buscar un acuerdo |
+| `reparto` | **Reparto del depósito** (antes «Reparto decidido») | {usd(r.dueno)} al dueño y {usd(r.inquilino)} al inquilino · botón «Ver detalle →» |
+| `adelantar` | Plazo adelantado | **Solo en la prueba:** terminó el plazo para reclamos |
+
+Textos largos nuevos: mediación «Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito.» (en la demo, más «En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».»); reparto «Se repartió el depósito en la red de prueba: {usd(r.dueno)} al dueño y {usd(r.inquilino)} al inquilino.»
+
+Si la otra persona confirma las fotos antes que tú, el aviso sigue con su texto «sigue» de siempre (Legal no dio línea corta para ese caso).
 
 ## Avisos v2 (23 oct 2026)
 
@@ -118,8 +135,8 @@ Los marcados `// LEGAL: revisar` en `src/alertas.ts` son los del depósito guard
 | Solo red de prueba: adelantar el plazo | `adelantar` | Plazo adelantado | Solo en la red de prueba: terminamos ahora los 7 días para reclamos. | Lo que sigue: El dueño de prueba aprueba y Lockumi devuelve el depósito al inquilino en la red de prueba. Tarda entre 20 y 60 segundos. |
 | Devolución automática (sin reclamos) | `devolucion` | Depósito devuelto | No hubo reclamos en 7 días. El dueño de prueba aprobó y Lockumi devolvió 19,94 USDC al inquilino en la red de prueba. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Reclamo del dueño de prueba | `reclamo` | Reclamo enviado | El dueño de prueba reclamó 5 USDC del depósito. | Lo que sigue: El inquilino acepta o no el reclamo. Si no lo acepta, pasa a una persona mediadora (simulación). |
-| No estoy de acuerdo → mediación | `mediacion` | Pasa a una persona mediadora | No hubo acuerdo con el reclamo. En esta prueba la persona mediadora es una simulación. | Lo que sigue: En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)». *(Legal, 23 oct)* |
-| Reparto de la persona mediadora (simulación) | `reparto` | Reparto decidido | La persona mediadora (simulación) decidió: 2,4925 USDC al dueño y 17,4475 USDC al inquilino. El reparto se hizo en la red de prueba. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
+| No estoy de acuerdo → mediación | `mediacion` | Pasa a una persona mediadora | No hubo acuerdo con el reclamo. En esta prueba la persona mediadora es una simulación. | Lo que sigue: Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito. En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)». *(Legal, 24 oct)* |
+| Reparto de la persona mediadora (simulación) | `reparto` | Reparto del depósito | Se repartió el depósito en la red de prueba: 2,4925 USDC al dueño y 17,4475 USDC al inquilino. *(Legal, 24 oct)* | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Aceptar reclamo | `acuerdo` | Reclamo aceptado | Se repartió el depósito en la red de prueba: 4,985 USDC al dueño y 14,955 USDC al inquilino. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Entrar (el regreso de Google o Apple no terminó) | `ingreso-fallo` | El ingreso no terminó | Toca Entrar y elige tu cuenta. *(Legal, 23 oct)* | — |
 | Entrar (correcto) | `ingreso` | ¡Ingresaste correctamente! | Te damos la bienvenida a la demo. Desde aquí puedes ver tus alquileres y crear un depósito protegido. | — |

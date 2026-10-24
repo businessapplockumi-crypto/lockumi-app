@@ -61,6 +61,9 @@ export function vaciarAlertas() { pila = []; avisarCambio() }
 // ---- Textos ----
 export interface Contexto { prueba: boolean; video: boolean; red: boolean }
 const CTX: Contexto = { prueba: modoPrueba, video: modoVideo, red: escrowReal }
+// LEGAL: revisado (24/10) · texto largo de la mediación (2.ª frase solo en la demo de una persona)
+export const MEDIACION_LARGO = 'Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito.'
+export const MEDIACION_DEMO = 'En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».'
 const TERMINO = 'El alquiler terminó. No tienes nada pendiente.'
 const quien = (r: Rol, c: Contexto) => r === 'dueno' && c.prueba ? 'El dueño de prueba' : r === 'dueno' ? 'El dueño' : 'El inquilino'
 
@@ -83,6 +86,7 @@ export const alertaCreado = (a: Pick<Alquiler, 'direccion' | 'monto'>, c = CTX):
   paso: 'crear', titulo: 'Alquiler creado',
   hecho: `Guardamos el alquiler de ${a.direccion} con un depósito de ${usd(a.monto)}.`,
   sigue: c.prueba ? 'Leer el contrato y firmarlo. Después lo firma el dueño de prueba.' : 'Leer el contrato y firmarlo. Falta también la firma del inquilino.',
+  linea: { et: 'Ahora:', texto: 'leer y firmar el contrato' },   // LEGAL: revisado (24/10)
 })
 
 const ETAPA = { contrato: 'el contrato', entrada: 'las fotos de entrada', salida: 'las fotos de salida' } as const
@@ -94,7 +98,11 @@ function alertaFirma(etapa: keyof typeof ETAPA, quienFirmo: Rol, rol: Rol, c: Co
   const sigue = c.prueba && falta === 'dueno'
     ? `El dueño de prueba ${etapa === 'contrato' ? 'lo firma' : 'las revisa y las confirma'} solo, en unos segundos.`
     : `Falta que el ${NOMBRE[falta]} ${etapa === 'contrato' ? 'lo firme' : 'las confirme'}.`
-  return { paso: `${etapa}-firma-${quienFirmo}`, titulo, hecho, sigue }
+  // LEGAL: revisado (24/10) · líneas cortas del aviso v2 de las firmas
+  const linea: Linea | undefined = etapa === 'contrato'
+    ? (yo ? { et: 'Sigue:', texto: c.prueba && falta === 'dueno' ? 'la firma del dueño de prueba' : 'la firma de la otra persona' } : falta === rol ? { et: 'Ahora:', texto: 'tu firma' } : undefined)
+    : (yo ? { et: 'Sigue:', texto: 'la otra persona confirma las fotos' } : undefined)
+  return { paso: `${etapa}-firma-${quienFirmo}`, titulo, hecho, sigue, ...(linea && { linea }) }
 }
 
 /** Lo mínimo del alquiler para comparar antes y después (sin copiar las fotos). */
@@ -135,6 +143,7 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
       paso: 'salida-inicio', titulo: 'Empezaron las fotos de salida',
       hecho: 'Ya pueden registrar cómo quedó el lugar.',
       sigue: 'Tomar una foto de cada espacio, marcar la lista y confirmar.',
+      linea: { et: 'Ahora:', texto: 'una foto de cada espacio' },   // LEGAL: revisado (24/10)
     }
     case 'ventana_reclamo': return {
       paso: 'salida-confirmada', titulo: 'Fotos de salida confirmadas',
@@ -142,18 +151,21 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
       // LEGAL: revisar
       sigue: c.video ? `Si el dueño de prueba no reclama en ${textoPlazo(ahora)}, el depósito vuelve al inquilino. En esta prueba puedes adelantar el plazo o hacer un reclamo en nombre del dueño de prueba.`
         : `Si el dueño no reclama en ${textoPlazo(ahora)}, el depósito vuelve al inquilino.`,
+      linea: { et: 'Sigue:', texto: `${textoPlazo(ahora)} para hacer un reclamo` },   // LEGAL: revisado (24/10) · {textoPlazo} sale del alquiler
     }
     case 'reclamo': return !ahora.reclamo ? null : {
       paso: 'reclamo', titulo: 'Reclamo enviado',
       hecho: `${quien('dueno', c)} reclamó ${usd(ahora.reclamo.monto)} del depósito.`,
       // LEGAL: revisar
       sigue: `El inquilino acepta o no el reclamo. Si no lo acepta, pasa a una persona mediadora${c.prueba ? ' (simulación)' : ''}.`,
+      linea: { et: 'Sigue:', texto: 'el inquilino acepta o no el reclamo' },   // LEGAL: revisado (24/10)
     }
     case 'mediacion': return {
       paso: 'mediacion', titulo: 'Pasa a una persona mediadora',
       hecho: `No hubo acuerdo con el reclamo.${c.prueba ? ' En esta prueba la persona mediadora es una simulación.' : ''}`,
-      // LEGAL: revisar
-      sigue: c.video ? 'En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».' : 'Una persona mediadora revisa las fotos de entrada y de salida y decide cómo se reparte el depósito.',
+      // LEGAL: revisado (24/10) · la persona mediadora ayuda a buscar un acuerdo; no decide. En la demo, decides tú (simulación).
+      sigue: MEDIACION_LARGO + (c.video ? ` ${MEDIACION_DEMO}` : ''),
+      linea: c.video ? { et: 'En esta prueba:', texto: 'decides tú el reparto (simulación)' } : { et: 'Sigue:', texto: 'una persona mediadora les ayuda a buscar un acuerdo' },   // LEGAL: revisado (24/10)
     }
     case 'cerrado': {
       if (!r) return null
@@ -175,11 +187,13 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
         linea: { texto: `${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino` },   // LEGAL: revisado el 23/10 (montos del reparto real)
         accion: { texto: 'Ver detalle', etiqueta: 'Ver el detalle del reparto', ir: 'detalles' },
       }
-      // LEGAL: revisar
+      // LEGAL: revisado (24/10) · título «Reparto del depósito», línea y texto largo con los montos reales de usd(...)
       return {
-        paso: 'reparto', titulo: 'Reparto decidido',
-        hecho: `La persona mediadora${c.prueba ? ' (simulación)' : ''} decidió: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino.${c.red ? ' El reparto se hizo en la red de prueba.' : ''}`,
+        paso: 'reparto', titulo: 'Reparto del depósito',
+        hecho: `Se repartió el depósito${red}: ${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino.`,
         sigue: TERMINO,
+        linea: { texto: `${usd(r.dueno)} al dueño y ${usd(r.inquilino)} al inquilino` },   // LEGAL: revisado (24/10)
+        accion: { texto: 'Ver detalle →', etiqueta: 'Ver el detalle del reparto', ir: 'detalles' },
       }
     }
     default: return null
@@ -192,6 +206,7 @@ export function alertaPorCambio(antes: Instantanea, ahora: Alquiler, rol: Rol, c
   if (ahora.estado === 'ventana_reclamo' && ahora.diasSimulados > antes.diasSimulados) return {
     paso: 'adelantar', titulo: 'Plazo adelantado',
     hecho: `Solo en la red de prueba: terminamos ahora los ${textoPlazo(ahora)} para reclamos.`,
+    linea: { et: 'Solo en la prueba:', texto: 'terminó el plazo para reclamos' },   // LEGAL: revisado (24/10)
     // LEGAL: revisar
     sigue: c.red ? 'El dueño de prueba aprueba y Lockumi devuelve el depósito al inquilino en la red de prueba. Tarda entre 20 y 60 segundos.' : 'El depósito vuelve completo al inquilino.',
   }

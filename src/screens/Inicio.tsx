@@ -14,7 +14,7 @@ import { Dibujo } from './dibujos'
 // Los 3 pasos de la portada, en el orden real de flujo.ts (ETAPAS): las fotos de entrada van después del depósito.
 const PASOS = [
   { ico: 'contrato', t: 'Firman el contrato', s: 'Los dos, en la app' },
-  { ico: 'escudo', t: 'Depósito protegido', s: 'Luego, fotos de entrada' },
+  { ico: 'escudo', t: 'Pagar el depósito', s: 'Luego, fotos de entrada' },   // LEGAL: revisado (24/10)
   { ico: 'devolver', t: 'Devolución al final', s: 'Con 7 días para reclamos' },
 ]
 
