@@ -49,6 +49,8 @@ export function avisar(a: Alerta | null | undefined) {
 }
 /** Cierra un aviso (por id) o, sin id, el más nuevo. */
 export function cerrarAlerta(id?: number) { pila = id == null ? pila.slice(0, -1) : pila.filter(x => x.id !== id); avisarCambio() }
+/** Quita los avisos de un paso (por ejemplo, el error de red al volver a intentar). */
+export function quitarAvisos(paso: string) { if (pila.some(x => x.paso === paso)) { pila = pila.filter(x => x.paso !== paso); avisarCambio() } }
 /** Los avisos visibles, del más viejo al más nuevo (misma referencia mientras no cambien). */
 export const alertasVisibles = () => pila
 export const alertaActual = () => pila.at(-1) ?? null

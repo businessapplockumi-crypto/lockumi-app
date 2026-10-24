@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import type { CSSProperties } from 'react'
 import { Tostada } from './Aviso'
 import { alertasVisibles, cerrarAlerta, suscribirAlertas } from './alertas'
 
@@ -64,7 +65,9 @@ export function Alertas() {
     setConFoco(!!c?.contains(document.activeElement)); setEncima(!!c?.querySelector(':hover')); if (!pila.length) setDedo(false) }, [pila])
   const tostada = (a: typeof pila[number]) => <Tostada key={a.id} a={a} indice={indice.get(a.id)!} pausa={abierta} abierta={abierta} desplazar={abierta ? desplazar(a.id) : 0}
     onCerrar={cerrarAlerta} onAlto={onAlto} registrar={registrar} />
-  return <div ref={caja} className={'tostadas' + (abierta ? ' tostadas--abierta' : '')}
+  // Como en Sonner, cerrada la pila los de atrás toman el alto del de adelante y asoman parejos por arriba.
+  const alto0 = nuevos.length ? altos[nuevos[0].id] : undefined
+  return <div ref={caja} className={'tostadas' + (abierta ? ' tostadas--abierta' : '')} style={alto0 ? { '--h0': alto0 + 'px' } as CSSProperties : undefined}
     onPointerOver={e => { if (e.pointerType === 'mouse') setEncima(true) }}
     onPointerOut={e => { if (e.pointerType === 'mouse' && !caja.current?.contains(e.relatedTarget as Node)) setEncima(false) }}
     onPointerDown={e => { if (e.pointerType !== 'mouse') setDedo(true) }}

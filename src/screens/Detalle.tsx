@@ -17,7 +17,7 @@ import { ContratoDoc } from './ContratoDoc'
 import { TomarFoto } from '../Camara'
 import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE, ahoraPrueba } from '../flujo'
 import { adelantoPermitido } from '../../api/_lib/red'
-import { avisar, alertaPorCambio, alertaErrorRed, ERROR_RED, instantanea, type Instantanea } from '../alertas'
+import { avisar, quitarAvisos, alertaPorCambio, alertaErrorRed, ERROR_RED, instantanea, type Instantanea } from '../alertas'
 import { EsperaPago } from '../EsperaPago'
 import { etapaDeAvance, type EtapaPago } from '../espera'
 
@@ -27,7 +27,7 @@ const ahoraISO = (a: Alquiler) => new Date(ahoraDe(a)).toISOString()
 function useProceso() {
   const [ocupado, setOcupado] = useState(false); const [avance, setAvance] = useState(''); const [err, setErr] = useState('')
   const correr = async (f: (av: (t: string) => void) => Promise<unknown>) => {
-    if (ocupado) return; setOcupado(true); setErr('')
+    if (ocupado) return; setOcupado(true); setErr(''); quitarAvisos(alertaErrorRed().paso)   // al volver a intentar, el aviso de error se va
     try { await f(setAvance) } catch (e) {
       const m = e instanceof Error && e.message ? e.message : 'No pudimos terminar este paso. Vuelve a tocar el botón.'
       setErr(m); if (m === ERROR_RED) avisar(alertaErrorRed())   // error de red (A12): también el aviso v2 de error (role=alert, no se esconde solo)

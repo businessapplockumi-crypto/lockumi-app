@@ -2,6 +2,24 @@
 
 **Publicado el 23 oct 2026** en app.lockumi.com (salvo el aviso al inicio del orden de Tab: ramas `aviso-tab` y `espera-pagar`, pendiente de publicar): rama `contrato-plegable` unida a `master` por avance rápido desde `ad1578f` en `abdfd9b` (código `afe15ae` y `abdfd9b`, docs `2312401`); deploy de producción `dpl_ARoWYrXEBftUcz1L4NoRiQNA9N6v`. Pruebas antes de publicar: 163/163 unitarias y 855/855 del recorrido en navegador.
 
+## Aviso v2 · toast (rama `ux-guiada`, 24 oct 2026; solo vista previa, falta publicar)
+
+Aprobado por Katherine (maquetas `diseno/aviso-compacto/` y `diseno/recorrido-formulario/`). Reemplaza la tarjeta de los avisos v2 en **todos** los logros, pasos y errores:
+
+- **Pastilla compacta de vidrio:** fondo crema al 92 % con desenfoque de 18 px (fondo sólido si el navegador no lo admite), casita completa de 32 px, título y **una línea** («Ahora: …», «Sigue: …», «Al entregar: …»). Teléfono: abajo al centro, 358 px, sobre la zona segura; si taparía la cabecera, el título, el paso o un botón principal, sube por encima del botón. Computadora: abajo a la derecha, 360 px, a 24 px del borde.
+- **Botón de acción** (44 px o más) que lleva al paso: «Pagar →», «Tomar fotos →», «Ver alquiler →», «Ver detalle →». Tocar el resto del aviso lo cierra. Sin X ni «Entendido».
+- **Tiempo:** 8 s con acción, 5 s sin acción, línea de 2 px; se pausa con el ratón, el dedo o el foco. **Errores:** `role="alert"`, no se esconden solos, sin línea de tiempo; el error de la red de prueba usa el texto A12 sin cambios («No se pudo completar» + «La red de prueba está lenta o no respondió. Espera un minuto y vuelve a tocar el botón.») y se quita al volver a intentar. El texto sigue escrito en la pantalla, sin `role="alert"` para no anunciarlo dos veces.
+- **Logros:** zona `role="status"`, `aria-live="polite"`.
+- **Pila de hasta 3** (como Sonner): el más nuevo adelante; los de atrás asoman sin texto; con el ratón, el foco o el dedo encima, la pila se abre.
+- **Deslizar** de lado (un tercio del ancho o rápido) o hacia abajo (40 px) para cerrar; si no llega, vuelve a su lugar.
+- **Movimiento:** entra en 320 ms (desde abajo), sale en 200 ms; con «reducir movimiento», solo un fundido de 160 ms.
+- **Teclado:** el aviso sigue siendo la 2.ª parada de Tab; Enter, Espacio o Esc lo cierran; Tab pasa al botón de acción.
+- Montos siempre con `usd(r.inquilino)` y `usd(r.dueno)`. Sin dependencias nuevas. No cambia el ingreso ni la lógica del escrow.
+
+Código: `src/alertas.ts` (`linea`, `accion`, pila, `alertaErrorRed`, `quitarAvisos`), `src/Aviso.tsx` (`Tostada`, `irA`), `src/Alertas.tsx` (zonas, lugar libre, pausa), `src/index.css`, `src/screens/Detalle.tsx`. Pruebas: `src/__tests__/alertas.test.tsx`; en el navegador `scripts/aviso-v2/capturar.mjs` (nuevo), `scripts/espera-pagar/capturar.mjs` y `scripts/alertas/capturar.mjs` (adaptados a la pila).
+
+**Pendiente:** los pasos crear, firmas, salida, reclamo, mediación, reparto y adelantar no tienen línea corta aprobada; usan su texto «sigue» o «hecho» de siempre.
+
 ## Avisos v2 (23 oct 2026)
 
 Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama. Reemplaza el estilo del aviso. **Textos cortos aprobados por Legal el 23 oct 2026** (revisión de Legal del 23 oct 2026): «¡Depósito guardado!» y «El ingreso no terminó» (ver la tabla de abajo) y el botón «Decidir como persona mediadora» renombrado a «Resolver el reclamo (simulación)»; los demás textos no cambian.
