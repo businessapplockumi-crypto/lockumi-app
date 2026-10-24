@@ -309,3 +309,20 @@ Pruebas: `src/__tests__/alertas.test.tsx`, `recorrido.test.tsx`, `src/legal/__te
   - «la respuesta»: aceptar ejecuta el reparto (lo firma Lockumi). Rechazar no firma nada en la red.
   - «cuando tú o la otra parte tocan el botón»: en la app publicada, el reclamo lo hace el usuario en nombre del dueño de prueba.
   - «se ejecuta después del plazo sin que nadie tenga que tocar nada»: hoy necesita que alguien abra el alquiler (ver la tarea programada en PLAN.md).
+
+## Legal, ronda 7 (24 oct 2026, rama `contrato-compacto`, sin publicar)
+
+- **Términos 1.6-demo** (misma versión y fecha):
+  - 5.3 «Firmas.»: texto exacto de Legal.
+  - 3.1: «Con Cavos se crea tu billetera en la red de prueba. Si usas tu propia billetera, con ella firmas el depósito como inquilino; en el modo por defecto, lo firma por ti la cuenta de Lockumi (ver 5.3).» Se mantuvo lo demás de 3.1: «Para entrar, usas el servicio de inicio de sesión de **Cavos** (cláusula 5) con Google, Apple o tu correo y un código.» y «Debes ser mayor de 18 años.»
+  - 5.5.1 b): el texto de Legal. Se mantuvo el final de la b): «y **Lockumi nunca ve tu clave privada**».
+- **Aviso de privacidad → 1.6-demo · 24 de octubre de 2026:** el párrafo de Freighter usa el texto de Legal. Se mantuvo «Lockumi nunca ve tu clave privada.» y el resto del párrafo.
+- **Crear, hoja «Red de prueba»:**
+  - Modo publicado: «Lockumi firma y confirma por el dueño de prueba. La mediación es simulada. El reclamo lo haces tú con un botón, en nombre del dueño de prueba, y queda registrado en la red de prueba.»
+  - Modo de una persona: «Tú eres el inquilino. Si usas tu propia billetera, depositas con ella; si no, la cuenta de Lockumi firma el depósito por ti en la red de prueba.» La hoja sale a todos en ese modo, tengan o no billetera propia (`Crear.tsx:184`, `:271`). Se mantuvo «El dueño es el dueño de prueba: por eso no te pedimos su correo.»
+- **Detalle, aprobación (modo de dos personas con Supabase, sin uso hoy):** «Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar el depósito. La aprobación y la liberación las firma la cuenta de Lockumi.» **Ojo:** en ese modo, el botón «Todo está bien: aprobar la devolución» firma la aprobación **con la billetera del dueño** (`trustless.ts:28-30`, `firmarXdr`), así que la segunda frase no es cierta ahí. El modo no está activo en ninguna versión publicada.
+- **El reclamo en el modo de una persona (`VITE_FLUJO=solo`) no abre ninguna disputa en la red.** Ese modo muestra `DetalleSolo` (`Detalle.tsx:313`, `Real.tsx:173`), que tiene 5 pasos: obtener USDC, depositar, aprobar, devolver y terminado. No tiene botón de reclamo. Las notas de reclamo con `modoSolo` en `Detalle.tsx` (las de las rondas 4 y 5: «El reclamo abre una disputa en la red de prueba…», «El reclamo se registra en la red de prueba…») solo aparecen en el alquiler de ejemplo del recorrido guiado, que es de solo lectura y no usa la red. Por eso no cambié `Crear.tsx:275` ni `Real.tsx:206` («…simulados…: no se registran en la red de prueba»), que en ese modo son correctos. Las dos notas de `Detalle.tsx` quedan para que Legal decida.
+- **Aceptación:**
+  - Cada documento tiene su casilla y su clave en `localStorage` (`lockumi.terminos.aceptacion`, `lockumi.privacidad.consentimiento`, con `{ version, fecha }`). `Login.tsx:95-96` marca cada casilla solo si la versión guardada es la del texto. La versión se lee de la línea «Versión …» del `.md` (`documentos.ts:23`).
+  - Producción tiene hoy las dos en 1.5-demo. Al publicar, el usuario marca **las dos casillas otra vez, una sola vez**, en la misma pantalla «Entrar». Quien ya aceptó Términos 1.6-demo en la vista previa solo marca la de privacidad.
+  - No hay otra pantalla que pida aceptar. La consecuencia es que quien ya tiene la sesión abierta (`App.tsx:39` solo muestra «Entrar» sin usuario) **no vuelve a aceptar** hasta que cierre sesión y entre de nuevo.

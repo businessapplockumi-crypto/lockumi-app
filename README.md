@@ -233,7 +233,7 @@ Todo lo que se escribe en un escrow queda público y permanente en Stellar. Por 
 | Fotos y actas | Cámara de la app con fecha, hora y huella SHA-256; se guardan en el navegador (localStorage), no en la cadena. Ver [`docs/fotos-captura.md`](docs/fotos-captura.md). |
 | Dos personas e invitaciones | **Próximamente.** En desarrollo; todavía no funciona. El correo de invitación saldría con Resend (ver abajo). |
 | Rendimiento con Blend | **No está activo.** Función futura; si llega, el rendimiento sería variable y no garantizado. |
-| Textos legales | `/terminos` versión **1.6-demo** (24 de octubre de 2026; cláusula 6.7 de Legal, rama `contrato-compacto`, sin publicar) y `/privacidad` versión **1.5-demo** (20 de octubre de 2026), pendientes de revisión por abogado. Origen y forma de reemplazarlos: [`src/legal/LEEME.md`](src/legal/LEEME.md). |
+| Textos legales | `/terminos` versión **1.6-demo** (24 de octubre de 2026; cláusula 6.7 de Legal, rama `contrato-compacto`, sin publicar) y `/privacidad` versión **1.6-demo** (24 de octubre de 2026; Freighter y quién firma, Legal ronda 7, sin publicar), pendientes de revisión por abogado. Origen y forma de reemplazarlos: [`src/legal/LEEME.md`](src/legal/LEEME.md). |
 
 El flujo mínimo anterior de 5 pasos (crear, obtener USDC, depositar, aprobar y devolver) sigue en el código solo si se compila con `VITE_FLUJO=solo`. No es el flujo de app.lockumi.com.
 
