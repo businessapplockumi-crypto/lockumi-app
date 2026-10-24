@@ -65,6 +65,13 @@ Publicado el 23 oct 2026 (avisos v2). Ver [`docs/alertas.md`](docs/alertas.md).
 - Los scripts de navegador que pasan por Inicio deben marcarlo como visto en `addInitScript` (ver `scripts/alertas/capturar.mjs`); si no, el recorrido se abre y tapa la pantalla.
 - Prueba en navegador: `VITE_TRUSTLESS=1 npx vite build && npx vite preview --port 4173`, luego `OUT=/tmp/rec/ node scripts/recorrido/capturar.mjs` (teléfono, computadora y movimiento reducido).
 
+## Espacios de las fotos (`src/espacios.ts`, `src/screens/Espacios.tsx`)
+
+- Cada espacio tiene un **id fijo**; entrada y salida se comparan por id. La salida se crea con `actaDesde(entrada)`.
+- **Regla (24 oct 2026):** antes de que los dos firmen la entrada, quitar un espacio borra de verdad sus fotos (y sus archivos de Storage); después, nada se puede cambiar ni borrar. Si tocas esto, mantén la regla en el cliente (`listaFija`, `src/acciones.ts`) y en el servidor (`supabase/migrations/20261024000000_lk_espacios.sql`: `lk_proteger_entrada`, `lk_fotos_borrar`).
+- Los textos marcados `// LEGAL: revisar (24/10)` son de Legal: no los cambies sin su visto bueno (las pruebas los revisan palabra por palabra).
+- Pruebas: `npx vitest run src/__tests__/espacios.test.tsx`, `bash scripts/espacios/probar-sql.sh` (Postgres 17 local, nunca un proyecto real) y `scripts/agregar-espacio/capturar.mjs` (Vite en 5173 con `VITE_TRUSTLESS=1 VITE_CAVOS_APP_ID=captura-local`). Detalle en [`docs/espacios.md`](docs/espacios.md).
+
 ## Agregar un estado del alquiler y su color
 
 «Tus alquileres» pinta cada tarjeta según el **grupo** de su estado: `pendiente` (amarillo miel), `curso` (verde salvia), `reclamo` (terracota) o `terminado` (arena). Para agregar un estado:

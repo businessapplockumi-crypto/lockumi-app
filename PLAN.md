@@ -90,3 +90,16 @@ No se usan llaves ni secretos. Toda integración simulada lleva la insignia "Dem
 - [x] Accesible: foco en el globo, Tab atrapado, Esc, foco de vuelta, movimiento reducido.
 - [ ] Entrada en el menú de la cuenta (avatar) de la maqueta: la app todavía no tiene ese menú.
 - [x] Publicado en `master` el 24 oct 2026 (OK de Katherine).
+
+## «+ Agregar espacio» (24 oct 2026, rama `agregar-espacio`, no publicado)
+
+Hecho: agregar (hasta 12, nombres de 2 a 30, sin duplicados), chips, plantillas, «+ Otro punto», cambiar nombre, quitar, id fijo, salida copiada de la entrada, migración local y SQL. **Regla de Katherine (24/10):** antes de que los dos firmen la entrada, quitar borra de verdad las fotos, sus archivos y la lista; después de firmar, nada se puede cambiar ni borrar (cliente y servidor). Detalle: [`docs/espacios.md`](docs/espacios.md).
+
+Pendiente:
+- [ ] **Modo de dos personas:** las DOS partes pueden quitar espacios antes de firmar, y la OTRA parte recibe un aviso; después de firmar, nadie puede.
+- [ ] Revisar la migración en el servidor y aplicarla; luego encender `VITE_ESPACIOS_SERVIDOR=1`.
+- [ ] Probar el borrado de archivos contra Supabase Storage real (hoy solo stub local y mock).
+- [ ] Limpieza de archivos huérfanos si falla el borrado en Storage después de la RPC.
+- [ ] Decidir qué pasa al borrar una cuenta con una entrada firmada (hoy el servidor no deja borrar ese contrato) y el plazo de guarda de las fotos en el Aviso de privacidad.
+- [ ] Moderación del texto libre (nombres y puntos).
+- [ ] Revisión de Legal de los textos `// LEGAL: revisar (24/10)`.
