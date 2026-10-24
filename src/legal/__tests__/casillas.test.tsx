@@ -116,6 +116,15 @@ describe('textos legales', () => {
     expect(t).toContain('6.7 Desacuerdo. En la demo, si el inquilino no acepta el reclamo, el caso pasa a una mediación simulada y el reparto se elige con el botón «Resolver el reclamo (simulación)». En un servicio real, una persona mediadora neutral les ayudaría a buscar un acuerdo, sin decidir por las partes. Si no hay acuerdo, el depósito seguiría guardado y cualquiera de las partes podría acudir a los tribunales de Costa Rica.')
     expect(t).not.toContain('decide un reparto'); expect(TERMINOS.html).not.toContain('LEGAL:')
   })
+  // LEGAL: revisado (24/10) · ronda 3: 4.1 a) con el texto de Legal; 5.3 sin cambios (ver docs/alertas.md, «Legal, ronda 3»).
+  it('4.1 a) ronda 3 de Legal: el escrow y el reparto de Lockumi si hay reclamo; 5.3 Cavos no cambia', () => {
+    const t = TERMINOS.html.replace(/<[^>]+>/g, '')
+    expect(t).toContain('tú firmas el depósito con tu billetera. Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.')
+    expect(t).not.toContain('Lockumi no custodia tus tokens de prueba')
+    expect(t).toContain('ni Cavos ni Lockumi pueden firmar por ti ni mover tus fondos')
+    expect(TERMINOS.version).toBe('1.6-demo'); expect(TERMINOS.html).not.toContain('LEGAL:')
+    expect(renderToStaticMarkup(<Login onOk={() => {}} />)).toContain('Ni el dueño ni el inquilino pueden liberarlo solos.')
+  })
   it('una aceptación de la versión 1.2-demo no cuenta: las casillas salen sin marcar', () => {
     guardarAceptacion('terminos', '1.2-demo'); guardarAceptacion('privacidad', '1.2-demo')
     expect(aceptoVersion('terminos', TERMINOS.version)).toBe(false); expect(aceptoVersion('privacidad', PRIVACIDAD!.version)).toBe(false)

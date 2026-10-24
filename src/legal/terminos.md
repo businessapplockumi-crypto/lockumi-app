@@ -30,7 +30,8 @@ d) **Monto del depósito de prueba:** si usas tu propio USDC de prueba, eliges l
 
 ## 4. Cómo se manejan los tokens de prueba
 4.1 **Quién custodia los tokens de prueba depende de la opción que elijas** (cláusula 5.5):
-a) **Si eliges «Usar mi propio USDC de prueba»** (con tu billetera de Cavos o con Freighter): **Lockumi no custodia tus tokens de prueba**; los firmas tú con tu billetera.
+<!-- LEGAL: revisado (24/10) · 4.1 a), ronda 3 -->
+a) **Si eliges «Usar mi propio USDC de prueba»** (con tu billetera de Cavos o con Freighter): tú firmas el depósito con tu billetera. Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.
 b) **Si eliges el USDC de prueba que te da Lockumi, sin valor:** ese USDC de prueba **no llega a tu billetera**. Lockumi lo pone en una **cuenta de inquilino de prueba rotulada**, cuya llave guarda Lockumi en su servidor, y **Lockumi firma el depósito por esa cuenta**. Tú no recibes ni controlas esos tokens y no los puedes retirar: solo pasan a los contratos digitales de la demo de Lockumi.
 c) En ambos casos, el depósito queda bloqueado en el contrato digital de garantía en la red de prueba. Lockumi también genera y guarda en su servidor la llave del **dueño de prueba**, y firma por esa cuenta, por ejemplo la aprobación del dueño. Si eliges tu propio USDC y falla la firma de tu billetera, Lockumi puede usar una cuenta de inquilino de prueba de respaldo, también rotulada y con llave en su servidor. Todas esas cuentas solo manejan tokens de prueba sin valor.
 4.1.1 Lockumi, como plataforma, crea el contrato digital, registra la evidencia (solo la huella digital SHA-256 de las fotos, no las fotos ni el lugar) y libera el depósito al inquilino cuando la aprobación está lista.

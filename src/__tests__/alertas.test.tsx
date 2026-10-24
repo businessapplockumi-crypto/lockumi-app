@@ -225,7 +225,7 @@ describe('textos de los avisos', () => {
   it('textos aprobados por Legal (23 oct): depósito guardado y mediación', () => {
     const base = { id: '1', direccion: 'Casa', monto: 20, ventanaSegundos: 604800, diasSimulados: 0, contrato: { firmas: {} }, entrada: { firmas: {} } }
     const p = al.alertaPorCambio({ ...base, estado: 'pendiente_pago' } as never, { ...base, estado: 'fotos_entrada' } as never, 'inquilino', VIDEO)!
-    expect(p.titulo).toBe('¡Depósito guardado!'); expect(p.hecho).toMatch(/^[^a-z]*20[^a-z]* guardados en una cuenta segura de la red de prueba\. Nadie puede sacarlos solo\.$/)   // «20 USDC» en la app (formato de usd())
+    expect(p.titulo).toBe('¡Depósito guardado!'); expect(p.hecho).toMatch(/^[^a-z]*20[^a-z]* guardados en una cuenta segura de la red de prueba\. Ni el dueño ni el inquilino pueden sacarlos solos\.$/)   // «20 USDC» en la app (formato de usd())
     const m = al.alertaPorCambio({ ...base, estado: 'reclamo' } as never, { ...base, estado: 'mediacion' } as never, 'inquilino', VIDEO)!
     expect(m.sigue).toBe('Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito. En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».')
     expect(al.lineaDe(m)).toEqual({ et: 'En esta prueba:', texto: 'decides tú el reparto (simulación)' })

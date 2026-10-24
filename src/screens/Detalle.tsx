@@ -69,9 +69,10 @@ function PagoSimulado({ a, rol }: P) {
   return <section className="pila"><div className="cab"><h2>Depósito</h2>{escrowReal ? <span className="chip chip--neutro">Red de prueba</span> : modoVideo ? <Simulado /> : <Demo t="Pago simulado" />}</div>
     <div className="monto">{usd(a.monto)}</div>
     <p>El dinero queda guardado. El dueño no lo recibe ahora: se decide al final del alquiler.</p>
+    {/* LEGAL: revisado (24/10) · «Ni el dueño ni el inquilino pueden sacarlos solos.» (las dos notas: cuenta propia y USDC de Lockumi) */}
     {rol === 'inquilino' ? <>
-      {escrowReal && usaCuentaPropia(a) ? <p className="nota">Son USDC de prueba, sin valor, de tu cuenta ({abreviar(a.red!.inquilino!)}). {a.red!.firma === 'freighter' ? 'Freighter' : 'Tu cuenta Lockumi'} te pedirá confirmar el depósito; después quedan bloqueados en una cuenta segura de la red de prueba. Nadie puede sacarlos solo.</p>
-        : escrowReal ? <p className="nota">Son USDC de prueba, sin valor: Lockumi los pone en tu cuenta de prueba y quedan bloqueados en una cuenta segura de la red de prueba. Nadie puede sacarlos solo.</p>
+      {escrowReal && usaCuentaPropia(a) ? <p className="nota">Son USDC de prueba, sin valor, de tu cuenta ({abreviar(a.red!.inquilino!)}). {a.red!.firma === 'freighter' ? 'Freighter' : 'Tu cuenta Lockumi'} te pedirá confirmar el depósito; después quedan bloqueados en una cuenta segura de la red de prueba. Ni el dueño ni el inquilino pueden sacarlos solos.</p>
+        : escrowReal ? <p className="nota">Son USDC de prueba, sin valor: Lockumi los pone en tu cuenta de prueba y quedan bloqueados en una cuenta segura de la red de prueba. Ni el dueño ni el inquilino pueden sacarlos solos.</p>
         : (!modoReal || modoVideo) && <p className="nota">Es una prueba: no se cobra nada.</p>}
       {p.error}
       <EsperaPago etapa={etapa} fallo={fallo} etiqueta={`Pagar ${usd(a.monto)}`} onPagar={() => void pagar()} />
@@ -117,7 +118,8 @@ function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
 function EnCurso({ a }: P) {
   return <section className="pila"><span className="chip chip--exito"><Icono id="i-candado" /> Depósito guardado</span>
     <h2>Alquiler en curso</h2><div className="monto">{usd(a.monto)}</div>
-    <p>Del {fecha(a.inicio)} al {fecha(a.fin)}. El depósito sigue guardado y nadie puede tomarlo solo.</p>
+    {/* LEGAL: revisado (24/10) */}
+    <p>Del {fecha(a.inicio)} al {fecha(a.fin)}. El depósito sigue guardado y ni el dueño ni el inquilino pueden tomarlo solos.</p>
     <p className="nota">Cuando el inquilino entregue el lugar, cualquiera de los dos puede empezar las fotos de salida.</p>
     <button type="button" className="boton boton--primario boton--ancho boton--grande" onClick={() => void acciones.iniciarSalida(a)}>Empezar fotos de salida</button>
   </section>
@@ -213,7 +215,8 @@ function Mediacion({ a }: P) {
   useEffect(() => { if (modoServidor) servidor.esMediador().then(setMediador).catch(() => {}) }, [])
   const decidir = () => p.correr(av => acciones.decidir(a, aDueno, undefined, av))
   return <section className="pila"><div className="cab"><h2>Con una persona mediadora</h2>{modoPrueba && <Simulado />}</div>
-    {modoSolo && <p className="nota">La persona mediadora es simulada: su decisión no se registra en la red de prueba ni mueve el depósito de prueba.</p>}
+    {/* LEGAL: revisado (24/10) · el reparto sí se ejecuta en la red de prueba: acciones.decidir → escrow.resolver → /api/solo «resolver» (resolve_dispute) */}
+    {modoSolo && <p className="nota">La mediación es simulada: el reparto que elijas se ejecuta con tokens de prueba, sin valor.</p>}
     {modoVideo && <p className="nota">En esta prueba la persona mediadora es simulada: decides tú con «Resolver el reclamo (simulación)». El reparto que elijas sí se hace de verdad en la red de prueba.</p>}
     {/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide */}
     <p>No hubo acuerdo. Una persona mediadora revisa con ustedes las fotos de entrada y salida y les ayuda a buscar un acuerdo sobre el reparto.</p>

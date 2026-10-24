@@ -108,7 +108,7 @@ export function Login({ onOk, error = false, onReintento }: { onOk: (u: Usuario)
     if (v) guardarAceptacion(c, VERSION[c]); else borrarAceptacion(c)
   }
   const beneficios = [
-    { ico: 'i-candado', t: 'Tu depósito queda guardado', d: 'Nadie puede liberarlo solo.' },
+    { ico: 'i-candado', t: 'Tu depósito queda guardado', d: 'Ni el dueño ni el inquilino pueden liberarlo solos.' },   // LEGAL: revisado (24/10)
     { ico: 'i-camara', t: 'Actas con fotos', d: 'Entrada y salida, firmadas por ambos.' },
     { ico: 'i-balanza', t: 'Reclamos claros', d: 'La mayoría se resuelve en la app.' },
   ]
