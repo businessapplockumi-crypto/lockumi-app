@@ -264,7 +264,7 @@ function EscrowReal({ a, rol }: P) {
   const correr = async (f: () => Promise<unknown>) => { setOcupado(true); setError(''); try { await f() } catch (e) { setError(e instanceof Error ? e.message : String(e)) } finally { setOcupado(false) } }
   const err = error && <p className="error" role="alert">{error}</p>
   if (a.estado === 'ventana_reclamo') return rol === 'dueno' && !aprobado ? <div className="pila">
-    <p className="nota">Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar la firma.</p>
+    {/* LEGAL: revisado (24/10) · ronda 7 (modo de dos personas, sin uso hoy) */}<p className="nota">Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar el depósito. La aprobación y la liberación las firma la cuenta de Lockumi.</p>
     <button type="button" className="boton boton--ancho" disabled={ocupado} onClick={() => void correr(() => acciones.aprobarDevolucion!(a))}>{ocupado ? 'Firmando…' : 'Todo está bien: aprobar la devolución'}</button>{err}</div>
     : aprobado ? <p className="nota">El dueño ya aprobó la devolución. Al terminar el plazo se libera el depósito.</p> : null
   if (a.estado === 'cerrado' && a.resultado?.via === 'automatico') return a.liquidacionTx

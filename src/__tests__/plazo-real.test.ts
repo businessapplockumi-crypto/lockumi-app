@@ -5,7 +5,7 @@ import { textoPlazo as desdeAcciones } from '../acciones'
 
 const fs = await import(/* @vite-ignore */ ['node', 'fs'].join(':')) as { readFileSync(r: URL, c: 'utf8'): string }
 const leer = (r: string) => fs.readFileSync(new URL(r, import.meta.url), 'utf8')
-const detalle = leer('../screens/Detalle.tsx'), terminos = leer('../legal/terminos.md'), contrato = leer('../screens/ContratoDoc.tsx')
+const detalle = leer('../screens/Detalle.tsx'), crear = leer('../screens/Crear.tsx'), terminos = leer('../legal/terminos.md'), contrato = leer('../screens/ContratoDoc.tsx')
 const alq = (estado: string, ventanaSegundos?: number) => ({ estado, ventanaSegundos, contrato: { firmas: {} }, entrada: { firmas: {} }, salida: { firmas: {} } }) as never
 
 describe('Plazo real en la app', () => {
@@ -32,5 +32,12 @@ describe('Plazo real en la app', () => {
     expect(contrato).toContain('Si no reclama, después de 7 días el depósito se devuelve completo al inquilino.')
     expect(terminos).toContain('Si no reclama, después de ese plazo se libera todo al inquilino.')
     expect(terminos).toContain('**Versión 1.6-demo · 24 de octubre de 2026**')
+  })
+  // LEGAL: revisado (24/10) · ronda 7: quién firma, en las hojas de Crear y en la aprobación (modo de dos personas)
+  it('Crear y Detalle: textos de Legal sobre firmas y reclamo registrado', () => {
+    expect(crear).toContain('<p>Tú eres el <strong>inquilino</strong>. Si usas tu propia billetera, depositas con ella; si no, la cuenta de Lockumi firma el depósito por ti en la red de prueba.')
+    expect(crear).toContain('La mediación es simulada. El reclamo lo haces tú con un botón, en nombre del dueño de prueba, y queda registrado en la red de prueba.</p>')
+    expect(crear).not.toContain('y depositas con tu billetera')
+    expect(detalle).toContain('Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar el depósito. La aprobación y la liberación las firma la cuenta de Lockumi.')
   })
 })

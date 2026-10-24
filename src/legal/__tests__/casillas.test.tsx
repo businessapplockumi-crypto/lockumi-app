@@ -65,16 +65,16 @@ describe('casillas obligatorias de Términos y Privacidad', () => {
 })
 
 describe('textos legales', () => {
-  // LEGAL: revisado (24/10) · Términos 1.6-demo (cláusula 6.7); el Aviso de privacidad sigue en 1.5-demo.
-  const VER: Record<string, [string, string]> = { terminos: ['1.6-demo', '24 de octubre de 2026'], privacidad: ['1.5-demo', '20 de octubre de 2026'] }
-  it('carga Términos 1.6-demo y Privacidad 1.5-demo con su fecha, tomadas del texto', () => {
+  // LEGAL: revisado (24/10) · Términos 1.6-demo (cláusula 6.7); ronda 7: Aviso de privacidad 1.6-demo (Freighter).
+  const VER: Record<string, [string, string]> = { terminos: ['1.6-demo', '24 de octubre de 2026'], privacidad: ['1.6-demo', '24 de octubre de 2026'] }
+  it('carga Términos 1.6-demo y Privacidad 1.6-demo con su fecha, tomadas del texto', () => {
     for (const d of [TERMINOS, PRIVACIDAD!]) { expect(d.version).toBe(VER[d.slug][0]); expect(d.fecha).toBe(VER[d.slug][1]); expect(d.metaEnTexto).toBe(true) }
     expect(Object.keys(DOCS).sort()).toEqual(['privacidad', 'terminos'])
   })
   it('la página muestra la versión y la fecha una sola vez, y el aviso de una línea de arriba', () => {
     for (const slug of ['terminos', 'privacidad']) {
       const html = renderToStaticMarkup(<PaginaLegal slug={slug} />)
-      expect(html.split(VER[slug][0]).length - 1).toBe(1); if (slug === 'terminos') expect(html).not.toContain('1.5-demo'); expect(html).not.toContain('1.4-demo'); expect(html).not.toContain('1.3-demo'); expect(html).not.toContain('1.2-demo'); expect(html).not.toContain('1.1-demo')
+      expect(html.split(VER[slug][0]).length - 1).toBe(1); expect(html).not.toContain('1.5-demo'); expect(html).not.toContain('1.4-demo'); expect(html).not.toContain('1.3-demo'); expect(html).not.toContain('1.2-demo'); expect(html).not.toContain('1.1-demo')
       expect(html.split(VER[slug][1]).length - 1).toBe(1)
       expect(html).toMatch(/<blockquote><p>Versión demo[^<]*\. Este texto puede actualizarse; te avisaremos de los cambios importantes\.<\/p><\/blockquote>/)
       expect(html).toContain('Pendiente de revisión por abogado')
@@ -98,18 +98,33 @@ describe('textos legales', () => {
     const html = renderToStaticMarkup(<Login onOk={() => {}} />)
     expect(html).not.toMatch(/id="acepto-terminos"[^>]*checked/); expect(html).not.toMatch(/id="acepto-privacidad"[^>]*checked/)
   })
-  it('las dos casillas guardan { version, fecha }: Términos 1.6-demo y Privacidad 1.5-demo', () => {
+  it('las dos casillas guardan { version, fecha }: Términos 1.6-demo y Privacidad 1.6-demo', () => {
     const ahora = new Date('2026-10-18T18:00:00Z')
     expect(guardarAceptacion('terminos', TERMINOS.version, ahora)).toEqual({ version: '1.6-demo', fecha: '2026-10-18T18:00:00.000Z' })
-    expect(guardarAceptacion('privacidad', PRIVACIDAD!.version, ahora)).toEqual({ version: '1.5-demo', fecha: '2026-10-18T18:00:00.000Z' })
-    expect(JSON.parse(localStorage.getItem('lockumi.privacidad.consentimiento')!)).toEqual({ version: '1.5-demo', fecha: '2026-10-18T18:00:00.000Z' })
+    expect(guardarAceptacion('privacidad', PRIVACIDAD!.version, ahora)).toEqual({ version: '1.6-demo', fecha: '2026-10-18T18:00:00.000Z' })
+    expect(JSON.parse(localStorage.getItem('lockumi.privacidad.consentimiento')!)).toEqual({ version: '1.6-demo', fecha: '2026-10-18T18:00:00.000Z' })
     expect(aceptoVersion('terminos', TERMINOS.version)).toBe(true)
   })
-  it('una aceptación de Términos 1.5-demo ya no cuenta: la casilla de Términos sale sin marcar; la de privacidad 1.5-demo sigue marcada', () => {
+  it('una aceptación 1.5-demo ya no cuenta para ninguno de los dos: las dos casillas salen sin marcar', () => {
     guardarAceptacion('terminos', '1.5-demo'); guardarAceptacion('privacidad', '1.5-demo')
-    expect(aceptoVersion('terminos', TERMINOS.version)).toBe(false); expect(aceptoVersion('privacidad', PRIVACIDAD!.version)).toBe(true)
+    expect(aceptoVersion('terminos', TERMINOS.version)).toBe(false); expect(aceptoVersion('privacidad', PRIVACIDAD!.version)).toBe(false)
     const html = renderToStaticMarkup(<Login onOk={() => {}} />)
-    expect(html).not.toMatch(/id="acepto-terminos"[^>]*checked/); expect(html).toMatch(/id="acepto-privacidad"[^>]*checked/)
+    expect(html).not.toMatch(/id="acepto-terminos"[^>]*checked/); expect(html).not.toMatch(/id="acepto-privacidad"[^>]*checked/)
+  })
+  // LEGAL: revisado (24/10) · ronda 7: quien ya aceptó Términos 1.6-demo (vista previa) solo vuelve a marcar Privacidad
+  it('con Términos 1.6-demo y Privacidad 1.5-demo, solo la casilla de privacidad sale sin marcar', () => {
+    guardarAceptacion('terminos', '1.6-demo'); guardarAceptacion('privacidad', '1.5-demo')
+    const html = renderToStaticMarkup(<Login onOk={() => {}} />)
+    expect(html).toMatch(/id="acepto-terminos"[^>]*checked/); expect(html).not.toMatch(/id="acepto-privacidad"[^>]*checked/)
+  })
+  it('ronda 7: textos exactos de Legal sobre quién firma (Términos 3.1, 5.3, 5.5.1 b; Privacidad Freighter)', () => {
+    const t = TERMINOS.html.replace(/<[^>]+>/g, ''), pr = PRIVACIDAD!.html.replace(/<[^>]+>/g, '')
+    expect(t).toContain('5.3 Firmas. Lockumi no tiene las llaves de tu propia billetera (Cavos o Freighter). En el modo por defecto, con USDC de prueba que te da Lockumi, usas una cuenta de prueba cuyas llaves guarda Lockumi, y la cuenta de Lockumi firma por ti en la red de prueba, incluido el depósito. Si usas tu propia billetera, con ella firmas el depósito y la compra de USDC de prueba. Las demás acciones que quedan en la red (abrir un reclamo, aceptarlo y ejecutar el reparto, la aprobación y la liberación) las firma la cuenta de Lockumi cuando alguien toca el botón en la app. Rechazar un reclamo no registra nada en la red. Si no hay reclamo, después del plazo la devolución se ejecuta la próxima vez que alguien abre el alquiler, sin que nadie tenga que aprobarla. Cavos permite que una app firme pagos pequeños con tu billetera sin pedirte confirmación, dentro de un límite por transacción y por día; Lockumi no usa esa función a propósito. Abrir la línea de USDC en tu billetera, que no mueve fondos, se firma sin pedirte confirmación.')
+    expect(t).toContain('3.1 Para entrar, usas el servicio de inicio de sesión de Cavos (cláusula 5) con Google, Apple o tu correo y un código. Con Cavos se crea tu billetera en la red de prueba. Si usas tu propia billetera, con ella firmas el depósito como inquilino; en el modo por defecto, lo firma por ti la cuenta de Lockumi (ver 5.3). Debes ser mayor de 18 años.')
+    expect(t).toContain('b) cuando usas Freighter, las transacciones que firma tu billetera (el depósito y la compra de USDC de prueba) las confirmas tú en la extensión; las demás las firma la cuenta de Lockumi (ver 5.3), y Lockumi nunca ve tu clave privada;')
+    expect(t).not.toContain('con la que firmas el depósito como inquilino.'); expect(t).not.toContain('cada transacción la firmas tú')
+    expect(pr).toContain('Si usas Freighter, las transacciones de tu billetera las confirmas tú en la extensión. Las demás acciones del contrato las firma la cuenta de Lockumi en la red de prueba. Lockumi nunca ve tu clave privada.')
+    expect(pr).not.toContain('Las transacciones las firmas tú'); expect(PRIVACIDAD!.html).not.toContain('LEGAL:')
   })
   it('6.7 Desacuerdo: texto de Legal (24/10); la mediación no decide y no hay persona mediadora que decida en la demo', () => {
     const t = TERMINOS.html.replace(/<[^>]+>/g, '')
@@ -117,13 +132,12 @@ describe('textos legales', () => {
     expect(t).not.toContain('decide un reparto'); expect(TERMINOS.html).not.toContain('LEGAL:')
   })
   // LEGAL: revisado (24/10) · ronda 3: 4.1 a) con el texto de Legal; 5.3 sin cambios (ver docs/alertas.md, «Legal, ronda 3»).
-  it('4.1 a) ronda 3 de Legal: el escrow y el reparto de Lockumi si hay reclamo; 5.3 de la ronda 6', () => {
+  it('4.1 a) ronda 3 de Legal: el escrow y el reparto de Lockumi si hay reclamo; 5.3 de la ronda 7', () => {
     const t = TERMINOS.html.replace(/<[^>]+>/g, '')
     expect(t).toContain('tú firmas el depósito con tu billetera. Lockumi no guarda tus tokens de prueba en una cuenta propia: quedan en un contrato de escrow en la red de prueba. Si hay un reclamo, la cuenta de Lockumi puede ejecutar el reparto.')
     expect(t).not.toContain('Lockumi no custodia tus tokens de prueba')
-    // LEGAL: revisado (24/10) · ronda 6: 5.3 «Firmas.» con el texto exacto de Legal (sin montos)
-    expect(t).toContain('5.3 Firmas. Lockumi no tiene las llaves de tu billetera (Cavos o Freighter). Si usas tu propia billetera, con ella firmas el depósito y la compra de USDC de prueba. Las demás acciones del contrato (el reclamo, la respuesta, el reparto, la aprobación y la liberación) las firma en la red de prueba la cuenta de Lockumi, cuando tú o la otra parte tocan el botón en la app. Si no hay reclamo, la devolución se ejecuta después del plazo sin que nadie tenga que tocar nada. Cavos permite que una app firme pagos pequeños con tu billetera sin pedirte confirmación, dentro de un límite por transacción y por día; Lockumi no usa esa función a propósito. Abrir la línea de USDC en tu billetera, que no mueve fondos, se firma sin pedirte confirmación.')
-    expect(t).not.toContain('Lockumi no usa esa función: el depósito y cada acción')
+    // LEGAL: revisado (24/10) · ronda 7: 5.3 «Firmas.» (texto exacto en el test de la ronda 7, sin montos)
+    expect(t).toContain('5.3 Firmas. Lockumi no tiene las llaves de tu propia billetera'); expect(t).not.toContain('Lockumi no usa esa función: el depósito y cada acción')
     expect(t).not.toContain('ni Cavos ni Lockumi pueden firmar por ti'); expect(t.slice(t.indexOf('5.3 '), t.indexOf('5.4 '))).not.toMatch(/\d+\s*(USDC|XLM)/)
     expect(TERMINOS.version).toBe('1.6-demo'); expect(TERMINOS.html).not.toContain('LEGAL:')
     expect(renderToStaticMarkup(<Login onOk={() => {}} />)).toContain('Ni el dueño ni el inquilino pueden liberarlo solos.')

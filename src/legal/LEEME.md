@@ -7,7 +7,7 @@ su ruta (`terminos.md` → `/terminos`) y su enlace en el pie.
 | Archivo         | Ruta          | Origen |
 |-----------------|---------------|--------|
 | `terminos.md`   | `/terminos`   | `/workspace/lockumi-landing/terminos-app-1.5-borrador.md`, copia exacta (1.5-demo), con la cláusula 6.7 cambiada por Legal el 24/10/2026 (ronda 2) → **1.6-demo · 24 de octubre de 2026**. El borrador de `lockumi-landing` no tiene ese cambio. |
-| `privacidad.md` | `/privacidad` | `/workspace/lockumi-landing/privacidad-app-1.5-borrador.md`, copia exacta (1.5-demo, sin nota interna) |
+| `privacidad.md` | `/privacidad` | `/workspace/lockumi-landing/privacidad-app-1.5-borrador.md`, copia exacta (1.5-demo, sin nota interna), con el párrafo de Freighter cambiado por Legal el 24/10/2026 (ronda 7) → **1.6-demo · 24 de octubre de 2026** |
 
 ## Reemplazar un texto
 Sustituir el archivo `.md` (sin editar su contenido; en privacidad, quitar la "Nota interna" si viene).
@@ -42,3 +42,7 @@ como `{ version, fecha }` y en el usuario (`lockumi.usuario` → `terminos`, `pr
   `docs/alertas.md`, «Legal, ronda 5».
 - **1.6-demo, ronda 6 (24 oct 2026, misma versión y fecha, sin publicar):** 5.3 pasa a «5.3 **Firmas.** …», el texto exacto de Legal
   (quién firma cada acción; Lockumi no usa la firma sin confirmación de Cavos). Ya no depende del cambio en Cavos (ver PLAN.md).
+- **Ronda 7 (24 oct 2026, sin publicar):** Términos 1.6-demo (misma versión): 3.1, 5.3 y 5.5.1 b) con el texto de Legal sobre quién
+  firma. **Aviso de privacidad → 1.6-demo · 24 de octubre de 2026** (párrafo de Freighter). Como cambió su versión, el consentimiento
+  1.5-demo ya no cuenta. En «Entrar», quien venga de producción (las dos en 1.5-demo) marca **las dos casillas otra vez, una sola vez**.
+  Quien ya aceptó Términos 1.6-demo en la vista previa solo marca la de privacidad.
