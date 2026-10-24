@@ -131,9 +131,9 @@ Los marcados `// LEGAL: revisar` en `src/alertas.ts` son los del depósito guard
 | Fotos de entrada: confirma el dueño de prueba | `entrada-dueno` | Empezó el alquiler | Los dos confirmaron las fotos de entrada. El depósito sigue guardado. | Lo que sigue: Cuando entregues el lugar, toca «Empezar fotos de salida». |
 | Empezar fotos de salida | `salida-inicio` | Empezaron las fotos de salida | Ya pueden registrar cómo quedó el lugar. | Lo que sigue: Tomar una foto de cada espacio, marcar la lista y confirmar. |
 | Fotos de salida: confirma el inquilino | `salida-inquilino` | Confirmaste las fotos de salida | Las fotos y la lista quedaron guardadas con la fecha y la hora. | Lo que sigue: El dueño de prueba las revisa y las confirma solo, en unos segundos. |
-| Fotos de salida: confirma el dueño de prueba | `salida-dueno` | Fotos de salida confirmadas | Los dos confirmaron las fotos de salida. Empiezan los 7 días para reclamos. | Lo que sigue: Si el dueño de prueba no reclama en 7 días, el depósito vuelve al inquilino. En esta prueba puedes adelantar el plazo o hacer un reclamo en nombre del dueño de prueba. |
+| Fotos de salida: confirma el dueño de prueba | `salida-dueno` | Fotos de salida confirmadas | Los dos confirmaron las fotos de salida. Empiezan los 7 días para reclamos. | Lo que sigue: Si el dueño de prueba no reclama, después de 7 días el depósito se devuelve al inquilino. En esta prueba puedes adelantar el plazo o hacer un reclamo en nombre del dueño de prueba. |
 | Solo red de prueba: adelantar el plazo | `adelantar` | Plazo adelantado | Solo en la red de prueba: terminamos ahora los 7 días para reclamos. | Lo que sigue: El dueño de prueba aprueba y Lockumi devuelve el depósito al inquilino en la red de prueba. Tarda entre 20 y 60 segundos. |
-| Devolución automática (sin reclamos) | `devolucion` | Depósito devuelto | No hubo reclamos en 7 días. El dueño de prueba aprobó y Lockumi devolvió 19,94 USDC al inquilino en la red de prueba. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
+| Devolución después de 7 días sin reclamos | `devolucion` | Depósito devuelto | No hubo reclamos en 7 días. El dueño de prueba aprobó y Lockumi devolvió 19,94 USDC al inquilino en la red de prueba. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Reclamo del dueño de prueba | `reclamo` | Reclamo enviado | El dueño de prueba reclamó 5 USDC del depósito. | Lo que sigue: El inquilino acepta o no el reclamo. Si no lo acepta, pasa a una persona mediadora (simulación). |
 | No estoy de acuerdo → mediación | `mediacion` | Pasa a una persona mediadora | No hubo acuerdo con el reclamo. En esta prueba la persona mediadora es una simulación. | Lo que sigue: Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito. En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)». *(Legal, 24 oct)* |
 | Reparto de la persona mediadora (simulación) | `reparto` | Reparto del depósito | Se repartió el depósito en la red de prueba: 2,4925 USDC al dueño y 17,4475 USDC al inquilino. *(Legal, 24 oct)* | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
@@ -254,3 +254,36 @@ Pruebas: `src/__tests__/alertas.test.tsx`, `recorrido.test.tsx`, `src/legal/__te
 
 **PLAN.md:** tarea programada para la devolución y la llave del dueño de prueba como custodia con dinero real (lista para el abogado).
 
+
+## Legal, ronda 5 (24 oct 2026, rama `contrato-compacto`, sin publicar)
+
+**Textos.** En la app, el plazo sale de `textoPlazo(a)` (`{plazo}`, el mismo del encabezado «{plazo} para reclamos»; en la vista previa de Vercel son 5 minutos). `plazoMs` y `textoPlazo` pasaron a `src/flujo.ts` (puro) y `src/acciones.ts` los reexporta, así `turno` y `ahoraPrueba` también los usan. «7 días» fijo queda solo en el contrato (`ContratoDoc`), los Términos, la landing y estos documentos. Quedan fijos también, porque no tienen un alquiler a mano: las etapas (`flujo.ts` `ETAPAS`), el nombre del estado (`types.ts`), la tarjeta de Inicio («Con 7 días para reclamos») y el recorrido guiado (`recorrido.ts`, ejemplo). «Termina el {fecha}.» ya no muestra «a. m..» (`conPunto` en `Detalle.tsx`). Prueba: `src/__tests__/plazo-real.test.ts`.
+
+- Encabezado de la pantalla del reclamo: etiqueta «Mediación simulada» (antes «Simulado»). Junto a «El reclamo abre una disputa en la red de prueba»: «Red de prueba». `Simulado` acepta ahora `texto`; los demás usos siguen diciendo «Simulado».
+- Demo local: «Si no hay reclamos, después de {plazo} el depósito se devuelve completo al inquilino. En esta demo local no hay red: es solo una simulación.»
+- Textos «después de…»: Detalle (regla y espera del inquilino), `flujo.ts` (salida y ventana, con `{plazo}`), `alertas.ts` (aviso de fotos de salida), contrato (con 7 días), Términos 6.5 («Si no reclama, después de ese plazo se libera todo al inquilino.», sigue en 1.6-demo), README y PLAN.
+
+**Landing, sin cambios (publicada; necesita el OK de Katherine).** `landing/index.html:148` dice hoy «Si en 7 días no hay un reclamo con pruebas, tu depósito vuelve a ti.» Texto de Legal para cuando Katherine lo apruebe: **«Si no hay un reclamo con pruebas, después de 7 días se te devuelve tu depósito.»**
+
+**Términos 5.3: no publicar todavía.** El texto actual queda en la rama, pero no se publica hasta que Katherine decida en el panel de Cavos (app → Approvals). Hay dos variantes:
+
+- **(a) Katherine pone los límites en 0 y «Over the limit» = *Ask the user*:** al final de 5.3 se agrega «Abrir la línea de USDC en tu billetera, que no mueve fondos, se firma sin pedirte confirmación.»
+- **(b) No hace el cambio:** se reemplaza «Lockumi no usa esa función: el depósito y cada acción en el contrato te piden confirmar.» por «Lockumi no usa esa función a propósito y la app te pide confirmar antes del depósito y de cada acción en el contrato. Los límites de firma sin confirmación de Cavos siguen activos con sus valores por defecto.»
+
+**Revisión en el código: ¿la app (sin contar Cavos) pide confirmar?** «Paso explícito» = el usuario toca un botón que nombra la acción. Ninguna acción tiene una ventana de confirmación aparte (modal o «¿Seguro?»); el único `confirm()` de la app es «Reiniciar demo» (`Inicio.tsx:55`).
+
+| Acción | Dónde | Paso explícito en la app | Quién firma en la red |
+|---|---|---|---|
+| Depósito (producción y vista previa) | `Detalle.tsx:80` (`EsperaPago`, «Pagar {monto}») → `:63` `pagar` | Sí: botón. Sin modal | Con «cuenta de prueba» (lo normal): el servidor (`escrow.ts` `fondearPrueba`), sin billetera. Con cuenta propia: Cavos o Freighter (`cuentaPropia.ts:43`) |
+| Depósito (una persona, `VITE_FLUJO=solo`) | `Real.tsx:117` y `:202` «Depositar {monto}» | Sí: botón. Sin modal | Billetera (`solo.ts:115`, `:126`) o el servidor con cuenta de prueba |
+| Comprar USDC de prueba | `solo.ts:84` | Sí: botón de «Obtener USDC de prueba» | Billetera (path payment) |
+| Reclamo | `Detalle.tsx:160`/`:152` abren el formulario → `:190` «Enviar reclamo» (con «Cancelar») | Sí: dos pasos (abrir formulario, enviar). Sin modal | Servidor (`solo.disputar`) |
+| Aceptar el reclamo | `Detalle.tsx:211` «Aceptar reclamo» | Sí: un botón; ejecuta al tocarlo. Sin modal | Servidor (reparto) |
+| Rechazar el reclamo | `Detalle.tsx:212` «No estoy de acuerdo» | Sí: un botón; ejecuta al tocarlo. Sin modal | Nada en la red (pasa a mediación) |
+| Resolver (mediación) | `Detalle.tsx:232` «Resolver el reclamo (simulación)» → `:236` «Confirmar el reparto» | Sí: dos pasos (abrir panel, confirmar) | Servidor (`solo.resolver`) |
+| Aprobar la devolución (sin reclamo) | `Detalle.tsx:138` (efecto al llegar a 0) → `escrow.ts` `devolver` | **No**: automático al abrir el alquiler | Servidor, por el dueño de prueba (`solo.aprobar`) |
+| Aprobar (modo `VITE_TRUSTLESS` con dos personas, sin uso hoy) | `Detalle.tsx:268` «Todo está bien: aprobar la devolución» | Sí: botón | Billetera (`trustless.ts:17`) |
+| Liberar el depósito | `Detalle.tsx:138` automático; reintento `:147`; `:272` «Liberar el depósito al inquilino» (modo `VITE_TRUSTLESS`) | **No** en el camino normal (automático); sí en el reintento y en `:272` | Servidor (`solo.liberar`, `trustless.ts:34`) |
+| Adelantar el plazo (solo red de prueba) | `Detalle.tsx:151`, `:164` | Sí: un botón, sin modal | Nada (cambia el reloj de la app) |
+
+**Conclusión para la variante (b).** «La app te pide confirmar antes del depósito» es cierto (botón). «… y de cada acción en el contrato» **no es del todo cierto**: aprobar y liberar sin reclamo ocurren solos, sin ningún paso, y los firma el servidor. Aceptar y rechazar se ejecutan con un solo toque. Además, en la app publicada la billetera del usuario solo firma el depósito con cuenta propia y la compra de USDC de prueba; reclamo, reparto, aprobación y liberación no pasan por la billetera (ni por Cavos). Sugerencia para Legal: «la app te pide tocar un botón antes del depósito, del reclamo, de la respuesta y del reparto; sin reclamo, la devolución ocurre sola al terminar el plazo».

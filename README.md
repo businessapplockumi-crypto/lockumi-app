@@ -86,7 +86,7 @@ En muchos alquileres el depósito de garantía queda retenido al terminar el con
 3. **Depósito protegido:** el inquilino deposita en un escrow; ni el dueño ni el inquilino pueden liberar el dinero por su cuenta; en la demo, si hay un reclamo, la cuenta de Lockumi ejecuta el reparto.
 4. **Fotos de entrada:** acta de entrada con fotos (con fecha y hora) y lista de revisión de cada espacio.
 5. **Fotos de salida:** al terminar, acta de salida con fotos y lista.
-6. **7 días para reclamos:** el dueño tiene 7 días para abrir un reclamo con pruebas. Si no reclama, el depósito vuelve al inquilino.
+6. **7 días para reclamos:** el dueño tiene 7 días para abrir un reclamo con pruebas. Si no reclama, después de 7 días el depósito se devuelve al inquilino.
 7. **Reclamo:** el inquilino acepta el reclamo o no está de acuerdo.
 8. **Mediador:** si no hay acuerdo, una persona mediadora les ayuda a buscar un acuerdo; en la demo la mediación es simulada y el reparto se elige con «Resolver el reclamo (simulación)».
 

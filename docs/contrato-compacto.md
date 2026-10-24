@@ -66,3 +66,7 @@ La sección «El depósito» del contrato (tarjeta, panel, hoja y «Descargar o 
 Aprobada por Legal solo para un servicio real o una versión de producción. **No se muestra en la demo.**
 
 > Si después de la mediación no hay acuerdo, el depósito sigue guardado y cualquiera de las dos partes puede acudir a los tribunales de Costa Rica. El depósito se reparte según el acuerdo al que lleguen después o según lo que resuelva la autoridad.
+
+## Legal, ronda 5 (24 oct 2026)
+
+La sección «7 días para reclamos» del contrato dice ahora «Si no reclama, después de 7 días el depósito se devuelve completo al inquilino.» El contrato y los Términos siguen con 7 días fijos; en el resto de la app el plazo es el real del alquiler (`textoPlazo`). Detalle en [`alertas.md`](alertas.md), «Legal, ronda 5».

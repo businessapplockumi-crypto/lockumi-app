@@ -27,6 +27,10 @@
   - Custodia: quién guarda el depósito y quién puede moverlo en cada rol del escrow.
   - Si Lockumi sería proveedor de servicios de activos virtuales y qué registro o supervisión le tocaría.
   - *(Legal, ronda 4, 24 oct 2026)* Hoy el servidor de Lockumi guarda la llave del **dueño de prueba** (`api/_lib/solo.ts`, `duenoDe`) y firma por esa cuenta, por ejemplo la aprobación que devuelve el depósito. Con dinero real, eso sería **custodia**: el abogado tiene que revisarlo, y el dueño real tiene que firmar con su propia billetera.
+- **Antes de publicar los Términos 1.6-demo (Legal, ronda 5, 24 oct 2026):** la cláusula 5.3 (Cavos) **no se publica** hasta decidir una de dos variantes (textos en [`docs/alertas.md`](docs/alertas.md), «Legal, ronda 5»):
+  - [ ] **(a)** Katherine pone en el panel de Cavos (app → Approvals) límites de **0** para XLM y USDC y «Over the limit» = *Ask the user*. Entonces se agrega a 5.3: «Abrir la línea de USDC en tu billetera, que no mueve fondos, se firma sin pedirte confirmación.»
+  - [ ] **(b)** Si no hace el cambio, se cambia la frase «Lockumi no usa esa función: …» por la de Legal, que dice que los límites de Cavos siguen activos. Ojo: la app no pide confirmar antes de **cada** acción (aprobar y liberar sin reclamo son automáticos); ver la revisión en `docs/alertas.md`.
+  - [ ] La landing (`index.html:148`) sigue sin cambios hasta el OK de Katherine. Texto de Legal: «Si no hay un reclamo con pruebas, después de 7 días se te devuelve tu depósito.»
 - **Antes de producción (técnico, Legal ronda 4, 24 oct 2026):** una **tarea programada** que devuelva el depósito al terminar el plazo sin reclamo, **sin depender de que alguien abra la app**. Hoy la devolución la dispara la app abierta (`src/screens/Detalle.tsx`, efecto que llama a `cerrarSinReclamo`) y `vercel.json` no tiene crons. Además, revisar en el panel de Cavos (app → Approvals) los límites de firma sin confirmación y la regla «Over the limit» = *Ask the user* (ver `docs/alertas.md`, «Legal, ronda 4»).
 - **Historial:** «Alquiler creado» (ya no dice que se envió una invitación).
 - **Resend:** dominio `lockumi.com` verificado y DNS listos para el correo de invitación de la Parte 4, que **no está activa**. Ver [`docs/correo-resend.md`](docs/correo-resend.md).
@@ -44,7 +48,7 @@ Demo navegable (no se publica en lockumi.com). Vite + React + TypeScript, estado
 6. **Pago del depósito** — el inquilino paga; queda "apartado" en escrow; mensaje: nadie lo libera solo. ✅ Fase 2
 7. **Rendimiento opcional** — interruptor USDC (Blend); VARIABLE y NO GARANTIZADO; reparto 40% inquilino / 40% dueño / 20% Lockumi; sin tasa fija (cualquier número va marcado como "ejemplo"). ✅ Fase 2
 8. **Acta de salida** — fotos + checklist, comparación lado a lado con la entrada. ✅ Fase 2
-9. **Ventana de reclamo** — 7 días con cuenta regresiva; sin reclamo, el depósito vuelve solo al inquilino; botón "simular paso de 7 días". ✅ Fase 2
+9. **Ventana de reclamo** — 7 días con cuenta regresiva; sin reclamo, después de 7 días el depósito se devuelve al inquilino; botón "simular paso de 7 días". ✅ Fase 2
 10. **Reclamo** — el dueño presenta fotos y monto; el inquilino acepta o rechaza. ✅ Fase 2
 11. **Mediación** — el mediador decide el reparto *(histórico; desde el 24 oct 2026 la persona mediadora ayuda a buscar un acuerdo y no decide)*; mensaje: la mayoría de los casos se resuelve en la app, la mediación es solo para pocos. ✅ Fase 2
 
@@ -64,14 +68,14 @@ No se usan llaves ni secretos. Toda integración simulada lleva la insignia "Dem
 - [x] Pago del depósito + aviso de escrow multiparte
 - [x] Interruptor de rendimiento con avisos de "variable / no garantizado" y reparto 40/40/20
 - [x] Acta de salida + comparación lado a lado
-- [x] Ventana de 7 días: cuenta regresiva, botón "simular paso de 7 días", devolución automática
+- [x] Ventana de 7 días: cuenta regresiva, botón "simular paso de 7 días", devolución después de 7 días sin reclamo
 - [x] Reclamo (fotos/monto) → aceptar/rechazar → pantalla del mediador (reparto)
 - [x] Línea de tiempo visual con todos los estados
 - [x] Decoraciones SVG, repaso del texto (español neutro, CR), accesibilidad
 - [x] Capturas a 390/1366 de todas las pantallas; despliegue de vista previa (proyecto aparte, NO la landing)
 
 ## Estado al cierre de la fase 2 (16 oct 2026)
-- Recorrido completo verificado con Playwright (`node e2e.mjs <url> [carpeta] [anchos]`) a 390 y 1366: entrar → crear → acta de entrada → firmas → pago → rendimiento → acta de salida → 7 días → devolución automática; y reclamo → rechazo → mediación → cierre. Sin desbordes ni errores JS.
+- Recorrido completo verificado con Playwright (`node e2e.mjs <url> [carpeta] [anchos]`) a 390 y 1366: entrar → crear → acta de entrada → firmas → pago → rendimiento → acta de salida → 7 días → devolución después de 7 días sin reclamo; y reclamo → rechazo → mediación → cierre. Sin desbordes ni errores JS.
 - Fechas: campo propio dd/mm/aaaa con la fecha escrita debajo (ej.: "1 nov 2026"), igual en cualquier navegador.
 - Fondo: la aurora ahora es `absolute` y cubre todo el documento (antes era `fixed` y se cortaba en capturas de página completa).
 - Barra a 390: logo más compacto y "Salir" como ícono.
