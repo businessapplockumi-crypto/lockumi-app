@@ -16,6 +16,8 @@ import { Inicio } from './screens/Inicio'
 import { Crear } from './screens/Crear'
 import { Detalle } from './screens/Detalle'
 import { Invitacion } from './screens/Invitacion'
+import { Ejemplo, useRecorridoPrimeraVez } from './screens/Ejemplo'
+import { RUTA_EJEMPLO } from './recorrido'
 const volver = () => { const v = sessionStorage.getItem('lockumi.regreso'); sessionStorage.removeItem('lockumi.regreso'); return v ?? '/' }
 export default function App() {
   const [u, setU] = useState(auth.actual()); const r = useHash()
@@ -29,18 +31,20 @@ export default function App() {
   const skip = <a className="skip" href="#contenido" onClick={e => { e.preventDefault(); document.getElementById('contenido')?.focus() }}>Saltar al contenido</a>
   // Textos legales: /terminos (ruta real, con reescritura en vercel.json) o #/terminos. Se ven con o sin sesión.
   const legal = rutaLegal(location.pathname) ?? rutaLegal(r)
+  useRecorridoPrimeraVez(u, r)   // se abre solo la primera vez, en Inicio
   if (legal) return <Fondo>{skip}<PaginaLegal slug={legal} /><Pie /></Fondo>
   // Si llegó por un link de invitación, se vuelve ahí después de entrar (también tras el regreso de Google o Apple).
   if (!u && r.startsWith('/invitacion/')) sessionStorage.setItem('lockumi.regreso', r)
-  if (!u && regreso === 'esperando') return <Fondo>{skip}<Entrando /><Alertas /></Fondo>
-  if (!u) return <Fondo>{skip}<Login onOk={entro} error={regreso === 'fallo'} onReintento={() => setRegreso(null)} /><Pie /><Alertas /></Fondo>
+  if (!u && regreso === 'esperando') return <Fondo>{skip}<Alertas /><Entrando /></Fondo>
+  if (!u) return <Fondo>{skip}<Alertas /><Login onOk={entro} error={regreso === 'fallo'} onReintento={() => setRegreso(null)} /><Pie /></Fondo>
   const m = r.match(/^\/alquiler\/(.+)$/)
   const inv = r.match(/^\/invitacion\/([0-9a-f-]{36})\/([0-9a-f]{64})$/)
+  // El aviso va justo después de «Saltar al contenido»: es la 2.ª parada de Tab (sin robar el foco).
   return <Fondo>{skip}
-    <Barra u={u} onSalir={() => { auth.salir(); olvidarBilletera(); setU(null) }} />
-    {r === '/crear' ? <Crear u={u} /> : inv ? <Invitacion id={inv[1]} token={inv[2]} u={u} /> : m ? <Detalle id={m[1]} u={u} /> : <Inicio u={u} />}
-    <Pie />
     <Alertas />
+    <Barra u={u} onSalir={() => { auth.salir(); olvidarBilletera(); setU(null) }} />
+    {r === '/crear' ? <Crear u={u} /> : r === RUTA_EJEMPLO ? <Ejemplo u={u} /> : inv ? <Invitacion id={inv[1]} token={inv[2]} u={u} /> : m ? <Detalle id={m[1]} u={u} /> : <Inicio u={u} />}
+    <Pie />
   </Fondo>
 }
 

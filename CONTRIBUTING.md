@@ -35,16 +35,35 @@ El contrato tiene dos partes (publicado el 23 oct 2026):
 - **La impresión siempre es completa.** «Descargar o imprimir» usa `Documento` con `impresion` (sin botón ni partes ocultas); con el menú del navegador, `@media print` muestra `.cp-completo[hidden]` y oculta el botón, y `beforeprint`/`afterprint` lo abren y lo dejan como estaba. Si tocas esto, corre `src/screens/__tests__/contrato-plegable.test.tsx` y `scripts/contrato-plegable/capturar.mjs` (genera los PDF y los revisa con `pdftotext`).
 - Accesibilidad: `<button type="button">` con `aria-expanded` y `aria-controls`; el bloque es `role="region"` con `hidden`. Letra de 14 px o más, 56 px de alto como mínimo y solo variables de `src/index.css`.
 
+## Estado de espera del pago (`src/espera.ts`, `src/EsperaPago.tsx`)
+
+Publicado el 24 oct 2026. Ver [`docs/estado-espera.md`](docs/estado-espera.md).
+
+- Los pasos (Firmando · Enviando · Guardado) salen del `avance` real de `services/escrow.ts` con `etapaDeAvance()`. **Sin temporizadores.** Si cambias un texto de `avance` del depósito, revisa `etapaDeAvance` y su prueba en `src/__tests__/espera-pago.test.tsx`.
+- El terracota (`--accion`) es solo para el botón en reposo. En espera, el botón usa `aria-busy` y `aria-disabled` (no `disabled`) y los tres verdes `--estado-curso-fondo`, `--salvia` y `--exito`, sin colores nuevos.
+- Textos nuevos con `// LEGAL: revisar`. No muestres «no se paga dos veces» mientras el código no lo garantice.
+- Si lo tocas, corre `scripts/espera-pagar/capturar.mjs` sobre la app construida (`VITE_TRUSTLESS=1 npx vite build && npx vite preview --port 4173`).
+
 ## Avisos después de cada paso (`src/alertas.ts`)
 
 Publicado el 23 oct 2026 (avisos v2). Ver [`docs/alertas.md`](docs/alertas.md).
 
-- **No llames a `<Aviso>` directo desde una pantalla.** Usa `avisar(alerta)` (cola: se muestran de a uno). `<Alertas />` va una sola vez en `App.tsx` (con y sin sesión).
+- **Aviso v2 · toast (publicado el 24 oct 2026):** `avisar()` ya no es una cola: es una **pila de hasta 3** (`MAX_AVISOS`). Cada aviso puede llevar `linea` ({et, texto}, texto de Legal) y `accion` ({texto, etiqueta, ir: 'panel' | 'detalles'}); `irA()` enfoca el botón principal del panel. 8 s con acción, 5 s sin acción; los errores (`tipo: 'error'`) no se esconden solos. Montos solo con `usd()`. Si agregas un título o botón que el aviso no debe tapar, súmalo en `TAPAR_NUNCA` (`src/Alertas.tsx`). Si lo tocas, corre `scripts/aviso-v2/capturar.mjs`, `scripts/espera-pagar/capturar.mjs` y `scripts/alertas/capturar.mjs`. Lo de abajo describe el v2 publicado.
+- **No llames a `<Aviso>` directo desde una pantalla.** Usa `avisar(alerta)` (cola: se muestran de a uno). `<Alertas />` va una sola vez en `App.tsx` (con y sin sesión), **justo después de «Saltar al contenido»** para que el aviso sea la 2.ª parada de Tab (ramas `aviso-tab` y `espera-pagar`, pendiente de publicar). No lo muevas al final ni le des foco al aparecer.
 - **Los avisos del flujo salen solos:** `Detalle` guarda una `instantanea()` del alquiler y, en cada cambio, `alertaPorCambio(antes, ahora, rol)` decide el aviso (cambio de estado, firma nueva de una parte o plazo adelantado). Así también avisa cuando el dueño de prueba firma solo. Un paso nuevo = un `case` nuevo en `alertaPorCambio` + su prueba en `src/__tests__/alertas.test.tsx` + su captura en `scripts/alertas/capturar.mjs`.
 - Cada aviso tiene `titulo`, `hecho` (qué pasó) y `sigue` (qué sigue). El ícono es siempre la casita de Lockumi (`src/LogoAviso.tsx`, tomada del logo oficial); el color sale de `tonoDe(alerta)`: `paso` (miel), `logro` (verde, la llave gira una vez; pasos en `LOGROS`) o `error`. Sin emojis. Los errores usan `tipo: 'error'` (zona `role="alert"`) y siempre dicen cómo seguir; los errores de los pasos siguen en la pantalla (`p.error`).
 - **Textos:** español neutro, sin palabras técnicas, sin «liberado» y con «(simulación)» para la persona mediadora. Todo texto con sentido legal lleva `// LEGAL: revisar` y no se cambia sin Legal.
 - `Aviso` (`src/Aviso.tsx`, v2): tarjeta pequeña, sin botones ni X. **Se esconde sola a los 5 s** (`DURACION_AVISO`, también en errores); se cierra antes al tocarla, con Enter, Espacio o Esc, y el conteo se pausa con el dedo, el mouse o el foco encima. No es un diálogo y **no roba el foco**: se anuncia desde las zonas fijas de `<Alertas />` (`role="status"` + `aria-live="polite"`, o `role="alert"` en errores). Se enfoca con Tab (nombre «Aviso. Toca para cerrar»; ids con `useId`) y al cerrar el foco vuelve a donde estaba. No pongas enlaces ni botones dentro (tocar la tarjeta la cierra). Un error que solo está en el aviso desaparece a los 5 s: si es importante, muéstralo también en la pantalla (como el error del ingreso en Entrar, `error` en `Login.tsx`, enlazado al botón con `aria-describedby`). Al volver de Google o Apple, `App.tsx` muestra `Entrando` (`aria-busy`) mientras confirma la sesión; no vuelvas a mostrar Entrar en ese momento. En el teléfono se ubica debajo del encabezado, del primer `h1` (o su `.cab`) y de `.entrada-app__titulo`; si quedaría por debajo de la mitad de la pantalla, va al pie. Si agregas un título de pantalla con otra clase, súmala en `lugarEnCelular()`. No uses la clase `.aviso` (ya es la nota amarilla). Si lo tocas, corre `scripts/alertas/capturar.mjs` (revisa zona, que no robe el foco, toque, Esc, pausa + Enter, el cierre solo a los 5 s, que no tape el encabezado ni el título, la casita completa, tamaño y capturas en 390 y 1280 px).
 - `[hidden]` y `display`: si una clase pone `display:grid|flex`, agrega `.clase[hidden]{display:none}` (pasó con `.turno`).
+
+## Recorrido guiado (`src/recorrido.ts`, `src/screens/Ejemplo.tsx`)
+
+- Los 6 pasos están en `PASOS_RECORRIDO`: ruta, estado del alquiler de ejemplo, selector y textos. Los textos son los de la maqueta (`diseno/envio/recorrido-formulario/textos.md`); si cambian, cambia también `src/__tests__/recorrido.test.tsx`, que los compara palabra por palabra. Cualquier texto nuevo pasa por Legal: sin promesas, la persona mediadora ayuda y no decide.
+- Cada paso apunta a un elemento con `data-recorrido="…"` (`nuevo`, `datos`, `reglas`, `pasos`) o a un selector estable. Si mueves o renombras ese elemento, deja el atributo. Usa un bloque bajo: el globo no debe tapar los botones principales (`elMovil` permite otro selector en el teléfono).
+- Los pasos 4 a 6 usan `#/ejemplo`: `Detalle` con `ejemplo`, envuelto en `inert`. No llama a `/api/solo`, no muestra avisos y no guarda nada en «Tus alquileres». No agregues ahí acciones reales.
+- «Ya lo vio» se guarda en `localStorage` con la clave `lockumi.recorrido.v1.<huella del correo>` (16 caracteres hex de SHA-256, nunca el correo). Para que todos lo vuelvan a ver, sube `VERSION_RECORRIDO`.
+- Los scripts de navegador que pasan por Inicio deben marcarlo como visto en `addInitScript` (ver `scripts/alertas/capturar.mjs`); si no, el recorrido se abre y tapa la pantalla.
+- Prueba en navegador: `VITE_TRUSTLESS=1 npx vite build && npx vite preview --port 4173`, luego `OUT=/tmp/rec/ node scripts/recorrido/capturar.mjs` (teléfono, computadora y movimiento reducido).
 
 ## Agregar un estado del alquiler y su color
 

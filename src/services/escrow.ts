@@ -44,7 +44,7 @@ function claro(e: unknown): Error {
   const m = e instanceof Error ? e.message : String(e)
   console.warn('[Lockumi] paso en la red de prueba:', m)
   if (/Trustless Work|Horizon|respondió \d{3}|rechazó la operación|no aceptó la transacción|bad_?seq/i.test(m))
-    return new solo.ErrorSolo('La red de prueba está lenta o no respondió. Espera unos segundos y vuelve a tocar el botón: no se repite lo que ya quedó hecho.')
+    return new solo.ErrorSolo('La red de prueba está lenta o no respondió. Espera un minuto y vuelve a tocar el botón.') // LEGAL: revisado A12 (24/10)
   return e instanceof Error ? e : new Error(m)
 }
 const yaHecho = (e: unknown, re: RegExp) => e instanceof Error && re.test(e.message)

@@ -1,101 +1,115 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { LogoAviso } from './LogoAviso'
+import { lineaDe, tonoDe, type AlertaEnPila, type Accion } from './alertas'
 
 export type Tono = 'paso' | 'logro' | 'error'
 
-/** En celular el aviso va arriba, debajo del encabezado, del logo y del título de la pantalla (no los tapa).
- *  Si eso lo dejaría muy abajo, va al pie. En escritorio va abajo a la derecha (solo CSS). */
-function lugarEnCelular(): { top?: number } {
-  if (matchMedia('(min-width:720px)').matches) return {}
-  const fondo = (e: Element | null | undefined) => { const r = e?.getBoundingClientRect(); return r && r.height && r.bottom > 0 ? r.bottom : 0 }
-  const h1 = document.querySelector('#contenido h1, main h1')
-  const debajo = Math.max(fondo(document.querySelector('.aviso-red')), fondo(document.querySelector('header.barra')), fondo(h1?.closest('.cab') ?? h1),
-    fondo(document.querySelector('.entrada-app__titulo')))   // entrada: logo grande, arte y título
-  const top = Math.round(debajo + 10)
-  return top < innerHeight * 0.55 ? { top } : {}
+/** Tiempo que se ve cada aviso antes de esconderse solo: 5 s sin acción y 8 s con acción. Los errores no se esconden solos. */
+export const DURACION_AVISO = 5000
+export const DURACION_CON_ACCION = 8000
+export const duracionDe = (a: Pick<AlertaEnPila, 'tipo' | 'accion'>) => a.tipo === 'error' ? null : a.accion ? DURACION_CON_ACCION : DURACION_AVISO
+/** Deslizar para cerrar: un tercio del ancho hacia un lado, 40 px hacia abajo o un gesto rápido (más de 0,5 px/ms). */
+export const UMBRAL_LADO = 1 / 3, UMBRAL_ABAJO = 40, UMBRAL_VELOCIDAD = 0.5
+
+const reducir = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/** Lleva al paso del botón de acción: la tarjeta del paso (enfoca su botón principal) o «Detalles» abierto. */
+export function irA(destino: Accion['ir']) {
+  const behavior: ScrollBehavior = reducir() ? 'auto' : 'smooth'
+  if (destino === 'detalles') {
+    const d = document.querySelector<HTMLDetailsElement>('details.detalles')
+    if (d) { d.open = true; d.scrollIntoView({ block: 'start', behavior }); d.querySelector<HTMLElement>('summary')?.focus({ preventScroll: true }); return }
+  }
+  const panel = document.querySelector<HTMLElement>('.detalle__principal > .tarjeta') ?? document.getElementById('contenido')
+  if (!panel) return
+  const b = panel.querySelector<HTMLElement>('.boton--primario:not([disabled]):not([aria-disabled="true"])') ?? panel.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled])')
+  if (b) { b.scrollIntoView({ block: 'center', behavior }); b.focus({ preventScroll: true }) }
+  else { panel.scrollIntoView({ block: 'start', behavior }); if (!panel.hasAttribute('tabindex')) panel.tabIndex = -1; panel.focus({ preventScroll: true }) }
 }
 
-/** Tiempo que se ve cada aviso antes de esconderse solo. */
-export const DURACION_AVISO = 5000
-
-/** Aviso v2 (sin librerías): tarjeta crema pequeña con la casita completa de Lockumi en una esquina de color.
- *  Tonos: paso (miel), logro (verde; la llave entra y gira una vez, como en el logo) y error (terracota).
- *  Se esconde solo a los 5 s. También se cierra al tocarlo o hacer clic, con Enter, Espacio o Esc.
- *  Si el dedo o el mouse está encima, o tiene el foco, el conteo se pausa y se reanuda al salir.
- *  No es un diálogo y no roba el foco: se anuncia desde la zona `role="status"` (o `role="alert"` en errores)
- *  de <Alertas />. Se puede enfocar con Tab (pausa) y, al cerrarlo, el foco vuelve a donde estaba. */
-export function Aviso({ tono = 'paso', titulo, children, onCerrar }:
-  { tono?: Tono; titulo: string; children: ReactNode; onCerrar: () => void }) {
+/** Aviso v2 (toast, sin librerías): pastilla de vidrio crema con la casita completa de 32 px, el título y una línea.
+ *  Con acción lleva un botón de 44 px que navega al paso; tocar el resto de la pastilla, Enter, Espacio o Esc la cierran.
+ *  Se esconde sola a los 5 s (8 s con acción; los errores no) y se pausa con el dedo, el mouse o el foco (`pausa`, de la pila).
+ *  En pantallas táctiles se cierra deslizándola hacia un lado o hacia abajo. No es un diálogo y no roba el foco. */
+export function Tostada({ a, indice, pausa, abierta, desplazar, onCerrar, onAlto, registrar }: {
+  a: AlertaEnPila; indice: number; pausa: boolean; abierta: boolean; desplazar: number
+  onCerrar: (id: number) => void; onAlto?: (id: number, h: number) => void; registrar?: (id: number, cerrar: (() => void) | null) => void
+}) {
+  const tono = tonoDe(a), linea = lineaDe(a), dur = duracionDe(a)
   const [saliendo, setSaliendo] = useState(false)
-  const [lugar, setLugar] = useState<{ top?: number }>({})
-  const [pausa, setPausa] = useState(false)
-  const ref = useRef<HTMLDivElement>(null), capa = useRef<HTMLDivElement>(null); const id = useId()
-  const saliendoRef = useRef(false); const onCerrarRef = useRef(onCerrar)
+  const ref = useRef<HTMLDivElement>(null); const id = useId()
+  const saliendoRef = useRef(false); const onCerrarRef = useRef(onCerrar); useEffect(() => { onCerrarRef.current = onCerrar })
   const antesDelFoco = useRef<HTMLElement | null>(null)
-  useEffect(() => { onCerrarRef.current = onCerrar })
-  const cerrar = () => {
+  const cerrar = (volverFoco = true) => {
     if (saliendoRef.current) return; saliendoRef.current = true; setSaliendo(true)
-    const nodo = ref.current
-    if (nodo?.contains(document.activeElement)) {   // tenía el foco: vuelve a donde estaba
+    if (volverFoco && ref.current?.contains(document.activeElement)) {   // tenía el foco: vuelve a donde estaba
       const v = antesDelFoco.current
-      if (v && v !== document.body && v.isConnected) v.focus(); else document.getElementById('contenido')?.focus()
+      if (v && v !== document.body && v.isConnected && !v.closest('.tostadas')) v.focus(); else document.getElementById('contenido')?.focus()
     }
-    setTimeout(() => onCerrarRef.current(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200)
+    setTimeout(() => onCerrarRef.current(a.id), reducir() ? 160 : 200)
   }
   const cerrarRef = useRef(cerrar); useEffect(() => { cerrarRef.current = cerrar })
-  // Conteo de 5 s que se pausa (dedo o mouse encima, o foco) y sigue donde quedó.
-  const encima = useRef(false), conFoco = useRef(false), queda = useRef(DURACION_AVISO), desde = useRef(0), reloj = useRef(0)
-  const revisar = () => {
-    const pausar = encima.current || conFoco.current
-    if (pausar && reloj.current) { clearTimeout(reloj.current); reloj.current = 0; queda.current -= Date.now() - desde.current }
-    if (!pausar && !reloj.current) { desde.current = Date.now(); reloj.current = window.setTimeout(() => cerrarRef.current(), Math.max(0, queda.current)) }
-    setPausa(pausar)
-  }
-  const revisarRef = useRef(revisar); useEffect(() => { revisarRef.current = revisar })
-  useEffect(() => { revisarRef.current(); return () => { clearTimeout(reloj.current); reloj.current = 0 } }, [])   // (en StrictMode el efecto corre dos veces)
-  useLayoutEffect(() => {
-    // Se escribe también directo en la tarjeta para que el cuadro que se dibuja ya la tenga en su lugar
-    // (por ejemplo, cuando la página salta arriba al cambiar de paso); el estado queda igual para React.
-    const poner = () => { const n = lugarEnCelular(), c = capa.current
-      if (c) { if (n.top != null) { c.style.top = n.top + 'px'; c.style.bottom = 'auto' } else c.removeAttribute('style') }
-      setLugar(v => v.top === n.top ? v : n) }
-    // Otra vez cuando la pantalla nueva ya está dibujada (por ejemplo, al pasar de «Nuevo alquiler» al alquiler creado)
-    // y cuando la página se desplaza (la app sube al paso nuevo): el aviso acompaña al título sin taparlo.
-    let cuadro = 0
-    const luego = () => { cancelAnimationFrame(cuadro); cuadro = requestAnimationFrame(poner) }
-    poner(); luego(); const t = setTimeout(poner, 350)
-    addEventListener('resize', luego); addEventListener('hashchange', luego); addEventListener('scroll', poner, { passive: true })
-    // También cuando el contenido cambia de tamaño o se agrega algo encima del título (por ejemplo, una línea
-    // «El dueño de prueba confirmó…»): el título baja y el aviso baja con él.
-    const tam = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(poner)
-    const vigilar = () => { if (!tam) return; tam.disconnect()
-      for (const e of [document.querySelector('.aviso-red'), document.querySelector('header.barra'), document.getElementById('contenido'),
-        document.querySelector('#contenido h1, main h1')?.closest('.cab') ?? document.querySelector('#contenido h1, main h1'), document.querySelector('.entrada-app__titulo')]) if (e) tam.observe(e) }
-    vigilar()
-    const cambios = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => { vigilar(); luego() })
-    cambios?.observe(document.getElementById('contenido') ?? document.body, { childList: true, subtree: true, characterData: true })
-    return () => { cancelAnimationFrame(cuadro); clearTimeout(t); tam?.disconnect(); cambios?.disconnect()
-      removeEventListener('resize', luego); removeEventListener('hashchange', luego); removeEventListener('scroll', poner) }
-  }, [])
+  useEffect(() => { registrar?.(a.id, () => cerrarRef.current()); return () => registrar?.(a.id, null) }, [a.id, registrar])
+  // Conteo que se pausa (dedo, mouse o foco en la pila) y sigue donde quedó.
+  const queda = useRef(dur ?? 0), desde = useRef(0), reloj = useRef(0)
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrarRef.current() }
-    addEventListener('keydown', k); return () => removeEventListener('keydown', k)
-  }, [])
-  const poner = (campo: typeof encima, v: boolean) => { campo.current = v; revisar() }
-  return <div ref={capa} className={'aviso-capa' + (saliendo ? ' aviso-capa--sale' : '')} style={lugar.top != null ? { top: lugar.top, bottom: 'auto' } : undefined}>
-    <div ref={ref} className={'aviso-pop aviso-pop--' + tono + (pausa ? ' aviso-pop--pausa' : '')} role="group" tabIndex={0}
-      aria-label="Aviso. Toca para cerrar" aria-describedby={id + 't ' + id + 'd'}
-      onClick={cerrar}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); cerrar() } }}
-      onPointerEnter={() => poner(encima, true)} onPointerLeave={() => poner(encima, false)}
-      onPointerDown={() => poner(encima, true)} onPointerCancel={() => poner(encima, false)}
-      onFocus={e => { antesDelFoco.current = e.relatedTarget as HTMLElement | null; poner(conFoco, true) }} onBlur={() => poner(conFoco, false)}>
-      <div className="aviso-pop__esquina"><LogoAviso /></div>
-      <div className="aviso-pop__cuerpo">
-        <h2 id={id + 't'} className="aviso-pop__titulo">{titulo}</h2>
-        <div id={id + 'd'} className="aviso-pop__texto">{children}</div>
-      </div>
-      <span className="aviso-pop__tiempo" aria-hidden="true" style={{ animationDuration: DURACION_AVISO + 'ms' }} />
+    if (dur == null) return
+    if (pausa) { if (reloj.current) { clearTimeout(reloj.current); reloj.current = 0; queda.current -= Date.now() - desde.current } return }
+    desde.current = Date.now(); reloj.current = window.setTimeout(() => cerrarRef.current(), Math.max(0, queda.current))
+    return () => { if (reloj.current) { clearTimeout(reloj.current); reloj.current = 0; queda.current -= Date.now() - desde.current } }
+  }, [pausa, dur])
+  useLayoutEffect(() => {
+    const n = ref.current; if (!n || !onAlto) return
+    const medir = () => onAlto(a.id, n.offsetHeight); medir()
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(medir); ro?.observe(n); return () => ro?.disconnect()
+  }, [a.id, onAlto])
+  // Deslizar para cerrar (dedo o lápiz): sigue al dedo con opacidad decreciente y 4° de giro; si no pasa el umbral, vuelve con un resorte.
+  const gesto = useRef<{ x: number; y: number; t: number; mov: boolean } | null>(null), recienArrastrado = useRef(false)
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' || saliendoRef.current) return
+    gesto.current = { x: e.clientX, y: e.clientY, t: performance.now(), mov: false }
+  }
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const g = gesto.current, n = ref.current; if (!g || !n) return
+    const dx = e.clientX - g.x, dy = Math.max(0, e.clientY - g.y)
+    if (!g.mov && Math.hypot(dx, dy) < 6) return
+    if (!g.mov) { g.mov = true; n.setPointerCapture?.(e.pointerId); n.classList.add('tostada--arrastre') }
+    const w = n.offsetWidth || 1, giro = reducir() ? 0 : (dx / w) * 4
+    n.style.transform = `translate(${dx}px, ${dy}px) rotate(${giro}deg)`
+    n.style.opacity = String(Math.max(0.25, 1 - Math.max(Math.abs(dx) / w, dy / 120) * 0.75))
+  }
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const g = gesto.current, n = ref.current; gesto.current = null; if (!g || !n || !g.mov) return
+    recienArrastrado.current = true; setTimeout(() => { recienArrastrado.current = false }, 0)
+    const dx = e.clientX - g.x, dy = Math.max(0, e.clientY - g.y), v = Math.hypot(dx, dy) / Math.max(1, performance.now() - g.t), w = n.offsetWidth || 1
+    n.classList.remove('tostada--arrastre')
+    if (Math.abs(dx) > w * UMBRAL_LADO || dy > UMBRAL_ABAJO || v > UMBRAL_VELOCIDAD) {
+      const lado = Math.abs(dx) >= dy
+      n.classList.add('tostada--fuera')
+      n.style.transform = reducir() ? n.style.transform : lado ? `translate(${Math.sign(dx || 1) * w * 1.2}px, ${dy}px) rotate(${Math.sign(dx || 1) * 8}deg)` : `translate(${dx}px, ${dy + 120}px)`
+      n.style.opacity = '0'; cerrar()
+    } else { n.classList.add('tostada--resorte'); n.style.transform = ''; n.style.opacity = ''; setTimeout(() => n.classList.remove('tostada--resorte'), 220) }
+  }
+  const onPointerCancel = () => { const n = ref.current; gesto.current = null; if (n) { n.classList.remove('tostada--arrastre'); n.style.transform = ''; n.style.opacity = '' } }
+  const accion = a.accion
+  return <div ref={ref} data-id={a.id} data-paso={a.paso} data-i={indice}
+    className={`tostada tostada--${tono}${accion ? ' tostada--accion' : ''}${saliendo ? ' tostada--sale' : ''}${pausa ? ' tostada--pausa' : ''}`}
+    style={{ '--y': `${-desplazar}px`, zIndex: 10 - indice } as React.CSSProperties}
+    role="group" tabIndex={0} aria-label="Aviso. Toca para cerrar" aria-describedby={id + 't ' + id + 'd'}
+    onClick={() => { if (!recienArrastrado.current) cerrar() }}
+    onKeyDown={e => { if (e.target !== e.currentTarget && e.key !== 'Escape') return; if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar() } }}
+    onFocus={e => { if (e.target === e.currentTarget && !ref.current?.contains(e.relatedTarget as Node)) antesDelFoco.current = e.relatedTarget as HTMLElement | null }}
+    onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}
+    data-abierta={abierta || undefined}>
+    <span className="tostada__casa"><LogoAviso /></span>
+    <div className="tostada__tx">
+      <h2 id={id + 't'} className="tostada__t">{a.titulo}</h2>
+      <p id={id + 'd'} className="tostada__l">{linea.et && <b>{linea.et}</b>}{linea.et && ' '}{linea.texto}</p>
     </div>
+    {accion && <button type="button" className="tostada__accion" aria-label={accion.etiqueta}
+      onClick={e => { e.stopPropagation(); cerrar(false); irA(accion.ir) }}
+      onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar() } }}>{accion.texto}</button>}
+    {dur != null && <span className="tostada__tiempo" aria-hidden="true" style={{ animationDuration: dur + 'ms' }} />}
+    <span className="tostada__manija" aria-hidden="true" />
   </div>
 }

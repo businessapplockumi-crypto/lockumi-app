@@ -280,60 +280,72 @@ input[type=range]{width:100%;accent-color:var(--accion);min-height:32px}
 .billetera__saldo{margin:0;font-size:1.1rem}
 .billetera__fondeo{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 
-/* Aviso v2 después de cada paso: tarjeta crema pequeña, casita completa de Lockumi en una esquina de color.
-   Celular: arriba, debajo del encabezado y del título (Aviso.tsx calcula el alto). Escritorio: abajo a la derecha.
-   Se esconde solo a los 5 s (pausa con el dedo, el mouse o el foco encima); también al tocarlo, Enter, Espacio o Esc.
-   Tonos: paso (miel), logro (verde), error (terracota). */
-.aviso-capa{position:fixed;z-index:60;top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;margin:0 auto;max-width:366px;pointer-events:none}
-.aviso-capa:not([style]){top:auto;bottom:calc(12px + env(safe-area-inset-bottom))}
-@media (min-width:720px){.aviso-capa,.aviso-capa:not([style]){top:auto;bottom:28px;left:auto;right:28px;width:320px;max-width:calc(100vw - 56px)}}
-.aviso-capa__voz{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.aviso-pop{--acento-claro:var(--estado-pendiente-fondo);--acento-anillo:var(--estado-pendiente-borde);--acento-texto:var(--estado-pendiente-texto);
-  pointer-events:auto;position:relative;display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;padding:12px 14px 12px 12px;border-radius:26px;
-  max-height:calc(100dvh - 24px);overflow-y:auto;text-align:left;color:var(--cafe);
-  background:radial-gradient(120% 140% at 0% 0%,var(--acento-claro) 0%,var(--fondo) 62%);border:1px solid rgba(255,255,255,.9);
-  box-shadow:0 1px 2px rgba(61,42,34,.06),0 10px 28px -6px rgba(61,42,34,.20),0 0 0 1px rgba(61,42,34,.04);animation:aviso-entra 420ms var(--ease) both}
-.aviso-pop--logro{--acento-claro:var(--estado-curso-fondo);--acento-anillo:var(--salvia);--acento-texto:var(--exito)}
-.aviso-pop--error{--acento-claro:var(--alterna);--acento-anillo:var(--coral);--acento-texto:var(--accion-activo)}
-@media (min-width:720px){.aviso-pop{animation-name:aviso-entra-abajo}}
-.aviso-pop__esquina{position:relative;width:52px;height:52px;border-radius:18px;background:var(--acento-claro);display:grid;place-items:center;overflow:visible;
-  box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--acento-anillo) 40%,transparent);animation:aviso-pop 460ms var(--ease) 90ms both}
+/* Aviso v2 (toast, estilo Sonner): pastilla de vidrio crema, casita completa de 32 px, título y una línea; con acción, un botón de 44 px.
+   Celular: abajo al centro sobre el área segura, 358 px en 390 (sube si taparía un botón principal: Alertas.tsx). Computadora: abajo a la derecha, 360 px.
+   Pila de hasta 3: el más nuevo al frente y los anteriores asoman hacia arriba; con el mouse, el dedo o el foco se abre.
+   5 s sin acción, 8 s con acción (línea de 2 px), pausa encima; los errores no se esconden solos. Deslizar hacia un lado o abajo la cierra. */
+.tostadas{position:fixed;z-index:60;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));width:min(358px,calc(100vw - 32px));height:0;transform:translateX(-50%);pointer-events:none}
+@media (min-width:720px){.tostadas{left:auto;right:24px;bottom:24px;width:360px;transform:none}}
+.tostada{--y:0px;pointer-events:auto;position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:64px;padding:10px 12px 12px 10px;border-radius:24px;
+  background:rgba(255,245,238,.92);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  border:1px solid rgba(255,255,255,.75);box-shadow:0 1px 1px rgba(61,42,34,.05),0 10px 26px -8px rgba(61,42,34,.32),0 0 0 .5px rgba(61,42,34,.08);
+  color:var(--cafe);text-align:left;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;transform-origin:50% 100%;
+  transition:transform 240ms var(--ease),opacity 200ms ease;animation:tostada-entra 320ms cubic-bezier(.2,.8,.2,1) backwards}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tostada{background:var(--fondo)}}
+.tostada:focus-visible{outline:none;box-shadow:var(--foco),0 10px 26px -8px rgba(61,42,34,.32)}
+.tostada__casa{flex:none;width:44px;height:44px;border-radius:15px;display:grid;place-items:center;overflow:visible;background:var(--estado-curso-fondo);box-shadow:inset 0 0 0 1.5px rgba(111,191,138,.45);animation:aviso-pop 460ms var(--ease) 90ms backwards}
+.tostada__casa .aviso-pop__logo{width:32px;height:32px}
 .aviso-pop__logo{display:block;width:44px;height:44px;overflow:visible}
 .aviso-pop__logo svg{display:block;width:100%;height:100%;overflow:visible}
 .aviso-logo__llave{transform-box:fill-box;transform-origin:6.6% 50%}
 .aviso-logo__cerradura,.aviso-logo__pulso{transform-box:fill-box;transform-origin:50% 30%}
 .aviso-logo__pulso{transform-origin:center;opacity:0}
 .aviso-logo__puerta-luz,.aviso-logo__brillo{opacity:0}
-.aviso-pop__cuerpo{min-width:0;padding-top:2px}
-.aviso-pop__titulo{margin:0;font:800 16.5px/1.25 Nunito,system-ui,sans-serif;letter-spacing:-.005em;color:var(--cafe)}
-.aviso-pop__texto p{margin:3px 0 0;font-size:13.5px;line-height:1.4;color:var(--cafe-suave)}
-.aviso-pop__texto .aviso-pop__sigue{margin-top:6px}
-.aviso-pop__sigue strong{color:var(--acento-texto);font-weight:700}
-.aviso-capa--sale .aviso-pop{animation:aviso-sale 200ms ease both}
-.aviso-pop{cursor:pointer;-webkit-tap-highlight-color:transparent}.aviso-pop:focus-visible{outline:none;box-shadow:var(--foco),0 10px 28px -6px rgba(61,42,34,.20)}
-/* Señal de tiempo: línea fina abajo que se acorta en 5 s y se detiene en pausa; quieta con «reducir movimiento». */
-.aviso-pop__tiempo{position:absolute;left:22px;right:22px;bottom:5px;height:3px;border-radius:2px;background:var(--acento-anillo);opacity:.45;transform-origin:left;animation:aviso-tiempo 5s linear both}
-.aviso-pop--pausa .aviso-pop__tiempo{animation-play-state:paused}
-@keyframes aviso-tiempo{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.tostada__tx{flex:1;min-width:0}
+.tostada__t{margin:0;font:800 15px/20px Nunito,system-ui,sans-serif;color:var(--cafe)}
+.tostada__l{margin:0;font:500 13px/18px Inter,system-ui,sans-serif;color:var(--cafe)}
+.tostada__l b{font-weight:700}
+.tostada__accion{flex:none;min-height:44px;min-width:44px;padding:0 14px;border:0;border-radius:999px;background:var(--exito);color:var(--fondo);font:700 14px/1 Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.tostada__accion:hover{filter:brightness(1.08)}.tostada__accion:focus-visible{outline:none;box-shadow:var(--foco)}
+.tostada__tiempo{position:absolute;left:64px;right:18px;bottom:4px;height:2px;border-radius:1px;background:var(--salvia);opacity:.55;transform-origin:left;animation:aviso-tiempo 5s linear both}
+.tostada--pausa .tostada__tiempo{animation-play-state:paused}
+.tostada__manija{position:absolute;top:4px;left:50%;width:28px;height:4px;margin-left:-14px;border-radius:2px;background:rgba(61,42,34,.18)}
+@media (hover:hover) and (pointer:fine){.tostada__manija{display:none}}
+.tostada--paso .tostada__casa{background:var(--estado-pendiente-fondo);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--estado-pendiente-borde) 45%,transparent)}
+.tostada--error{align-items:flex-start}.tostada--error .tostada__casa{background:var(--alterna);box-shadow:inset 0 0 0 1.5px rgba(255,107,53,.45)}
+.tostada--error .tostada__t{color:var(--accion-activo)}
+/* Pila cerrada: los anteriores asoman detrás (12 y 23 px), más chicos y tenues, sin su contenido */
+.tostada[data-i="1"]{transform:translateY(-12px) scale(.95);opacity:.9}
+.tostada[data-i="2"]{transform:translateY(-23px) scale(.9);opacity:.7}
+.tostada:not([data-i="0"])>*{visibility:hidden}
+.tostadas:not(.tostadas--abierta) .tostada:not([data-i="0"]){height:var(--h0,auto);min-height:0;overflow:hidden}
+/* Pila abierta (mouse, dedo o foco): cada aviso a su altura con 8 px de separación */
+.tostadas--abierta .tostada{transform:translateY(var(--y));opacity:1}
+.tostadas--abierta .tostada>*{visibility:visible}
+.tostada--sale,.tostadas--abierta .tostada--sale{opacity:0;transform:translateY(calc(var(--y) + 8px))}
+.tostada--arrastre{transition:none!important;animation:none}
+.tostada--resorte{transition:transform 200ms cubic-bezier(.3,1.5,.5,1),opacity 200ms ease}
+.tostada--fuera{transition:transform 200ms ease-out,opacity 200ms ease-out!important}
 /* Logros: la llave del logo entra a la cerradura y gira, una sola vez (~2 s), como en el logo de lockumi.com */
-.aviso-pop--logro .aviso-logo__llave{animation:aviso-llave 2s var(--ease) 250ms both}
-.aviso-pop--logro .aviso-logo__cerradura{animation:aviso-cerradura 2s var(--ease) 250ms both}
-.aviso-pop--logro .aviso-logo__pulso{animation:aviso-pulso 2s var(--ease) 250ms both}
-.aviso-pop--logro .aviso-logo__puerta-luz{animation:aviso-luz 2s ease-out 250ms both}
+.tostada--logro .aviso-logo__llave{animation:aviso-llave 2s var(--ease) 250ms both}
+.tostada--logro .aviso-logo__cerradura{animation:aviso-cerradura 2s var(--ease) 250ms both}
+.tostada--logro .aviso-logo__pulso{animation:aviso-pulso 2s var(--ease) 250ms both}
+.tostada--logro .aviso-logo__puerta-luz{animation:aviso-luz 2s ease-out 250ms both}
+@keyframes aviso-tiempo{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 @keyframes aviso-llave{0%{opacity:0;transform:translate(230px,-60px) rotate(-28deg) scale(.9)}12%{opacity:1}36%{transform:translate(26px,0)}46%{transform:scale(1.04)}55%{transform:none}
   70%{transform:rotate(98deg)}76%{transform:rotate(88deg)}82%,88%{transform:rotate(90deg)}100%{opacity:1;transform:none}}
 @keyframes aviso-cerradura{0%,55%{transform:rotate(-90deg)}74%,100%{transform:none}}
 @keyframes aviso-pulso{0%,68%{opacity:0;transform:scale(.5)}74%{opacity:.85}96%,100%{opacity:0;transform:scale(1.6)}}
 @keyframes aviso-luz{0%,68%{opacity:0}76%{opacity:.75}100%{opacity:0}}
-@keyframes aviso-entra{from{opacity:0;transform:translateY(-14px) scale(.94)}to{opacity:1;transform:none}}
-@keyframes aviso-entra-abajo{from{opacity:0;transform:translateY(14px) scale(.94)}to{opacity:1;transform:none}}
-@keyframes aviso-sale{to{opacity:0;transform:scale(.96)}}
+@keyframes tostada-entra{from{opacity:0;transform:translateY(16px)}to{opacity:1}}
 @keyframes aviso-pop{from{transform:scale(.6)}to{transform:none}}
+/* Reducir movimiento: sin deslizamiento, giro, pop ni llave animada; solo fundido de 160 ms (entrada y salida). El gesto de deslizar sigue. */
 @media (prefers-reduced-motion:reduce){
-  .aviso-pop{animation:aviso-fade 160ms linear both!important}.aviso-capa--sale .aviso-pop{animation:none!important;opacity:0}
-  .aviso-pop__esquina,.aviso-logo__llave,.aviso-logo__cerradura,.aviso-logo__pulso,.aviso-logo__puerta-luz{animation:none!important}
+  .tostada{animation:aviso-fade 160ms linear backwards!important;transition:opacity 160ms linear!important}
+  .tostada--sale,.tostadas--abierta .tostada--sale{transform:translateY(var(--y))}
+  .tostada__casa,.aviso-logo__llave,.aviso-logo__cerradura,.aviso-logo__pulso,.aviso-logo__puerta-luz{animation:none!important}
   .aviso-logo__llave,.aviso-logo__cerradura{transform:none!important;opacity:1}
-  .aviso-pop__tiempo{animation:none!important;opacity:.3}
+  .tostada__tiempo{animation:none!important;opacity:.3}
 }
 @keyframes aviso-fade{from{opacity:0}to{opacity:1}}
 .billetera__detalle{font-size:13px;opacity:.85}.billetera__detalle summary{cursor:pointer;width:max-content}
@@ -741,3 +753,110 @@ html.sin-scroll{overflow:hidden}
 .entrada-app__error strong{font-family:Nunito,var(--fuente,inherit);font-weight:800}
 .ingreso-cargando{min-height:60vh;justify-content:center}
 .ingreso-cargando .entrada-app__titulo{text-align:center}
+
+/* Recorrido guiado (driver.js): globo crema sólido con la casita, «Paso N de 6», 6 puntos y botones de 44 px. Velo café al 55 % (en recorrido.ts). */
+.driver-popover.recorrido{background:var(--fondo);color:var(--cafe);border-radius:22px;padding:16px 16px 14px;max-width:min(340px,calc(100vw - 24px));min-width:min(300px,calc(100vw - 24px));box-shadow:0 18px 48px rgba(61,42,34,.28),0 0 0 1.5px rgba(111,191,138,.45);font-family:Inter,system-ui,sans-serif}
+.driver-popover.recorrido .recorrido__cab{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.driver-popover.recorrido .recorrido__casa{flex:none;width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:var(--estado-curso-fondo);box-shadow:inset 0 0 0 1.5px rgba(111,191,138,.45)}
+.driver-popover.recorrido .recorrido__casa svg{width:28px;height:28px;display:block;overflow:visible}
+.driver-popover.recorrido .recorrido__n{margin:0;font:800 12px/16px Inter,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--accion)}
+.driver-popover.recorrido .driver-popover-title{font:800 18px/24px Nunito,system-ui,sans-serif;color:var(--cafe);margin:0 0 4px}
+.driver-popover.recorrido .driver-popover-description{font:500 15px/22px Inter,system-ui,sans-serif;color:var(--cafe);margin:0}
+.driver-popover.recorrido .driver-popover-footer{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.driver-popover.recorrido .recorrido__puntos{display:flex;gap:5px;margin-right:auto}
+.driver-popover.recorrido .recorrido__puntos i{width:7px;height:7px;border-radius:50%;background:rgba(61,42,34,.2)}
+.driver-popover.recorrido .recorrido__puntos i.ya{background:var(--salvia)}
+.driver-popover.recorrido .recorrido__puntos i.es{width:18px;border-radius:4px;background:var(--accion)}
+.driver-popover.recorrido .driver-popover-footer button,.driver-popover.recorrido .recorrido__saltar{min-height:44px;min-width:44px;padding:0 16px;border-radius:999px;font:700 15px/1 Inter,system-ui,sans-serif;text-shadow:none;cursor:pointer;border:1.5px solid var(--cafe);background:transparent;color:var(--cafe)}
+.driver-popover.recorrido .recorrido__saltar{border-color:transparent;text-decoration:underline;padding:0 8px}
+.driver-popover.recorrido .driver-popover-navigation-btns{display:flex;gap:8px;flex:none}
+.driver-popover.recorrido .driver-popover-footer button.driver-popover-next-btn{background:var(--accion);border-color:var(--accion);color:var(--fondo)}
+.driver-popover.recorrido button:focus-visible{outline:3px solid var(--cafe);outline-offset:2px}
+.driver-popover.recorrido .driver-popover-arrow-side-top{border-top-color:var(--fondo)}
+.driver-popover.recorrido .driver-popover-arrow-side-bottom{border-bottom-color:var(--fondo)}
+.driver-popover.recorrido .driver-popover-arrow-side-left{border-left-color:var(--fondo)}
+.driver-popover.recorrido .driver-popover-arrow-side-right{border-right-color:var(--fondo)}
+.boton-ayuda{display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;padding:0 12px;border-radius:999px;border:1.5px solid rgba(61,42,34,.25);background:transparent;color:var(--cafe);font:700 14px/1 Inter,system-ui,sans-serif;cursor:pointer;justify-content:center}
+.boton-ayuda__i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--cafe);color:var(--fondo);font:800 14px/1 Nunito,system-ui,sans-serif}
+@media (max-width:719px){.boton-ayuda{padding:0}.boton-ayuda__t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.boton-ayuda{border:0}}
+.primera-vez{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.primera-vez h2{margin:0;font:800 17px/22px Nunito,system-ui,sans-serif}
+.primera-vez p{margin:2px 0 0}
+.ejemplo-cinta{margin:0 0 8px;padding:6px 12px;border-radius:999px;display:inline-block;background:var(--estado-pendiente-fondo);font:700 13px/18px Inter,system-ui,sans-serif;color:var(--cafe)}
+@media (prefers-reduced-motion:reduce){.driver-popover.recorrido{animation:aviso-fade 120ms linear!important}.driver-overlay,.driver-active-element{transition:none!important}}
+
+/* ── Estado de espera v2 del pago (src/EsperaPago.tsx; docs/estado-espera.md). Copiado de la maqueta aprobada
+   diseno/estado-espera/v2/espera.css; solo usa variables de la paleta. ── */
+.envio{display:grid;gap:10px}
+/* Botón en espera: no usa la opacidad .55 de [disabled] (bajaría el contraste). aria-disabled en vez de disabled: no pierde el foco. */
+/* v2 · El botón en espera y la barrita avanzan por tres verdes de la paleta (clase en .envio; nada derivado):
+   Paso 1 salvia claro (--estado-curso-fondo) + café (--cafe): 11,68:1
+   Paso 2 salvia medio (--salvia) + café: 6,12:1
+   Paso 3 y listo: verde bosque (--exito) + crema (--fondo): 5,34:1  → todos AA para texto normal.
+   El terracota queda solo para los botones de acción en reposo («Pagar», «Volver a intentar el pago»).
+   Transición suave de 500 ms; con «reducir movimiento», de golpe. */
+.boton.envio__boton[aria-busy="true"]{cursor:progress;transform:none}
+.envio .boton.envio__boton,.envio__barra>span{transition:background-color 500ms var(--ease),box-shadow 500ms var(--ease),color 0s linear 250ms}  /* el texto cambia de golpe a mitad del fundido: nunca queda con poco contraste */
+.envio--t1 .boton.envio__boton{background:var(--estado-curso-fondo);color:var(--cafe);box-shadow:inset 0 0 0 1.5px var(--salvia),0 4px 12px rgba(46,115,71,.10)}
+.envio--t2 .boton.envio__boton{background:var(--salvia);color:var(--cafe);box-shadow:inset 0 0 0 1.5px var(--salvia),0 6px 16px rgba(46,115,71,.18)}
+.envio--t3 .boton.envio__boton{background:var(--exito);color:var(--fondo);box-shadow:inset 0 0 0 1.5px var(--exito),0 6px 16px rgba(46,115,71,.24)}
+.envio--t1 .envio__barra>span{background:var(--estado-curso-fondo);box-shadow:inset 0 0 0 1.5px var(--salvia)}
+.envio--t2 .envio__barra>span{background:var(--salvia);box-shadow:inset 0 0 0 1.5px var(--salvia)}
+.envio--t3 .envio__barra>span{background:var(--exito);box-shadow:inset 0 0 0 1.5px var(--exito)}
+@media (prefers-reduced-motion:reduce){.envio .boton.envio__boton,.envio__barra>span{transition:none!important}}
+.boton.envio__boton--listo{cursor:default}
+.envio__logo{width:36px;height:36px;flex:none;border-radius:12px;background:var(--fondo);display:grid;place-items:center;margin-left:-8px;overflow:visible}
+.envio__logo .aviso-pop__logo{width:30px;height:30px}
+.envio__boton .ico{width:22px;height:22px;stroke-width:2.4}
+.envio__nota{text-align:center}
+/* Pasos: tres puntos con una línea; hecho (salvia con visto), actual (terracota con anillo), por venir (neutro). */
+.envio__pasos{list-style:none;margin:2px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.envio__paso{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-size:13px;line-height:17px;color:var(--cafe-suave)}
+.envio__paso+.envio__paso::before{content:"";position:absolute;top:13px;right:calc(50% + 18px);width:calc(100% - 32px);height:2px;border-radius:2px;background:var(--linea)}
+.envio__paso--hecho+.envio__paso::before{background:var(--salvia)}
+.envio__punto{position:relative;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(61,42,34,.07);font-weight:700;font-size:13px}
+.envio__punto .ico{width:15px;height:15px;vertical-align:0}
+.envio__paso--hecho{color:var(--exito);font-weight:600}
+.envio__paso--hecho .envio__punto{background:rgba(111,191,138,.3);color:var(--exito)}
+.envio__paso--actual{color:var(--cafe);font-weight:600}
+/* v2: paso actual en salvia con número café (6,12:1) */
+.envio__paso--actual .envio__punto{background:var(--salvia);color:var(--cafe);box-shadow:0 0 0 4px rgba(111,191,138,.25)}
+.envio__paso--actual .envio__punto::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--salvia);animation:envio-pulso 1.4s var(--ease) infinite}
+@keyframes envio-pulso{from{opacity:.7;transform:scale(.9)}to{opacity:0;transform:scale(1.5)}}
+/* La casita del botón: la llave entra a la cerradura y gira, en bucle (misma llave y cerradura de LogoAviso). */
+[aria-busy="true"] .envio__logo .aviso-logo__llave{animation:envio-llave 2.4s var(--ease) infinite}
+[aria-busy="true"] .envio__logo .aviso-logo__cerradura{animation:envio-cerradura 2.4s var(--ease) infinite}
+@keyframes envio-llave{0%{opacity:0;transform:translate(230px,-60px) rotate(-28deg) scale(.9)}14%{opacity:1}34%{transform:translate(26px,0)}44%{transform:none}
+  60%{transform:rotate(90deg)}80%{opacity:1;transform:rotate(90deg)}92%{opacity:1;transform:none}100%{opacity:0;transform:none}}
+@keyframes envio-cerradura{0%,44%{transform:rotate(-90deg)}60%,80%{transform:none}92%,100%{transform:rotate(-90deg)}}
+/* Reducir movimiento: sin llave animada ni pulso. La llave queda puesta y el paso actual con su anillo quieto. */
+@media (prefers-reduced-motion:reduce){
+  .envio__logo .aviso-logo__llave,.envio__logo .aviso-logo__cerradura,.envio__paso--actual .envio__punto::after{animation:none!important}
+  .envio__logo .aviso-logo__llave,.envio__logo .aviso-logo__cerradura{transform:none!important;opacity:1}
+  .envio__paso--actual .envio__punto::after{opacity:.5;transform:none}
+}
+/* Barrita de carga (role=progressbar). Determinada: avanza un tercio por paso y, dentro del paso, se acerca despacio
+   al siguiente sin llegar (--desde → --hasta). Indeterminada (si no se sabe el avance): un tramo que va y viene. */
+.envio__barra{position:relative;height:6px;border-radius:var(--r-pildora);background:rgba(61,42,34,.1);overflow:hidden}
+.envio__barra>span{position:absolute;inset:0 auto 0 0;width:var(--hasta);border-radius:inherit;
+  animation:envio-barra 6s cubic-bezier(.1,.6,.3,1) both}
+@keyframes envio-barra{from{width:var(--desde)}to{width:var(--hasta)}}
+.envio__barra--listo>span{width:100%;animation:envio-barra-fin 300ms var(--ease) both}
+@keyframes envio-barra-fin{from{width:var(--desde)}to{width:100%}}
+.envio__barra--indet>span{width:35%;background:var(--salvia);animation:envio-barra-va 1.6s ease-in-out infinite}
+@keyframes envio-barra-va{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
+@media (prefers-reduced-motion:reduce){
+  /* Por saltos: a la mitad del tramo del paso actual, sin movimiento continuo. Indeterminada: tramo quieto al centro. */
+  .envio__barra>span{animation:none!important;width:var(--salto)}
+  .envio__barra--listo>span{width:100%}
+  .envio__barra--indet>span{width:40%;left:30%;transform:none}
+}
+
+/* v2 · Error: el paso que falló queda marcado con --error (5,94:1 sobre blanco); la barrita se oculta y el botón vuelve a estar activo. */
+.envio__paso--error{color:var(--error);font-weight:600}
+.envio__paso--error .envio__punto{background:#fff;color:var(--error);box-shadow:inset 0 0 0 1.5px var(--error)}
+
+/* El botón en espera no usa [disabled] (aria-disabled): sin hover terracota mientras espera. */
+.envio .boton.envio__boton:hover{filter:none}
+.envio--t1 .boton.envio__boton:hover{background:var(--estado-curso-fondo)}.envio--t2 .boton.envio__boton:hover{background:var(--salvia)}.envio--t3 .boton.envio__boton:hover{background:var(--exito)}
+

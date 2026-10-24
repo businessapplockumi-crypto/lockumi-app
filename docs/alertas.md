@@ -1,6 +1,41 @@
 # Avisos después de cada paso
 
-**Publicado el 23 oct 2026** en app.lockumi.com: rama `contrato-plegable` unida a `master` por avance rápido desde `ad1578f` en `abdfd9b` (código `afe15ae` y `abdfd9b`, docs `2312401`); deploy de producción `dpl_ARoWYrXEBftUcz1L4NoRiQNA9N6v`. Pruebas antes de publicar: 163/163 unitarias y 855/855 del recorrido en navegador.
+**Publicado el 23 oct 2026** en app.lockumi.com (el aviso al inicio del orden de Tab y el aviso v2 · toast se publicaron el 24 oct 2026; ver abajo): rama `contrato-plegable` unida a `master` por avance rápido desde `ad1578f` en `abdfd9b` (código `afe15ae` y `abdfd9b`, docs `2312401`); deploy de producción `dpl_ARoWYrXEBftUcz1L4NoRiQNA9N6v`. Pruebas antes de publicar: 163/163 unitarias y 855/855 del recorrido en navegador.
+
+## Aviso v2 · toast (publicado el 24 oct 2026; rama `ux-guiada` unida a `master` con merge `--no-ff`)
+
+Aprobado por Katherine (maquetas `diseno/aviso-compacto/` y `diseno/recorrido-formulario/`). Reemplaza la tarjeta de los avisos v2 en **todos** los logros, pasos y errores:
+
+- **Pastilla compacta de vidrio:** fondo crema al 92 % con desenfoque de 18 px (fondo sólido si el navegador no lo admite), casita completa de 32 px, título y **una línea** («Ahora: …», «Sigue: …», «Al entregar: …»). Teléfono: abajo al centro, 358 px, sobre la zona segura; si taparía la cabecera, el título, el paso o un botón principal, sube por encima del botón. Computadora: abajo a la derecha, 360 px, a 24 px del borde.
+- **Botón de acción** (44 px o más) que lleva al paso: «Pagar →», «Tomar fotos →», «Ver alquiler →», «Ver detalle →». Tocar el resto del aviso lo cierra. Sin X ni «Entendido».
+- **Tiempo:** 8 s con acción, 5 s sin acción, línea de 2 px; se pausa con el ratón, el dedo o el foco. **Errores:** `role="alert"`, no se esconden solos, sin línea de tiempo; el error de la red de prueba usa el texto A12 sin cambios («No se pudo completar» + «La red de prueba está lenta o no respondió. Espera un minuto y vuelve a tocar el botón.») y se quita al volver a intentar. El texto sigue escrito en la pantalla, sin `role="alert"` para no anunciarlo dos veces.
+- **Logros:** zona `role="status"`, `aria-live="polite"`.
+- **Pila de hasta 3** (como Sonner): el más nuevo adelante; los de atrás asoman sin texto; con el ratón, el foco o el dedo encima, la pila se abre.
+- **Deslizar** de lado (un tercio del ancho o rápido) o hacia abajo (40 px) para cerrar; si no llega, vuelve a su lugar.
+- **Movimiento:** entra en 320 ms (desde abajo), sale en 200 ms; con «reducir movimiento», solo un fundido de 160 ms.
+- **Teclado:** el aviso sigue siendo la 2.ª parada de Tab; Enter, Espacio o Esc lo cierran; Tab pasa al botón de acción.
+- Montos siempre con `usd(r.inquilino)` y `usd(r.dueno)`. Sin dependencias nuevas. No cambia el ingreso ni la lógica del escrow.
+
+Código: `src/alertas.ts` (`linea`, `accion`, pila, `alertaErrorRed`, `quitarAvisos`), `src/Aviso.tsx` (`Tostada`, `irA`), `src/Alertas.tsx` (zonas, lugar libre, pausa), `src/index.css`, `src/screens/Detalle.tsx`. Pruebas: `src/__tests__/alertas.test.tsx`; en el navegador `scripts/aviso-v2/capturar.mjs` (nuevo), `scripts/espera-pagar/capturar.mjs` y `scripts/alertas/capturar.mjs` (adaptados a la pila).
+
+**Líneas cortas de los demás pasos (Legal, 24 oct, 12:22 a. m.; marcadas `// LEGAL: revisado (24/10)` en `src/alertas.ts`):**
+
+| Paso | Título | Línea |
+|---|---|---|
+| `crear` | Alquiler creado | **Ahora:** leer y firmar el contrato |
+| `contrato-firma-inquilino` | Firmaste el contrato | **Sigue:** la firma del dueño de prueba *(sin dueño de prueba: «la firma de la otra persona»)* |
+| `contrato-firma-dueno` (falta tu firma) | El dueño firmó el contrato | **Ahora:** tu firma |
+| `entrada-firma-*` / `salida-firma-*` (confirmaste tú) | Confirmaste las fotos de entrada / de salida | **Sigue:** la otra persona confirma las fotos |
+| `salida-inicio` | Empezaron las fotos de salida | **Ahora:** una foto de cada espacio |
+| `salida-confirmada` | Fotos de salida confirmadas | **Sigue:** {textoPlazo} para hacer un reclamo (sale del alquiler, p. ej. «7 días») |
+| `reclamo` | Reclamo enviado | **Sigue:** el inquilino acepta o no el reclamo |
+| `mediacion` | Pasa a una persona mediadora | Demo: **En esta prueba:** decides tú el reparto (simulación). Dos personas: **Sigue:** una persona mediadora les ayuda a buscar un acuerdo |
+| `reparto` | **Reparto del depósito** (antes «Reparto decidido») | {usd(r.dueno)} al dueño y {usd(r.inquilino)} al inquilino · botón «Ver detalle →» |
+| `adelantar` | Plazo adelantado | **Solo en la prueba:** terminó el plazo para reclamos |
+
+Textos largos nuevos: mediación «Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito.» (en la demo, más «En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)».»); reparto «Se repartió el depósito en la red de prueba: {usd(r.dueno)} al dueño y {usd(r.inquilino)} al inquilino.»
+
+Si la otra persona confirma las fotos antes que tú, el aviso sigue con su texto «sigue» de siempre (Legal no dio línea corta para ese caso).
 
 ## Avisos v2 (23 oct 2026)
 
@@ -28,13 +63,13 @@ Aprobado por Katherine (23 oct, 8:06 a. m.). Misma rama. Reemplaza el estilo del
   - **ya no es un diálogo**: `<Alertas />` deja siempre en la página dos zonas, `role="status"` con `aria-live="polite"` (pasos y logros) y `role="alert"` (errores), y el aviso aparece dentro de la que corresponde, así el lector de pantalla lo anuncia sin mover el foco;
   - **no roba el foco**. La tarjeta se puede enfocar con Tab (`tabindex="0"`, nombre «Aviso. Toca para cerrar», título y texto con `aria-describedby`): enfocada se pausa y Enter, Espacio o Esc la cierran; al cerrarla el foco vuelve a donde estaba (o a `#contenido`);
   - con «reducir movimiento»: solo un fundido al aparecer, sin animación de salida ni de la llave, y la línea del tiempo queda quieta;
-  - límite: la tarjeta va al final de la página, así que llegar con Tab antes de 5 s puede costar; casi todo lo que dice también queda en la pantalla (líneas del paso e historial), y el error del ingreso queda escrito en Entrar (ver «Error del ingreso en Entrar»);
+  - **se llega con Tab antes de 5 s** *(publicado el 24 oct 2026)*: `<Alertas />` va justo después de «Saltar al contenido», así que desde el inicio de la página el aviso es la **2.ª parada de Tab** (1.º «Saltar al contenido», 2.º el aviso, antes del encabezado). Sigue sin robar el foco. Con el foco se pausa; Enter, Espacio o Esc lo cierran y el foco vuelve a donde estaba. Si el foco ya está más abajo (por ejemplo en el botón del paso), Tab sigue hacia adelante y no llega al aviso; se llega con Mayús+Tab hasta el inicio o desde «Saltar al contenido». Antes iba al final de la página; casi todo lo que dice también queda en la pantalla (líneas del paso e historial), y el error del ingreso queda escrito en Entrar (ver «Error del ingreso en Entrar»). Moverlo al inicio del DOM **no cambia cómo se ve**: `.aviso-capa` es `position:fixed`, así que el aviso sigue flotando con el mismo tamaño y lugar que en `master` (390 px: 366 px de ancho, debajo del título o abajo si el título está bajo; escritorio: 320 px abajo a la derecha) y no empuja nada. Lo verifica `scripts/espera-pagar/capturar.mjs` (capa fija, sin X ni «Entendido», casita completa, tamaño y lugar como en `master`, nada se mueve al cerrarse) y una prueba unitaria en `src/__tests__/espera-pago.test.tsx`. Con el foco de Tab el aviso muestra el anillo de foco (borde rojo); eso no es la tarjeta vieja;
   - contraste AA en todos los textos (el más justo, verde `#2E7347` sobre `#E3F2E8`, 4,95:1).
 - **«Tomar foto»** (`src/Camara.tsx`): el emoji 📷 se cambió por el ícono de cámara de la app (`i-camara`).
 
 Capturas reales (localhost, sesión simulada): `capturas/alertas-v2-*.png`. Imágenes livianas y GIF de la llave: `diseno/envio/alertas-v2-implementado/`. GIF del cierre solo (celular y computadora): `diseno/envio/alertas-v2-autocierre/aviso-se-esconde-solo.gif`.
 
-**Decisiones pendientes (Katherine):** 1) ~~el error del ingreso solo se ve en el aviso~~ **resuelto el 23 oct** (queda escrito en Entrar, ver abajo); 2) el enlace «Entrar con mi correo» de la maqueta no se agregó (tocar el aviso lo cierra; un enlace dentro chocaría con eso); 3) se quitó «en esta misma pestaña» del texto (decisión de Producto según Legal); 4) llegar con Tab antes de 5 s.
+**Decisiones pendientes (Katherine):** 1) ~~el error del ingreso solo se ve en el aviso~~ **resuelto el 23 oct** (queda escrito en Entrar, ver abajo); 2) el enlace «Entrar con mi correo» de la maqueta no se agregó (tocar el aviso lo cierra; un enlace dentro chocaría con eso); 3) se quitó «en esta misma pestaña» del texto (decisión de Producto según Legal); 4) ~~llegar con Tab antes de 5 s~~ **propuesto en la rama `aviso-tab`** (pendiente del OK de Katherine para publicar). Siguen sin agregarse «Entrar con mi correo» ni «en esta misma pestaña».
 
 ### Error del ingreso en Entrar (aprobado por Katherine, 23 oct, 11:49 a. m.)
 
@@ -100,8 +135,8 @@ Los marcados `// LEGAL: revisar` en `src/alertas.ts` son los del depósito guard
 | Solo red de prueba: adelantar el plazo | `adelantar` | Plazo adelantado | Solo en la red de prueba: terminamos ahora los 7 días para reclamos. | Lo que sigue: El dueño de prueba aprueba y Lockumi devuelve el depósito al inquilino en la red de prueba. Tarda entre 20 y 60 segundos. |
 | Devolución automática (sin reclamos) | `devolucion` | Depósito devuelto | No hubo reclamos en 7 días. El dueño de prueba aprobó y Lockumi devolvió 19,94 USDC al inquilino en la red de prueba. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Reclamo del dueño de prueba | `reclamo` | Reclamo enviado | El dueño de prueba reclamó 5 USDC del depósito. | Lo que sigue: El inquilino acepta o no el reclamo. Si no lo acepta, pasa a una persona mediadora (simulación). |
-| No estoy de acuerdo → mediación | `mediacion` | Pasa a una persona mediadora | No hubo acuerdo con el reclamo. En esta prueba la persona mediadora es una simulación. | Lo que sigue: En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)». *(Legal, 23 oct)* |
-| Reparto de la persona mediadora (simulación) | `reparto` | Reparto decidido | La persona mediadora (simulación) decidió: 2,4925 USDC al dueño y 17,4475 USDC al inquilino. El reparto se hizo en la red de prueba. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
+| No estoy de acuerdo → mediación | `mediacion` | Pasa a una persona mediadora | No hubo acuerdo con el reclamo. En esta prueba la persona mediadora es una simulación. | Lo que sigue: Una persona mediadora revisa las fotos y les ayuda a buscar un acuerdo sobre el reparto del depósito. En esta prueba, decides tú el reparto con «Resolver el reclamo (simulación)». *(Legal, 24 oct)* |
+| Reparto de la persona mediadora (simulación) | `reparto` | Reparto del depósito | Se repartió el depósito en la red de prueba: 2,4925 USDC al dueño y 17,4475 USDC al inquilino. *(Legal, 24 oct)* | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Aceptar reclamo | `acuerdo` | Reclamo aceptado | Se repartió el depósito en la red de prueba: 4,985 USDC al dueño y 14,955 USDC al inquilino. | Lo que sigue: El alquiler terminó. No tienes nada pendiente. |
 | Entrar (el regreso de Google o Apple no terminó) | `ingreso-fallo` | El ingreso no terminó | Toca Entrar y elige tu cuenta. *(Legal, 23 oct)* | — |
 | Entrar (correcto) | `ingreso` | ¡Ingresaste correctamente! | Te damos la bienvenida a la demo. Desde aquí puedes ver tus alquileres y crear un depósito protegido. | — |

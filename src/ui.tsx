@@ -1,4 +1,5 @@
 import { modoReal } from './services/auth'
+import { abrirRecorrido } from './recorrido'
 import { modoPrueba, escrowReal } from './servidor/config'
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Usuario, Alquiler } from './types'
@@ -15,6 +16,8 @@ export function Barra({ u, onSalir }: { u: Usuario; onSalir: () => void }) {
     <a href="#/" className="logo" aria-label="Lockumi, ir a tus alquileres"><img src="/img/logo-lockumi.svg" alt="" /></a>
     <div className="barra__der">
       <span className="barra__usuario cortar" title={u.email}>{u.email}</span>
+      <button type="button" className="boton-ayuda" aria-label="¿Cómo funciona?" onClick={e => abrirRecorrido(u, { quien: e.currentTarget })}>
+        <span className="boton-ayuda__i" aria-hidden="true">?</span><span className="boton-ayuda__t" aria-hidden="true">¿Cómo funciona?</span></button>
       <button type="button" className="boton-icono" onClick={onSalir} aria-label="Salir" title="Salir">
         <svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14M10 16l-4-4 4-4M6 12h10"/></svg>
       </button>
