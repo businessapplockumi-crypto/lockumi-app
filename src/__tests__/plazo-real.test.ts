@@ -26,7 +26,12 @@ describe('Plazo real en la app', () => {
     expect(detalle).not.toMatch(/\{fechaHora\(fin\)\}\./)
     expect(detalle).toContain('después de {textoPlazo(a)} el depósito se devuelve completo al inquilino. En esta demo local no hay red: es solo una simulación.')
     expect(detalle).toContain('<h2>Reclamo del dueño</h2>{modoPrueba && <Simulado texto="Mediación simulada" />}')
-    expect(detalle).toContain('Puedes reclamar. <Simulado texto="Red de prueba" /> El reclamo abre una disputa en la red de prueba')
+    // LEGAL: revisado (24/10) · ronda 8: en el ejemplo (modoSolo) el reclamo es simulado
+    expect(detalle).toContain('¿Encontraste un daño? Puedes reclamar. <Simulado /> En este ejemplo, el reclamo y la mediación son simulados: no se registran en la red de prueba ni bloquean ningún depósito.</p>')
+    expect(detalle).toContain('{modoSolo && <p className="nota">En este ejemplo, el reclamo es simulado: no se registra en la red de prueba ni bloquea ningún depósito. La mediación también es simulada.</p>}')
+    expect(detalle).not.toContain('<Simulado texto="Red de prueba" />')
+    expect(detalle).not.toContain('El reclamo abre una disputa en la red de prueba')
+    expect(detalle).not.toContain('El reclamo se registra en la red de prueba y bloquea')
   })
   it('Contrato y Términos 6.5 siguen con 7 días fijos y dicen «después de…»', () => {
     expect(contrato).toContain('Si no reclama, después de 7 días el depósito se devuelve completo al inquilino.')
@@ -38,6 +43,10 @@ describe('Plazo real en la app', () => {
     expect(crear).toContain('<p>Tú eres el <strong>inquilino</strong>. Si usas tu propia billetera, depositas con ella; si no, la cuenta de Lockumi firma el depósito por ti en la red de prueba.')
     expect(crear).toContain('La mediación es simulada. El reclamo lo haces tú con un botón, en nombre del dueño de prueba, y queda registrado en la red de prueba.</p>')
     expect(crear).not.toContain('y depositas con tu billetera')
-    expect(detalle).toContain('Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar el depósito. La aprobación y la liberación las firma la cuenta de Lockumi.')
+    // LEGAL: revisado (24/10) · ronda 8
+    expect(detalle).toContain('Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar esta aprobación. La liberación del depósito la firma la cuenta de Lockumi.')
+    expect(detalle).not.toContain('La aprobación y la liberación las firma')
+    expect(crear).toContain('Lockumi firma y confirma por el dueño de prueba: tú tocas el botón en su nombre. El reclamo y la persona mediadora son simulados y no se registran en la red de prueba.</p>')
+    expect(crear).not.toContain('el mediador son simulados')
   })
 })

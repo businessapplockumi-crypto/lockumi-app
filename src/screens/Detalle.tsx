@@ -154,8 +154,8 @@ function Ventana({ a, rol }: P) {
     </div>)}
     {resta > 0 && !(modoVideo && rol === 'inquilino') && (rol === 'dueno'
       ? (form ? <FormReclamo a={a} onCancelar={() => setForm(false)} /> : <>
-        {/* LEGAL: revisado (24/10) · el reclamo abre resolve/dispute real (acciones.reclamar → escrow.disputar) */}
-        {modoSolo ? <p className="nota">¿Encontraste un daño? Puedes reclamar. <Simulado texto="Red de prueba" /> El reclamo abre una disputa en la red de prueba y bloquea el depósito de prueba. La mediación es simulada.</p>
+        {/* LEGAL: revisado (24/10) · ronda 8. modoSolo: solo el alquiler de ejemplo del recorrido (DetalleSolo no tiene reclamo), sin red: reclamo y mediación simulados. Si no (modoVideo, producción): el reclamo abre una disputa real en la red de prueba (acciones.reclamar → escrow.disputar) */}
+        {modoSolo ? <p className="nota">¿Encontraste un daño? Puedes reclamar. <Simulado /> En este ejemplo, el reclamo y la mediación son simulados: no se registran en la red de prueba ni bloquean ningún depósito.</p>
           : <p>¿Encontraste un daño que no estaba en las fotos de entrada? Puedes reclamar. Si todo está bien, no hagas nada.</p>}
         <button type="button" className={'boton boton--ancho ' + (modoSolo ? 'boton--secundario' : 'boton--primario boton--grande')} onClick={() => setForm(true)}>Reclamar un daño</button></>)
       : <Espera texto={`Esperando. Si el dueño no reclama, después de ${textoPlazo(a)} se te devuelve el depósito.`} />)}{/* LEGAL: revisado (24/10) */}
@@ -202,8 +202,8 @@ function Reclamo({ a, rol }: P) {
   const r = a.reclamo!; const p = useProceso()
   const aceptar = () => p.correr(av => acciones.responder(a, true, av))
   return <section className="pila"><div className="cab"><h2>Reclamo del dueño</h2>{modoPrueba && <Simulado texto="Mediación simulada" />}</div>{/* LEGAL: revisado (24/10) */}<Evidencia a={a} />
-    {/* LEGAL: revisado (24/10) · acciones.reclamar → escrow.disputar (disputa real en la red de prueba) */}
-    {modoSolo && <p className="nota">El reclamo se registra en la red de prueba y bloquea el depósito de prueba hasta que se resuelva. La mediación es simulada.</p>}
+    {/* LEGAL: revisado (24/10) · ronda 8. modoSolo: solo el alquiler de ejemplo (sin red, reclamo simulado). modoVideo (producción): disputa real en la red de prueba (acciones.reclamar → escrow.disputar) */}
+    {modoSolo && <p className="nota">En este ejemplo, el reclamo es simulado: no se registra en la red de prueba ni bloquea ningún depósito. La mediación también es simulada.</p>}
     {modoVideo && <p className="nota">El dueño de prueba es una cuenta de Lockumi. Su reclamo quedó registrado en la cuenta segura de la red de prueba: el depósito no se mueve hasta que se resuelva.</p>}
     {rol === 'inquilino' ? <>
       <p>Si aceptas, recibes {usd(a.monto - r.monto)} y el dueño {usd(r.monto)}{escrowReal ? ` (menos ${COMISION_TEXTO} de comisión de la red de prueba)` : ''}. Si no estás de acuerdo, una persona mediadora revisa las fotos con ustedes y les ayuda a buscar un acuerdo.</p>{/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide */}
@@ -264,7 +264,7 @@ function EscrowReal({ a, rol }: P) {
   const correr = async (f: () => Promise<unknown>) => { setOcupado(true); setError(''); try { await f() } catch (e) { setError(e instanceof Error ? e.message : String(e)) } finally { setOcupado(false) } }
   const err = error && <p className="error" role="alert">{error}</p>
   if (a.estado === 'ventana_reclamo') return rol === 'dueno' && !aprobado ? <div className="pila">
-    {/* LEGAL: revisado (24/10) · ronda 7 (modo de dos personas, sin uso hoy) */}<p className="nota">Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar el depósito. La aprobación y la liberación las firma la cuenta de Lockumi.</p>
+    {/* LEGAL: revisado (24/10) · ronda 8 (modo de dos personas, sin uso hoy: la billetera firma la aprobación, trustless.ts:28-30; la liberación la firma el servidor). BLOQUEO: antes de activarlo, Legal reescribe Términos 5.3 */}<p className="nota">Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar esta aprobación. La liberación del depósito la firma la cuenta de Lockumi.</p>
     <button type="button" className="boton boton--ancho" disabled={ocupado} onClick={() => void correr(() => acciones.aprobarDevolucion!(a))}>{ocupado ? 'Firmando…' : 'Todo está bien: aprobar la devolución'}</button>{err}</div>
     : aprobado ? <p className="nota">El dueño ya aprobó la devolución. Al terminar el plazo se libera el depósito.</p> : null
   if (a.estado === 'cerrado' && a.resultado?.via === 'automatico') return a.liquidacionTx
