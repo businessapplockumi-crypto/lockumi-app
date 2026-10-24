@@ -137,7 +137,8 @@ function Ventana({ a, rol }: P) {
   return <section className="pila"><h2>{textoPlazo(a)} para reclamos</h2>
     <div className="cuenta" role="timer"><span className="cuenta__n">{dias}</span> días <span className="cuenta__n">{horas}</span> horas</div>
     {modoSolo ? <p className="nota">En esta prueba no hay que esperar el plazo: si todo está bien, el dueño de prueba aprueba y el depósito vuelve al inquilino en la red de prueba.</p>
-      : escrowReal ? <p className="nota">Termina el {fechaHora(fin)}. Si no hay reclamos, el dueño de prueba aprueba y Lockumi devuelve el depósito al inquilino en la red de prueba.</p>
+      // LEGAL: revisado (24/10) · la devolución la dispara la app abierta (efecto de arriba) y la firma el servidor de Lockumi
+      : escrowReal ? <p className="nota">Termina el {fechaHora(fin)}. Si no hay reclamo en 7 días, el depósito de prueba se devuelve completo al inquilino la próxima vez que alguien abra el alquiler. Ninguna de las partes tiene que aprobarlo: lo ejecuta la cuenta de Lockumi.</p>
       : <p className="nota">Termina el {fechaHora(fin)}. Si no hay reclamos, el depósito vuelve completo al inquilino, sin que nadie tenga que aprobarlo.</p>}
     {resta === 0 && !a.reclamo && !modoSolo && (p.ocupado ? <div className="espera" role="status"><span aria-hidden="true">⏳</span><p>{p.avance || 'Devolviendo el depósito…'}</p></div>
       : p.err ? <>{p.error}<button type="button" className="boton boton--primario boton--ancho" onClick={() => void devolver()}>Volver a intentar la devolución</button></> : null)}
@@ -150,7 +151,8 @@ function Ventana({ a, rol }: P) {
     </div>)}
     {resta > 0 && !(modoVideo && rol === 'inquilino') && (rol === 'dueno'
       ? (form ? <FormReclamo a={a} onCancelar={() => setForm(false)} /> : <>
-        {modoSolo ? <p className="nota">¿Encontraste un daño? Puedes reclamar. <Simulado /> El reclamo y la mediación no se registran en la red de prueba.</p>
+        {/* LEGAL: revisado (24/10) · el reclamo abre resolve/dispute real (acciones.reclamar → escrow.disputar) */}
+        {modoSolo ? <p className="nota">¿Encontraste un daño? Puedes reclamar. <Simulado /> El reclamo abre una disputa en la red de prueba y bloquea el depósito de prueba. La mediación es simulada.</p>
           : <p>¿Encontraste un daño que no estaba en las fotos de entrada? Puedes reclamar. Si todo está bien, no hagas nada.</p>}
         <button type="button" className={'boton boton--ancho ' + (modoSolo ? 'boton--secundario' : 'boton--primario boton--grande')} onClick={() => setForm(true)}>Reclamar un daño</button></>)
       : <Espera texto={`Esperando. Si el dueño no reclama en ${textoPlazo(a)}, recibes tu depósito${escrowReal ? '' : ' completo'}.`} />)}
@@ -197,7 +199,8 @@ function Reclamo({ a, rol }: P) {
   const r = a.reclamo!; const p = useProceso()
   const aceptar = () => p.correr(av => acciones.responder(a, true, av))
   return <section className="pila"><div className="cab"><h2>Reclamo del dueño</h2>{modoPrueba && <Simulado />}</div><Evidencia a={a} />
-    {modoSolo && <p className="nota">El reclamo es simulado: no se registra en la red de prueba y el depósito de prueba sigue bloqueado en la cuenta segura.</p>}
+    {/* LEGAL: revisado (24/10) · acciones.reclamar → escrow.disputar (disputa real en la red de prueba) */}
+    {modoSolo && <p className="nota">El reclamo se registra en la red de prueba y bloquea el depósito de prueba hasta que se resuelva. La mediación es simulada.</p>}
     {modoVideo && <p className="nota">El dueño de prueba es una cuenta de Lockumi. Su reclamo quedó registrado en la cuenta segura de la red de prueba: el depósito no se mueve hasta que se resuelva.</p>}
     {rol === 'inquilino' ? <>
       <p>Si aceptas, recibes {usd(a.monto - r.monto)} y el dueño {usd(r.monto)}{escrowReal ? ` (menos ${COMISION_TEXTO} de comisión de la red de prueba)` : ''}. Si no estás de acuerdo, una persona mediadora revisa las fotos con ustedes y les ayuda a buscar un acuerdo.</p>{/* LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide */}
