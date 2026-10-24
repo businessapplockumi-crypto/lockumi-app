@@ -326,3 +326,14 @@ Pruebas: `src/__tests__/alertas.test.tsx`, `recorrido.test.tsx`, `src/legal/__te
   - Cada documento tiene su casilla y su clave en `localStorage` (`lockumi.terminos.aceptacion`, `lockumi.privacidad.consentimiento`, con `{ version, fecha }`). `Login.tsx:95-96` marca cada casilla solo si la versión guardada es la del texto. La versión se lee de la línea «Versión …» del `.md` (`documentos.ts:23`).
   - Producción tiene hoy las dos en 1.5-demo. Al publicar, el usuario marca **las dos casillas otra vez, una sola vez**, en la misma pantalla «Entrar». Quien ya aceptó Términos 1.6-demo en la vista previa solo marca la de privacidad.
   - No hay otra pantalla que pida aceptar. La consecuencia es que quien ya tiene la sesión abierta (`App.tsx:39` solo muestra «Entrar» sin usuario) **no vuelve a aceptar** hasta que cierre sesión y entre de nuevo.
+
+## Legal, ronda 8 (24 oct 2026, rama `contrato-compacto`, sin publicar)
+
+- `Crear.tsx:276` (modo de una persona): «El reclamo y la persona mediadora son simulados y no se registran en la red de prueba.» Se mantuvo la primera frase del párrafo («Lockumi firma y confirma por el dueño de prueba: tú tocas el botón en su nombre.»).
+- `Detalle.tsx:158` (modo de una persona, alquiler de ejemplo): píldora «Simulado» (antes «Red de prueba») y «En este ejemplo, el reclamo y la mediación son simulados: no se registran en la red de prueba ni bloquean ningún depósito.»
+- `Detalle.tsx:206` (igual): «En este ejemplo, el reclamo es simulado: no se registra en la red de prueba ni bloquea ningún depósito. La mediación también es simulada.»
+- Los comentarios `LEGAL` de `Detalle.tsx:157`, `:205` y `Crear.tsx:274/:279` ahora dicen a qué modo se aplica cada texto: ejemplo de `modoSolo` = sin red; `modoVideo` (producción) = disputa real en la red de prueba.
+- `Detalle.tsx:267` (modo de dos personas): «Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar esta aprobación. La liberación del depósito la firma la cuenta de Lockumi.»
+- **BLOQUEO para activar el modo de dos personas:** antes, Legal reescribe Términos 5.3, que hoy dice que la cuenta de Lockumi firma la aprobación. En ese modo la firma la billetera del dueño (`trustless.ts:28-30`). También está en PLAN.md.
+- **Corrección de la ronda 7:** las notas de `Detalle.tsx:158` y `:206` **hoy no se ven en ninguna pantalla**. El alquiler de ejemplo siempre se ve como inquilino (`miRol: 'inquilino'` en `recorrido.ts`; `vistaDe` lo respeta) y no llega al estado «reclamo». Para la imagen `legal-ronda8.jpg` forcé el rol y el estado en una copia aparte, sin subirla.
+- Nueva aceptación con la sesión abierta: propuesta en `docs/reaceptacion.md` (solo imagen; no hay código).
