@@ -18,6 +18,8 @@ import { TomarFoto } from '../Camara'
 import { ETAPAS, etapaDe, pasoTexto, turno, otro, NOMBRE, ahoraPrueba } from '../flujo'
 import { adelantoPermitido } from '../../api/_lib/red'
 import { avisar, alertaPorCambio, instantanea, type Instantanea } from '../alertas'
+import { EsperaPago } from '../EsperaPago'
+import { etapaDeAvance, type EtapaPago } from '../espera'
 
 type P = { a: Alquiler; rol: Rol }
 const ahoraISO = (a: Alquiler) => new Date(ahoraDe(a)).toISOString()
@@ -49,7 +51,16 @@ function Pago({ a, rol }: P) {
 }
 function PagoSimulado({ a, rol }: P) {
   const p = useProceso()
-  const pagar = () => p.correr(av => acciones.pagar(a, av))
+  // Estado de espera v2: el paso sale del avance real de services/escrow.ts (sin temporizadores). `fallo` = paso en que falló.
+  const [etapa, setEtapa] = useState<EtapaPago>(0); const [fallo, setFallo] = useState<EtapaPago>(0)
+  const pagar = () => {
+    if (p.ocupado) return
+    let actual: EtapaPago = 1; setFallo(0); setEtapa(1)
+    return p.correr(async av => {
+      try { await acciones.pagar(a, t => { actual = etapaDeAvance(t); setEtapa(actual); av(t) }); setEtapa(3) }
+      catch (x) { setFallo(actual); setEtapa(0); throw x }
+    })
+  }
   return <section className="pila"><div className="cab"><h2>Depósito</h2>{escrowReal ? <span className="chip chip--neutro">Red de prueba</span> : modoVideo ? <Simulado /> : <Demo t="Pago simulado" />}</div>
     <div className="monto">{usd(a.monto)}</div>
     <p>El dinero queda guardado. El dueño no lo recibe ahora: se decide al final del alquiler.</p>
@@ -58,8 +69,7 @@ function PagoSimulado({ a, rol }: P) {
         : escrowReal ? <p className="nota">Son USDC de prueba, sin valor: Lockumi los pone en tu cuenta de prueba y quedan bloqueados en una cuenta segura de la red de prueba. Nadie puede sacarlos solo.</p>
         : (!modoReal || modoVideo) && <p className="nota">Es una prueba: no se cobra nada.</p>}
       {p.error}
-      <button type="button" className="boton boton--primario boton--ancho boton--grande" disabled={p.ocupado} onClick={() => void pagar()}>{p.texto(`Pagar ${usd(a.monto)}`)}</button>
-      {escrowReal && p.ocupado && NOTA_TIEMPO}
+      <EsperaPago etapa={etapa} fallo={fallo} etiqueta={`Pagar ${usd(a.monto)}`} onPagar={() => void pagar()} />
     </> : <Espera texto="Esperando que el inquilino pague el depósito." />}
   </section>
 }

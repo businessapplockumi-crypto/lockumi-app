@@ -741,3 +741,78 @@ html.sin-scroll{overflow:hidden}
 .entrada-app__error strong{font-family:Nunito,var(--fuente,inherit);font-weight:800}
 .ingreso-cargando{min-height:60vh;justify-content:center}
 .ingreso-cargando .entrada-app__titulo{text-align:center}
+
+/* ── Estado de espera v2 del pago (src/EsperaPago.tsx; docs/estado-espera.md). Copiado de la maqueta aprobada
+   diseno/estado-espera/v2/espera.css; solo usa variables de la paleta. ── */
+.envio{display:grid;gap:10px}
+/* Botón en espera: no usa la opacidad .55 de [disabled] (bajaría el contraste). aria-disabled en vez de disabled: no pierde el foco. */
+/* v2 · El botón en espera y la barrita avanzan por tres verdes de la paleta (clase en .envio; nada derivado):
+   Paso 1 salvia claro (--estado-curso-fondo) + café (--cafe): 11,68:1
+   Paso 2 salvia medio (--salvia) + café: 6,12:1
+   Paso 3 y listo: verde bosque (--exito) + crema (--fondo): 5,34:1  → todos AA para texto normal.
+   El terracota queda solo para los botones de acción en reposo («Pagar», «Volver a intentar el pago»).
+   Transición suave de 500 ms; con «reducir movimiento», de golpe. */
+.boton.envio__boton[aria-busy="true"]{cursor:progress;transform:none}
+.envio .boton.envio__boton,.envio__barra>span{transition:background-color 500ms var(--ease),box-shadow 500ms var(--ease),color 0s linear 250ms}  /* el texto cambia de golpe a mitad del fundido: nunca queda con poco contraste */
+.envio--t1 .boton.envio__boton{background:var(--estado-curso-fondo);color:var(--cafe);box-shadow:inset 0 0 0 1.5px var(--salvia),0 4px 12px rgba(46,115,71,.10)}
+.envio--t2 .boton.envio__boton{background:var(--salvia);color:var(--cafe);box-shadow:inset 0 0 0 1.5px var(--salvia),0 6px 16px rgba(46,115,71,.18)}
+.envio--t3 .boton.envio__boton{background:var(--exito);color:var(--fondo);box-shadow:inset 0 0 0 1.5px var(--exito),0 6px 16px rgba(46,115,71,.24)}
+.envio--t1 .envio__barra>span{background:var(--estado-curso-fondo);box-shadow:inset 0 0 0 1.5px var(--salvia)}
+.envio--t2 .envio__barra>span{background:var(--salvia);box-shadow:inset 0 0 0 1.5px var(--salvia)}
+.envio--t3 .envio__barra>span{background:var(--exito);box-shadow:inset 0 0 0 1.5px var(--exito)}
+@media (prefers-reduced-motion:reduce){.envio .boton.envio__boton,.envio__barra>span{transition:none!important}}
+.boton.envio__boton--listo{cursor:default}
+.envio__logo{width:36px;height:36px;flex:none;border-radius:12px;background:var(--fondo);display:grid;place-items:center;margin-left:-8px;overflow:visible}
+.envio__logo .aviso-pop__logo{width:30px;height:30px}
+.envio__boton .ico{width:22px;height:22px;stroke-width:2.4}
+.envio__nota{text-align:center}
+/* Pasos: tres puntos con una línea; hecho (salvia con visto), actual (terracota con anillo), por venir (neutro). */
+.envio__pasos{list-style:none;margin:2px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.envio__paso{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-size:13px;line-height:17px;color:var(--cafe-suave)}
+.envio__paso+.envio__paso::before{content:"";position:absolute;top:13px;right:calc(50% + 18px);width:calc(100% - 32px);height:2px;border-radius:2px;background:var(--linea)}
+.envio__paso--hecho+.envio__paso::before{background:var(--salvia)}
+.envio__punto{position:relative;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(61,42,34,.07);font-weight:700;font-size:13px}
+.envio__punto .ico{width:15px;height:15px;vertical-align:0}
+.envio__paso--hecho{color:var(--exito);font-weight:600}
+.envio__paso--hecho .envio__punto{background:rgba(111,191,138,.3);color:var(--exito)}
+.envio__paso--actual{color:var(--cafe);font-weight:600}
+/* v2: paso actual en salvia con número café (6,12:1) */
+.envio__paso--actual .envio__punto{background:var(--salvia);color:var(--cafe);box-shadow:0 0 0 4px rgba(111,191,138,.25)}
+.envio__paso--actual .envio__punto::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--salvia);animation:envio-pulso 1.4s var(--ease) infinite}
+@keyframes envio-pulso{from{opacity:.7;transform:scale(.9)}to{opacity:0;transform:scale(1.5)}}
+/* La casita del botón: la llave entra a la cerradura y gira, en bucle (misma llave y cerradura de LogoAviso). */
+[aria-busy="true"] .envio__logo .aviso-logo__llave{animation:envio-llave 2.4s var(--ease) infinite}
+[aria-busy="true"] .envio__logo .aviso-logo__cerradura{animation:envio-cerradura 2.4s var(--ease) infinite}
+@keyframes envio-llave{0%{opacity:0;transform:translate(230px,-60px) rotate(-28deg) scale(.9)}14%{opacity:1}34%{transform:translate(26px,0)}44%{transform:none}
+  60%{transform:rotate(90deg)}80%{opacity:1;transform:rotate(90deg)}92%{opacity:1;transform:none}100%{opacity:0;transform:none}}
+@keyframes envio-cerradura{0%,44%{transform:rotate(-90deg)}60%,80%{transform:none}92%,100%{transform:rotate(-90deg)}}
+/* Reducir movimiento: sin llave animada ni pulso. La llave queda puesta y el paso actual con su anillo quieto. */
+@media (prefers-reduced-motion:reduce){
+  .envio__logo .aviso-logo__llave,.envio__logo .aviso-logo__cerradura,.envio__paso--actual .envio__punto::after{animation:none!important}
+  .envio__logo .aviso-logo__llave,.envio__logo .aviso-logo__cerradura{transform:none!important;opacity:1}
+  .envio__paso--actual .envio__punto::after{opacity:.5;transform:none}
+}
+/* Barrita de carga (role=progressbar). Determinada: avanza un tercio por paso y, dentro del paso, se acerca despacio
+   al siguiente sin llegar (--desde → --hasta). Indeterminada (si no se sabe el avance): un tramo que va y viene. */
+.envio__barra{position:relative;height:6px;border-radius:var(--r-pildora);background:rgba(61,42,34,.1);overflow:hidden}
+.envio__barra>span{position:absolute;inset:0 auto 0 0;width:var(--hasta);border-radius:inherit;
+  animation:envio-barra 6s cubic-bezier(.1,.6,.3,1) both}
+@keyframes envio-barra{from{width:var(--desde)}to{width:var(--hasta)}}
+.envio__barra--listo>span{width:100%;animation:envio-barra-fin 300ms var(--ease) both}
+@keyframes envio-barra-fin{from{width:var(--desde)}to{width:100%}}
+.envio__barra--indet>span{width:35%;background:var(--salvia);animation:envio-barra-va 1.6s ease-in-out infinite}
+@keyframes envio-barra-va{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
+@media (prefers-reduced-motion:reduce){
+  /* Por saltos: a la mitad del tramo del paso actual, sin movimiento continuo. Indeterminada: tramo quieto al centro. */
+  .envio__barra>span{animation:none!important;width:var(--salto)}
+  .envio__barra--listo>span{width:100%}
+  .envio__barra--indet>span{width:40%;left:30%;transform:none}
+}
+
+/* v2 · Error: el paso que falló queda marcado con --error (5,94:1 sobre blanco); la barrita se oculta y el botón vuelve a estar activo. */
+.envio__paso--error{color:var(--error);font-weight:600}
+.envio__paso--error .envio__punto{background:#fff;color:var(--error);box-shadow:inset 0 0 0 1.5px var(--error)}
+
+/* El botón en espera no usa [disabled] (aria-disabled): sin hover terracota mientras espera. */
+.envio .boton.envio__boton:hover{filter:none}
+.envio--t1 .boton.envio__boton:hover{background:var(--estado-curso-fondo)}.envio--t2 .boton.envio__boton:hover{background:var(--salvia)}.envio--t3 .boton.envio__boton:hover{background:var(--exito)}
