@@ -107,7 +107,7 @@ describe('acciones locales', () => {
     expect(A(id).entrada.cuartos.map(c => c.id)).toEqual(['sala', 'dormitorio', 'bano'])
     const guardado = JSON.stringify((JSON.parse(mem.get(K)!) as Alquiler[]).find(x => x.id === id))
     expect(guardado).not.toContain('data:image/svg+xml,c'); expect(guardado).not.toContain('data:image/svg+xml,d'); expect(guardado).not.toContain('"cocina"')
-    expect(A(id).historial.at(-1)!.texto).toBe('Se quitó el espacio Cocina y se borraron sus fotos (2)')
+    expect(A(id).historial.at(-1)!.texto).toBe('Se quitó el espacio Cocina y se borraron sus 2 fotos.')
     await acciones.deshacerQuitar!(A(id), 'cocina')   // no hay nada que deshacer: no se guardó copia
     expect(A(id).entrada.cuartos.map(c => c.id)).toEqual(['sala', 'dormitorio', 'bano'])
     const otra = await acciones.agregarCuarto!(A(id), 'Cocina', [], 'inquilino')
@@ -129,7 +129,7 @@ describe('acciones locales', () => {
     await expect(acciones.agregarCuarto!(A(id), 'Patio', [], 'dueno')).rejects.toThrow(E.TXT.bloqueado)
     await expect(acciones.quitarCuarto!(A(id), 'bano', 'dueno')).rejects.toThrow(E.TXT.bloqueado)
     await expect(acciones.renombrarCuarto!(A(id), 'bano', 'Baño 2')).rejects.toThrow(E.TXT.bloqueado)
-    expect(E.ERR.fija).toBe(E.TXT.bloqueado + ' Si algo cambió, anótalo en las fotos de salida.')
+    expect(E.ERR.fija).toBe(E.TXT.bloqueado + ' Si algo cambia durante el alquiler, regístralo en las fotos de salida.')
   })
   it('la salida copia la entrada y la comparación empareja por id (no por posición)', async () => {
     const id = nuevo()
@@ -187,7 +187,7 @@ describe('pantalla y textos', () => {
     expect(ui).not.toMatch(/Quitar con las fotos/)                                        // texto viejo reemplazado por Legal
     expect(ui).toMatch(/role="alertdialog"/); expect(ui).toMatch(/role="dialog"/); expect(ui).toMatch(/aria-haspopup="menu"/)
     expect(leer('../espacios.ts').match(/LEGAL: revisado \(23\/10\)/g)!.length).toBeGreaterThanOrEqual(5)
-    expect(leer('../espacios.ts').match(/LEGAL: revisar \(24\/10\)/g)!.length).toBeGreaterThanOrEqual(4)
+    expect(leer('../espacios.ts').match(/LEGAL: revisado \(24\/10\)/g)!.length).toBeGreaterThanOrEqual(4)
   })
   it('avisos v2: «Espacio agregado» con «Tomar foto →», «Nombre cambiado» sin botón y «Espacio quitado» con «Deshacer»', () => {
     const ag = alertaEspacioAgregado('Patio', 'p1')
@@ -215,7 +215,13 @@ describe('servidor: mapeo por id', () => {
     const sql = leer('../../supabase/migrations/20261024000000_lk_espacios.sql')
     for (const f of ['lk_agregar_cuarto', 'lk_renombrar_cuarto', 'lk_quitar_cuarto', 'cuarto_id', 'lk_proteger_entrada', 'lk_fotos_borrar', 'delete from public.lk_fotos']) expect(sql).toContain(f)
     expect(sql).toMatch(/No se aplicó en ningún proyecto real/); expect(sql).not.toContain('quitada_en')
-    expect(sql).toContain('La entrada ya está firmada por los dos. Los espacios, las fotos y la lista quedan guardados como respaldo y ya no se pueden cambiar ni borrar.')
+    expect(sql).toContain(`raise exception '${E.ERR.fija}'`)   // lk_error_fija = texto «ya firmada» + oración final de Legal (24/10)
+    for (const t of ["'Se quitó el espacio %s y se borró su foto.'", "'Se quitó el espacio %s y se borraron sus %s fotos.'", "'Se quitó el espacio %s.'"]) expect(sql).toContain(t)
+  })
+  it('historial (Legal 24/10): 1 foto, sin fotos', async () => {
+    const id = nuevo(); store.cambiar(id, x => { x.entrada.cuartos[1].fotos.push(foto('c')) })
+    await acciones.quitarCuarto!(A(id), 'cocina', 'inquilino'); expect(A(id).historial.at(-1)!.texto).toBe('Se quitó el espacio Cocina y se borró su foto.')
+    await acciones.quitarCuarto!(A(id), 'sala', 'inquilino'); expect(A(id).historial.at(-1)!.texto).toBe('Se quitó el espacio Sala.')
   })
   it('servidor: quitar borra los ARCHIVOS del bucket con las rutas que devuelve lk_quitar_cuarto (con un reintento) y avisa si no pudo', async () => {
     const { quitarCuartoServidor } = await import('../servidor/repositorio')

@@ -125,7 +125,7 @@ const local: Acciones = {
     // «Deshacer» solo existe si no tenía fotos (se recuerda en memoria unos segundos, nunca en el almacenamiento).
     recienQuitado = c.fotos.length ? null : { a: a.id, cuarto: structuredClone(c), pos }
     store.cambiar(a.id, y => { y.entrada.cuartos.splice(pos, 1); y.entrada.firmas = {} },
-      c.fotos.length ? `Se quitó el espacio ${c.nombre} y se borraron sus fotos (${c.fotos.length})` : `Se quitó el espacio ${c.nombre}`) // LEGAL: revisar (24/10)
+      c.fotos.length === 1 ? `Se quitó el espacio ${c.nombre} y se borró su foto.` : c.fotos.length ? `Se quitó el espacio ${c.nombre} y se borraron sus ${c.fotos.length} fotos.` : `Se quitó el espacio ${c.nombre}.`) // LEGAL: revisado (24/10)
     return c.fotos.length
   },
   async deshacerQuitar(a, id) {

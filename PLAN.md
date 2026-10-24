@@ -99,7 +99,13 @@ Pendiente:
 - [ ] **Modo de dos personas:** las DOS partes pueden quitar espacios antes de firmar, y la OTRA parte recibe un aviso; después de firmar, nadie puede.
 - [ ] Revisar la migración en el servidor y aplicarla; luego encender `VITE_ESPACIOS_SERVIDOR=1`.
 - [ ] Probar el borrado de archivos contra Supabase Storage real (hoy solo stub local y mock).
-- [ ] Limpieza de archivos huérfanos si falla el borrado en Storage después de la RPC.
-- [ ] Decidir qué pasa al borrar una cuenta con una entrada firmada (hoy el servidor no deja borrar ese contrato) y el plazo de guarda de las fotos en el Aviso de privacidad.
-- [ ] Moderación del texto libre (nombres y puntos).
-- [ ] Revisión de Legal de los textos `// LEGAL: revisar (24/10)`.
+- [ ] Hoy el servidor no deja borrar un contrato con la entrada firmada; ajustar el borrado de cuentas a la regla de guarda de abajo.
+- [x] Revisión de Legal de los textos del 24/10 (`84cb442`; marcados `// LEGAL: revisado (24/10)`).
+
+Pendiente para producción (Legal, 24 oct 2026):
+- [ ] Un canal de contacto real para el «avísanos» de «Se quitó el espacio, pero no se pudieron borrar sus archivos. Toca «Reintentar» o avísanos.».
+- [ ] Un trabajo de limpieza de archivos huérfanos en `lk-fotos` (archivos sin fila en `lk_fotos`, por ejemplo si falla el borrado en Storage después de la RPC).
+- [ ] Moderación del texto libre (nombres de espacios y puntos de la lista).
+- [ ] Una nota posterior a la firma, con fecha, que vean las dos partes, sin cambiar la entrada firmada.
+- [ ] Al borrar una cuenta, las fotos y la lista de una entrada firmada se guardan hasta que termine el plazo de guarda. Legal propone 18 meses (Ley 7527, art. 120); falta confirmarlo con un abogado y en el Aviso de privacidad.
+- [ ] Correr `scripts/espacios/probar-sql-remoto.sh` contra el proyecto de prueba cuando Katherine dé `SUPABASE_DB_URL` (runbook en `docs/espacios.md`), y probar el borrado de archivos con la API de Storage real.

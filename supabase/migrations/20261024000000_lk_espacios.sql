@@ -53,10 +53,10 @@ language sql stable security definer set search_path = public as $$
   select (select count(*) from public.lk_firmas where contrato_id = p_contrato and etapa = 'entrada') >= 2
 $$;
 /** Mensaje del servidor cuando se intenta cambiar o borrar la entrada ya firmada. */
--- LEGAL: revisar (24/10): primera oración = texto final de Legal; la segunda dice qué hacer.
+-- LEGAL: revisado (24/10): texto «ya firmada» de Legal + la oración final de Legal.
 create or replace function public.lk_error_fija() returns void language plpgsql as $$
 begin
-  raise exception 'La entrada ya está firmada por los dos. Los espacios, las fotos y la lista quedan guardados como respaldo y ya no se pueden cambiar ni borrar. Si algo cambió, anótalo en las fotos de salida.'
+  raise exception 'La entrada ya está firmada por los dos. Los espacios, las fotos y la lista quedan guardados como respaldo y ya no se pueden cambiar ni borrar. Si algo cambia durante el alquiler, regístralo en las fotos de salida.'
     using errcode = '55000';
 end $$;
 create or replace function public.lk_exigir_lista_abierta(p_contrato uuid) returns text
@@ -175,9 +175,10 @@ begin
   -- Los índices viejos (columna cuarto) de las fotos que siguen se corren: cuarto_id es el que manda.
   update public.lk_fotos set cuarto = cuarto - 1 where contrato_id = p_contrato and etapa = 'entrada' and cuarto > v_pos;
   delete from public.lk_firmas where contrato_id = p_contrato and etapa = 'entrada';
-  -- LEGAL: revisar (24/10)
-  perform public.lk_evento(p_contrato, case when cardinality(v_rutas) > 0 then format('Se quitó el espacio %s y se borraron sus fotos (%s)', v_nombre, cardinality(v_rutas))
-                                            else format('Se quitó el espacio %s', v_nombre) end);
+  -- LEGAL: revisado (24/10)
+  perform public.lk_evento(p_contrato, case when cardinality(v_rutas) = 1 then format('Se quitó el espacio %s y se borró su foto.', v_nombre)
+                                            when cardinality(v_rutas) > 1 then format('Se quitó el espacio %s y se borraron sus %s fotos.', v_nombre, cardinality(v_rutas))
+                                            else format('Se quitó el espacio %s.', v_nombre) end);
   return v_rutas;
 end $$;
 

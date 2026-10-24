@@ -69,8 +69,8 @@ Publicado el 23 oct 2026 (avisos v2). Ver [`docs/alertas.md`](docs/alertas.md).
 
 - Cada espacio tiene un **id fijo**; entrada y salida se comparan por id. La salida se crea con `actaDesde(entrada)`.
 - **Regla (24 oct 2026):** antes de que los dos firmen la entrada, quitar un espacio borra de verdad sus fotos (y sus archivos de Storage); después, nada se puede cambiar ni borrar. Si tocas esto, mantén la regla en el cliente (`listaFija`, `src/acciones.ts`) y en el servidor (`supabase/migrations/20261024000000_lk_espacios.sql`: `lk_proteger_entrada`, `lk_fotos_borrar`).
-- Los textos marcados `// LEGAL: revisar (24/10)` son de Legal: no los cambies sin su visto bueno (las pruebas los revisan palabra por palabra).
-- Pruebas: `npx vitest run src/__tests__/espacios.test.tsx`, `bash scripts/espacios/probar-sql.sh` (Postgres 17 local, nunca un proyecto real) y `scripts/agregar-espacio/capturar.mjs` (Vite en 5173 con `VITE_TRUSTLESS=1 VITE_CAVOS_APP_ID=captura-local`). Detalle en [`docs/espacios.md`](docs/espacios.md).
+- Los textos marcados `// LEGAL: revisado (24/10)` son de Legal: no los cambies sin su visto bueno (las pruebas los revisan palabra por palabra).
+- Pruebas: `npx vitest run src/__tests__/espacios.test.tsx`, `bash scripts/espacios/probar-sql.sh` (Postgres 17 local, nunca un proyecto real; contra el proyecto de prueba de Supabase, solo con `scripts/espacios/probar-sql-remoto.sh`, que termina en ROLLBACK; ver el runbook) y `scripts/agregar-espacio/capturar.mjs` (Vite en 5173 con `VITE_TRUSTLESS=1 VITE_CAVOS_APP_ID=captura-local`). Detalle en [`docs/espacios.md`](docs/espacios.md).
 
 ## Agregar un estado del alquiler y su color
 

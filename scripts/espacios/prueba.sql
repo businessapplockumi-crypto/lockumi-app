@@ -4,7 +4,13 @@ create or replace function pg_temp.falla(q text, patron text) returns void langu
 begin execute q; raise exception 'SE ESPERABA ERROR (%): %', patron, q;
 exception when others then if sqlerrm like 'SE ESPERABA ERROR%' or sqlerrm !~* patron then raise exception 'error distinto para %: %', q, sqlerrm; end if; end $$;
 create or replace function pg_temp.ok(c boolean, que text) returns void language plpgsql as $$ begin if not coalesce(c, false) then raise exception 'FALLA: %', que; end if; raise notice '✓ %', que; end $$;
-create or replace function pg_temp.yo(u text) returns void language sql as $$ select set_config('lk.uid', u, false) $$;
+-- auth.uid(): el stub local lee lk.uid; Supabase real lee request.jwt.claim.sub / request.jwt.claims. Se ponen los dos.
+create or replace function pg_temp.yo(u text) returns void language sql as $$
+  select set_config('lk.uid', u, false), set_config('request.jwt.claim.sub', u, false), set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, false) $$;
+-- Supabase real bloquea DELETE por SQL en storage.objects (trigger storage.protect_delete). Esta prueba solo revisa la
+-- política RLS lk_fotos_borrar sobre las filas, dentro de una transacción que se deshace (probar-sql-remoto.sh hace ROLLBACK).
+-- No borra archivos reales: eso solo lo hace la API de Storage.
+select set_config('storage.allow_delete_query', 'true', false);
 \set A '''11111111-1111-4111-8111-111111111111'''
 \set B '''22222222-2222-4222-8222-222222222222'''
 \set C '''33333333-3333-4333-8333-333333333333'''
@@ -63,7 +69,7 @@ with b as (delete from storage.objects where name = :'cid' || '/entrada/a.jpg' r
 with b as (delete from storage.objects where name = :'cid' || '/entrada/t.jpg' returning 1) select pg_temp.ok(count(*) = 0, 'el archivo de una foto que sigue en la lista NO se puede borrar') from b;
 reset role;
 select pg_temp.ok(cuarto = 3 and cuarto_id = :'pid', 'la foto de Terraza sigue emparejada (índice corrido y mismo id)') from public.lk_fotos where ruta like '%/t.jpg';
-select pg_temp.ok(exists (select 1 from public.lk_eventos where contrato_id = :'cid' and texto = 'Se quitó el espacio Cocina y se borraron sus fotos (1)'), 'quitar: evento en el historial');
+select pg_temp.ok(exists (select 1 from public.lk_eventos where contrato_id = :'cid' and texto = 'Se quitó el espacio Cocina y se borró su foto.'), 'quitar: evento en el historial');
 select public.lk_agregar_cuarto(:'cid', 'Cocina') as cid2 \gset
 select pg_temp.ok(:'cid2' <> 'cocina' and not exists (select 1 from public.lk_fotos where cuarto_id = :'cid2'), 'volver a agregar Cocina: espacio nuevo, sin fotos (hay que tomarlas de nuevo)');
 select pg_temp.ok(not public.lk_acta_completa(:'cid', 'entrada'), 'acta incompleta mientras falten fotos o puntos');
@@ -77,10 +83,13 @@ select pg_temp.ok(cuartos->-1->>'agregado_por' = 'inquilino', 'el inquilino tamb
 update public.lk_actas set cuartos = jsonb_set(cuartos, '{0,items,0,estado}', '"bien"') where contrato_id = :'cid' and etapa = 'entrada';
 insert into public.lk_firmas(contrato_id, etapa, rol, usuario) values (:'cid', 'entrada', 'dueno', :A), (:'cid', 'entrada', 'inquilino', :B);
 \set FIJA '''La entrada ya está firmada por los dos'''
+select set_config('lk.cid', :'cid', false);
 select pg_temp.falla(format('select public.lk_agregar_cuarto(%L, %L)', :'cid', 'Jardín'), :FIJA);
 select pg_temp.falla(format('select public.lk_quitar_cuarto(%L, %L)', :'cid', 'sala'), :FIJA);
 select pg_temp.falla(format('select public.lk_renombrar_cuarto(%L, %L, %L)', :'cid', :'pid', 'Otro'), :FIJA);
-select pg_temp.ok(true, 'DESPUÉS de firmar: las RPC rechazan agregar, quitar y renombrar, con el mensaje que explica qué hacer');
+do $$ begin perform public.lk_quitar_cuarto(current_setting('lk.cid')::uuid, 'sala'); raise exception 'SE ESPERABA ERROR';
+exception when others then if sqlerrm <> 'La entrada ya está firmada por los dos. Los espacios, las fotos y la lista quedan guardados como respaldo y ya no se pueden cambiar ni borrar. Si algo cambia durante el alquiler, regístralo en las fotos de salida.' then raise exception 'mensaje distinto: %', sqlerrm; end if; end $$;
+select pg_temp.ok(true, 'DESPUÉS de firmar: las RPC rechazan agregar, quitar y renombrar, con el mensaje EXACTO de Legal (24/10)');
 reset role;   -- aun como dueño de la base (sin RLS) los triggers lo impiden
 select pg_temp.falla(format('delete from public.lk_fotos where contrato_id = %L', :'cid'), :FIJA);
 select pg_temp.falla(format('update public.lk_fotos set sha256 = %L where contrato_id = %L', repeat('c', 64), :'cid'), :FIJA);
