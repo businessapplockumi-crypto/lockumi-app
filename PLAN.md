@@ -22,6 +22,10 @@
 - **Cerrado el 24 oct 2026 (rama `ux-guiada`):** la tarjeta de Inicio dice «Pagar el depósito · Luego, fotos de entrada» en vez de «Depósito protegido» (Legal). «Depósito guardado» solo se usa cuando ya está pagado.
 - ~~**Pendiente de Legal:** todavía dicen que la persona mediadora «decide» `src/flujo.ts` (línea «sigue» de mediación), el texto de la mediación en `src/screens/Detalle.tsx` y el contrato (`src/screens/ContratoDoc.tsx`).~~ **Resuelto el 24 oct 2026 en la rama `contrato-compacto` (vista previa, sin publicar):** Legal aprobó los textos nuevos (la persona mediadora ayuda a buscar un acuerdo; no decide), marcados `// LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide`. Ver [`docs/alertas.md`](docs/alertas.md). Sigue pendiente: el aviso de ingreso dice «crear un depósito protegido»; no se cambia sin el OK de Legal.
 - **Vista previa, sin publicar (24 oct 2026, rama `contrato-compacto` desde `051c071`):** contrato compacto en el detalle del alquiler. En la computadora, tarjeta corta (lugar, depósito, fechas, estado y «Ver contrato») arriba de la columna derecha, fija a 48 px y nunca más alta que la pantalla; el contrato completo se abre en un panel lateral. En el teléfono, una barra arriba (lugar · depósito) abre una hoja desde abajo que se cierra deslizando. Imprimir sigue dando el contrato completo; sin cambios en textos legales. La pantalla Firma sigue con el contrato plegable. Ver [`docs/contrato-compacto.md`](docs/contrato-compacto.md).
+- **Antes de producción (lista para el abogado, 24 oct 2026):**
+  - La resolución de disputas (`disputeResolver` en Trustless Work) tiene que quedar en una **persona neutral distinta de la plataforma**. Hoy es la cuenta de Lockumi (`api/_lib/solo.ts`, `api/_lib/tw.ts`). Trustless Work v2 lo exige: https://docs.trustlesswork.com/trustless-work/v2-en/introduction/technology-overview/roles-in-trustless-work
+  - Custodia: quién guarda el depósito y quién puede moverlo en cada rol del escrow.
+  - Si Lockumi sería proveedor de servicios de activos virtuales y qué registro o supervisión le tocaría.
 - **Historial:** «Alquiler creado» (ya no dice que se envió una invitación).
 - **Resend:** dominio `lockumi.com` verificado y DNS listos para el correo de invitación de la Parte 4, que **no está activa**. Ver [`docs/correo-resend.md`](docs/correo-resend.md).
 - Próximamente: dos personas reales con invitación por correo o link (Parte 4). El rendimiento con Blend no está activo.
@@ -40,7 +44,7 @@ Demo navegable (no se publica en lockumi.com). Vite + React + TypeScript, estado
 8. **Acta de salida** — fotos + checklist, comparación lado a lado con la entrada. ✅ Fase 2
 9. **Ventana de reclamo** — 7 días con cuenta regresiva; sin reclamo, el depósito vuelve solo al inquilino; botón "simular paso de 7 días". ✅ Fase 2
 10. **Reclamo** — el dueño presenta fotos y monto; el inquilino acepta o rechaza. ✅ Fase 2
-11. **Mediación** — el mediador decide el reparto; mensaje: la mayoría de los casos se resuelve en la app, la mediación es solo para pocos. ✅ Fase 2
+11. **Mediación** — el mediador decide el reparto *(histórico; desde el 24 oct 2026 la persona mediadora ayuda a buscar un acuerdo y no decide)*; mensaje: la mayoría de los casos se resuelve en la app, la mediación es solo para pocos. ✅ Fase 2
 
 ## Simulado vs. real
 | Pieza | Estado | Archivo |

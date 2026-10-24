@@ -111,5 +111,5 @@ Si agregas lógica nueva, agrega su prueba en `src/**/__tests__/`.
 - Nombres, textos de la interfaz y comentarios en español neutro.
 - Sigue el estilo de los archivos vecinos: funciones cortas, sin dependencias nuevas si no hacen falta.
 - `npm run lint` no debe dar errores.
-- Los textos legales de `src/legal/` no se editan a mano: se reemplazan como indica `src/legal/LEEME.md`. Hoy son la versión 1.5-demo.
+- Los textos legales de `src/legal/` no se editan a mano: se reemplazan como indica `src/legal/LEEME.md`. Hoy: Términos 1.6-demo (24 oct 2026, rama `contrato-compacto`, sin publicar) y Aviso de privacidad 1.5-demo.
 - Todo texto nuevo con implicación legal (fuera de `src/legal/`) lleva el comentario `// LEGAL: revisar` y se lista en el *pull request* para que Legal lo revise.

@@ -88,7 +88,7 @@ En muchos alquileres el depósito de garantía queda retenido al terminar el con
 5. **Fotos de salida:** al terminar, acta de salida con fotos y lista.
 6. **7 días para reclamos:** el dueño tiene 7 días para abrir un reclamo con pruebas. Si no reclama, el depósito vuelve al inquilino.
 7. **Reclamo:** el inquilino acepta el reclamo o no está de acuerdo.
-8. **Mediador:** si no hay acuerdo, una persona mediadora decide el reparto (en la demo, la mediación es simulada y no tiene efecto legal).
+8. **Mediador:** si no hay acuerdo, una persona mediadora les ayuda a buscar un acuerdo; en la demo la mediación es simulada y el reparto se elige con «Resolver el reclamo (simulación)».
 
 ## Arquitectura
 
@@ -172,7 +172,7 @@ Escrow *single-release* de Trustless Work (API REST v1). Asignación según `api
 | `serviceProvider` | Plataforma Lockumi | Deja la evidencia del acta de salida (cambia el hito a "Completed"). |
 | `platformAddress` | Plataforma Lockumi | Cuenta de la plataforma; comisión de plataforma 0 (`platformFee: 0`). |
 | `releaseSigner` | Plataforma Lockumi | Libera el depósito desde el servidor después del plazo. |
-| `disputeResolver` | Plataforma Lockumi (mediación) | Reparte el saldo en un reclamo (acuerdo o decisión de la persona mediadora simulada). |
+| `disputeResolver` | Plataforma Lockumi (mediación) | Reparte el saldo en un reclamo (acuerdo o reparto elegido en la mediación simulada). |
 | `receiver` | Inquilino | El depósito vuelve a su cuenta. |
 
 El depósito (`fund-escrow`) lo firma el inquilino. El servidor exige que las cuentas del dueño, del inquilino y de la plataforma sean distintas.
@@ -233,7 +233,7 @@ Todo lo que se escribe en un escrow queda público y permanente en Stellar. Por 
 | Fotos y actas | Cámara de la app con fecha, hora y huella SHA-256; se guardan en el navegador (localStorage), no en la cadena. Ver [`docs/fotos-captura.md`](docs/fotos-captura.md). |
 | Dos personas e invitaciones | **Próximamente.** En desarrollo; todavía no funciona. El correo de invitación saldría con Resend (ver abajo). |
 | Rendimiento con Blend | **No está activo.** Función futura; si llega, el rendimiento sería variable y no garantizado. |
-| Textos legales | `/terminos` y `/privacidad`, versión **1.5-demo** (20 de octubre de 2026), pendientes de revisión por abogado. Origen y forma de reemplazarlos: [`src/legal/LEEME.md`](src/legal/LEEME.md). |
+| Textos legales | `/terminos` versión **1.6-demo** (24 de octubre de 2026; cláusula 6.7 de Legal, rama `contrato-compacto`, sin publicar) y `/privacidad` versión **1.5-demo** (20 de octubre de 2026), pendientes de revisión por abogado. Origen y forma de reemplazarlos: [`src/legal/LEEME.md`](src/legal/LEEME.md). |
 
 El flujo mínimo anterior de 5 pasos (crear, obtener USDC, depositar, aprobar y devolver) sigue en el código solo si se compila con `VITE_FLUJO=solo`. No es el flujo de app.lockumi.com.
 

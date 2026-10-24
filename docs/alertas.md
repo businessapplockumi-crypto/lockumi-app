@@ -177,3 +177,32 @@ Regla: la persona mediadora **ayuda** a buscar un acuerdo; **no decide**. Reempl
 
 Cada uno lleva `// LEGAL: revisado (24/10) · la persona mediadora ayuda, no decide`. Pruebas: `src/services/__tests__/flujo.test.ts` («mediación: la persona mediadora ayuda, no decide»), `src/screens/__tests__/contrato-compacto.test.tsx` («Mediación en el contrato») y `contrato-plegable.test.tsx`; el script `scripts/contrato-plegable/capturar.mjs` revisa el PDF.
 
+## Legal, ronda 2 (24 oct 2026, rama `contrato-compacto`, sin publicar)
+
+Legal revisó `c5d713e` (los 7 textos de arriba quedan aprobados) y pidió quitar los «decide» que quedaban y la promesa «ni Lockumi». Cada cambio lleva `// LEGAL: revisado (24/10)`.
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| Contrato, «El depósito» (`src/screens/ContratoDoc.tsx`; también en «Descargar o imprimir» y en el panel del contrato compacto) | «Nadie puede tomarlo solo: ni el dueño, ni el inquilino, ni Lockumi.» | «Ni el dueño ni el inquilino pueden tomarlo solos. En esta prueba, si hay un reclamo, la cuenta de Lockumi es la que ejecuta el reparto que se elige en la simulación.» |
+| Botón de la persona mediadora, dos personas con servidor (`src/screens/Detalle.tsx`) | «Decidir como mediador» | «Registrar el acuerdo» |
+| Botón de la persona mediadora, demo local sin red (`src/screens/Detalle.tsx`) | «Demo: decidir como mediador» | «Demo: registrar el acuerdo» |
+| Botón que confirma el reparto, fuera de la prueba de video (`src/screens/Detalle.tsx`) | «Decidir» | «Registrar el acuerdo» |
+| Espera en la mediación (`src/screens/Detalle.tsx`) | «… Te avisaremos cuando haya una decisión.» | «… Te avisaremos cuando haya un acuerdo.» |
+| Comprobante del paso `resolucion` (`src/services/comprobantes.ts`) | «Reparto del depósito según la decisión» | «Reparto del depósito» |
+| Historial, demo local (`src/acciones.ts`) | «La persona mediadora decidió: … al dueño y … al inquilino» | «Acuerdo registrado: … al dueño y … al inquilino» |
+| Términos 6.7 (`src/legal/terminos.md`, versión 1.5-demo → **1.6-demo**, 24 oct 2026) | «… pasa a una persona mediadora **simulada** que decide un reparto simulado …» | texto exacto de Legal (ver `src/legal/LEEME.md`) |
+
+app.lockumi.com (modo de una persona) muestra «Resolver el reclamo (simulación)» y «Confirmar el reparto», que no cambian.
+
+**Sin cambiar (para Legal):**
+- `src/screens/Detalle.tsx`, nota del modo de una persona: «La persona mediadora es simulada: su decisión no se registra en la red de prueba ni mueve el depósito de prueba.» Pendiente de un texto de Legal.
+- `supabase/migrations/20261017000000_lockumi_e2e.sql` (versión con servidor, no activa en app.lockumi.com): «Solo una persona mediadora puede decidir.» y «La persona mediadora decidió: …». No se editó: el repositorio no deja constancia de si se aplicó al proyecto de Supabase (`scripts/aplicar-supabase-e2e.mjs`). Si se aplicó, hace falta una migración nueva con `create or replace function` para `lk_decidir_mediacion`; si no, se puede editar este archivo. `scripts/probar-esquema.mjs` sigue esperando el texto actual.
+- La frase «nadie puede tomarlo/sacarlos solo» de otros textos (avisos, recorrido, Detalle, Real, Login, README) y la página de inicio (`lockumi/landing`): lista para Legal en el informe de la ronda 2; no se tocaron.
+
+Pruebas: `src/screens/__tests__/contrato-compacto.test.tsx` («ronda 2 de Legal…»), `contrato-plegable.test.tsx` y `src/legal/__tests__/casillas.test.tsx` (versión 1.6-demo, 6.7 exacta, la aceptación de Términos 1.5-demo ya no cuenta).
+
+### [Servicio real]
+
+Aprobada por Legal solo para un servicio real o una versión de producción. **No se muestra en la demo.**
+
+> Si después de la mediación no hay acuerdo, el depósito sigue guardado y cualquiera de las dos partes puede acudir a los tribunales de Costa Rica. El depósito se reparte según el acuerdo al que lleguen después o según lo que resuelva la autoridad.

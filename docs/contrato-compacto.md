@@ -48,3 +48,13 @@ El paso 6 («Los pasos») sigue apuntando bien con la columna reordenada, en com
 ## Mediación: texto revisado por Legal (24 oct 2026)
 
 En esta misma rama, la sección «Mediación» del contrato (y los demás textos de mediación) dicen que la persona mediadora ayuda a buscar un acuerdo y no decide. Lista completa en [`alertas.md`](alertas.md#textos-de-mediación-revisados-por-legal-24-oct-2026-rama-contrato-compacto-sin-publicar).
+
+## El depósito: texto de Legal, ronda 2 (24 oct 2026)
+
+La sección «El depósito» del contrato (tarjeta, panel, hoja y «Descargar o imprimir») ya no dice «ni Lockumi». Ahora: «El depósito queda guardado hasta el final. Ni el dueño ni el inquilino pueden tomarlo solos. En esta prueba, si hay un reclamo, la cuenta de Lockumi es la que ejecuta el reparto que se elige en la simulación.» (`// LEGAL: revisado (24/10)`). En el modo con servidor, los botones de la persona mediadora dicen «Registrar el acuerdo» y la cláusula 6.7 de los Términos pasó a 1.6-demo. Detalle en [`alertas.md`](alertas.md#legal-ronda-2-24-oct-2026-rama-contrato-compacto-sin-publicar).
+
+### [Servicio real]
+
+Aprobada por Legal solo para un servicio real o una versión de producción. **No se muestra en la demo.**
+
+> Si después de la mediación no hay acuerdo, el depósito sigue guardado y cualquiera de las dos partes puede acudir a los tribunales de Costa Rica. El depósito se reparte según el acuerdo al que lleguen después o según lo que resuelva la autoridad.
