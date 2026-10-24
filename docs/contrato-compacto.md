@@ -70,3 +70,7 @@ Aprobada por Legal solo para un servicio real o una versión de producción. **N
 ## Legal, ronda 5 (24 oct 2026)
 
 La sección «7 días para reclamos» del contrato dice ahora «Si no reclama, después de 7 días el depósito se devuelve completo al inquilino.» El contrato y los Términos siguen con 7 días fijos; en el resto de la app el plazo es el real del alquiler (`textoPlazo`). Detalle en [`alertas.md`](alertas.md), «Legal, ronda 5».
+
+## Legal, ronda 6 (24 oct 2026)
+
+La nota del plazo en producción pasa a «Si no hay reclamo, después de {plazo}…». El plazo publicado es de 7 días (604800 s), así que el contrato y la app coinciden. Detalle en [`alertas.md`](alertas.md), «Legal, ronda 6».

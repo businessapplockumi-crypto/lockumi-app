@@ -257,7 +257,7 @@ Pruebas: `src/__tests__/alertas.test.tsx`, `recorrido.test.tsx`, `src/legal/__te
 
 ## Legal, ronda 5 (24 oct 2026, rama `contrato-compacto`, sin publicar)
 
-**Textos.** En la app, el plazo sale de `textoPlazo(a)` (`{plazo}`, el mismo del encabezado «{plazo} para reclamos»; en la vista previa de Vercel son 5 minutos). `plazoMs` y `textoPlazo` pasaron a `src/flujo.ts` (puro) y `src/acciones.ts` los reexporta, así `turno` y `ahoraPrueba` también los usan. «7 días» fijo queda solo en el contrato (`ContratoDoc`), los Términos, la landing y estos documentos. Quedan fijos también, porque no tienen un alquiler a mano: las etapas (`flujo.ts` `ETAPAS`), el nombre del estado (`types.ts`), la tarjeta de Inicio («Con 7 días para reclamos») y el recorrido guiado (`recorrido.ts`, ejemplo). «Termina el {fecha}.» ya no muestra «a. m..» (`conPunto` en `Detalle.tsx`). Prueba: `src/__tests__/plazo-real.test.ts`.
+**Textos.** En la app, el plazo sale de `textoPlazo(a)` (`{plazo}`, el mismo del encabezado «{plazo} para reclamos»; en la app publicada y en la vista previa son 7 días: ver «Legal, ronda 6»). `plazoMs` y `textoPlazo` pasaron a `src/flujo.ts` (puro) y `src/acciones.ts` los reexporta, así `turno` y `ahoraPrueba` también los usan. «7 días» fijo queda solo en el contrato (`ContratoDoc`), los Términos, la landing y estos documentos. Quedan fijos también, porque no tienen un alquiler a mano: las etapas (`flujo.ts` `ETAPAS`), el nombre del estado (`types.ts`), la tarjeta de Inicio («Con 7 días para reclamos») y el recorrido guiado (`recorrido.ts`, ejemplo). «Termina el {fecha}.» ya no muestra «a. m..» (`conPunto` en `Detalle.tsx`). Prueba: `src/__tests__/plazo-real.test.ts`.
 
 - Encabezado de la pantalla del reclamo: etiqueta «Mediación simulada» (antes «Simulado»). Junto a «El reclamo abre una disputa en la red de prueba»: «Red de prueba». `Simulado` acepta ahora `texto`; los demás usos siguen diciendo «Simulado».
 - Demo local: «Si no hay reclamos, después de {plazo} el depósito se devuelve completo al inquilino. En esta demo local no hay red: es solo una simulación.»
@@ -287,3 +287,25 @@ Pruebas: `src/__tests__/alertas.test.tsx`, `recorrido.test.tsx`, `src/legal/__te
 | Adelantar el plazo (solo red de prueba) | `Detalle.tsx:151`, `:164` | Sí: un botón, sin modal | Nada (cambia el reloj de la app) |
 
 **Conclusión para la variante (b).** «La app te pide confirmar antes del depósito» es cierto (botón). «… y de cada acción en el contrato» **no es del todo cierto**: aprobar y liberar sin reclamo ocurren solos, sin ningún paso, y los firma el servidor. Aceptar y rechazar se ejecutan con un solo toque. Además, en la app publicada la billetera del usuario solo firma el depósito con cuenta propia y la compra de USDC de prueba; reclamo, reparto, aprobación y liberación no pasan por la billetera (ni por Cavos). Sugerencia para Legal: «la app te pide tocar un botón antes del depósito, del reclamo, de la respuesta y del reparto; sin reclamo, la devolución ocurre sola al terminar el plazo».
+
+## Legal, ronda 6 (24 oct 2026, rama `contrato-compacto`, sin publicar)
+
+- **Nota del plazo en producción** (`Detalle.tsx`, `escrowReal`): «Termina el {fecha}. Si no hay reclamo, después de {plazo} el depósito de prueba se devuelve completo al inquilino la próxima vez que alguien abra el alquiler. Ninguna de las partes tiene que aprobarlo: lo ejecuta la cuenta de Lockumi.»
+- **Plazo real de app.lockumi.com: 604800 s (7 días).** `VITE_VENTANA_SEGUNDOS` solo se usa con el servidor compartido (Supabase, `servidor/repositorio.ts:110`). En el modo publicado (`modoPrueba`, sin Supabase) el alquiler se guarda sin `ventanaSegundos` y `plazoMs` usa 604800 (`flujo.ts:5`). El bundle publicado (`/assets/index-DQeLMnM-.js`, revisado el 24 oct a las 2:28 a. m.) solo tiene `ventanaSegundos??604800` y no incluye el código de Supabase. Por eso la tarjeta de Inicio, `ETAPAS`, `types.ts` y `recorrido.ts` siguen con «7 días». La vista previa de Vercel también usa 7 días, aunque tenga `VITE_VENTANA_SEGUNDOS=300`.
+- **Términos 5.3 «Firmas.»:** texto exacto de Legal, misma versión 1.6-demo · 24 oct 2026. Las variantes (a) y (b) de la ronda 5 quedan sin efecto. El cambio de límites en Cavos se sigue recomendando, pero ya no bloquea la publicación.
+- **Quién firma el depósito en el modo por omisión** («USDC de prueba que te da Lockumi», `Crear.tsx:123`): **el servidor**, con la cuenta de inquilino de prueba. El camino es `escrow.ts:92` (solo va a la billetera si `usaCuentaPropia`) → `escrow.ts:113` `solo.fondearPrueba` → `api/_lib/solo.ts:323-333` `fondear-prueba` (`inquilinoPruebaDe` + `firmarYEnviar`). La billetera no firma nada en ese modo.
+- **Textos que dicen que firmas tú con tu billetera** (sin cambios; para Legal):
+  - Términos 3.1 (`terminos.md:28`): «Con Cavos se crea tu billetera (tu cuenta digital en la app), con la que firmas el depósito como inquilino.» **No es así en el modo por omisión**, donde firma el servidor.
+  - `Crear.tsx:274` (solo `VITE_FLUJO=solo`): «Tú eres el inquilino y depositas con tu billetera.»
+  - `Detalle.tsx:267` (solo con dos personas, `VITE_TRUSTLESS` con Supabase, sin uso hoy): «Si todo está bien, aprueba ahora la devolución. Tu billetera te pedirá confirmar la firma.» Choca con 5.3, que dice que la aprobación la firma Lockumi.
+  - Términos 5.5.1 b) (`terminos.md:55`): «cada transacción la firmas tú en la extensión de Freighter». Habla de Freighter, pero «cada transacción» se puede leer como todas las acciones del contrato.
+  - Privacidad (`privacidad.md:16`): «Las transacciones las firmas tú en la extensión de Freighter». Mismo matiz.
+  - Correctos porque dicen la condición: Términos 4.1 a) (`terminos.md:34`, «Si eliges “Usar mi propio USDC de prueba”…: tú firmas el depósito con tu billetera»), `Detalle.tsx:76`, `Real.tsx:70`, `:116`, `Billetera.tsx:85`, README:228.
+  - Sin promesas de firma: Login, `alertas.ts`, `recorrido.ts` y la guía del README («firmar» ahí es firmar el contrato o las fotos dentro de la app, no en la red).
+- **Otros textos que chocan con la nueva 5.3** (el reclamo se registra en la red):
+  - `Crear.tsx:278` (modo publicado): «Los reclamos y el mediador son simulados: los haces tú con un botón en nombre del dueño.»
+  - `Crear.tsx:275` y `Real.tsx:206` (solo `VITE_FLUJO=solo`): «El reclamo y el mediador son simulados y no se registran en la red.»
+- **Matices de la 5.3 para Legal:**
+  - «la respuesta»: aceptar ejecuta el reparto (lo firma Lockumi). Rechazar no firma nada en la red.
+  - «cuando tú o la otra parte tocan el botón»: en la app publicada, el reclamo lo hace el usuario en nombre del dueño de prueba.
+  - «se ejecuta después del plazo sin que nadie tenga que tocar nada»: hoy necesita que alguien abra el alquiler (ver la tarea programada en PLAN.md).
