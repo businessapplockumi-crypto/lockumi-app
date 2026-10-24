@@ -104,7 +104,25 @@ async function subirFoto(id: string, etapa: 'entrada' | 'salida' | 'reclamo', cu
 }
 
 const tras = async <T>(p: Promise<T>) => { const r = await p; await recargar(); return r }
+/** Quita un espacio (antes de las dos confirmaciones): el servidor borra sus filas y devuelve las rutas; aquí se borran los ARCHIVOS
+ *  del bucket (la política lk_fotos_borrar solo lo permite para fotos que ya salieron de lk_fotos y con la entrada sin firmar por los dos). */
+type Cubo = { remove(rutas: string[]): Promise<{ error: { message: string } | null }> }
+export async function quitarCuartoServidor(id: string, cuarto: string, dep: { rpc: typeof rpc; cubo: () => Promise<Cubo>; recargar: () => Promise<unknown> } =
+  { rpc, cubo: async () => (await supabase()).storage.from(BUCKET_FOTOS), recargar }) {
+  const rutas = await dep.rpc<string[]>('lk_quitar_cuarto', { p_contrato: id, p_id: cuarto }) ?? []
+  if (rutas.length) {
+    const cubo = await dep.cubo()
+    let { error } = await cubo.remove(rutas)
+    if (error) ({ error } = await cubo.remove(rutas))   // un reintento
+    if (error) { await dep.recargar(); throw new ErrorServidor('Se quitó el espacio, pero no se pudieron borrar sus archivos. Toca «Reintentar» o avísanos.') }
+  }
+  await dep.recargar(); return rutas.length
+}
+
 export const servidor = {
+  agregarCuarto: (id: string, nombre: string, items: string[]) => tras(rpc<string>('lk_agregar_cuarto', { p_contrato: id, p_nombre: nombre, p_items: items })),
+  renombrarCuarto: (id: string, cuarto: string, nombre: string) => tras(rpc('lk_renombrar_cuarto', { p_contrato: id, p_id: cuarto, p_nombre: nombre })).then(() => {}),
+  quitarCuarto: (id: string, cuarto: string) => quitarCuartoServidor(id, cuarto),
   async crear(d: { direccion: string; monto: number; inicio: string; fin: string; reglas: string[]; inquilinoEmail: string }, email: string, cuenta?: string) {
     const r = await rpc<{ id: string; token: string }>('lk_crear_contrato', { p_direccion: d.direccion, p_monto: d.monto, p_inicio: d.inicio, p_fin: d.fin, p_reglas: d.reglas,
       p_email_inquilino: d.inquilinoEmail, p_email_cavos: email, p_direccion_stellar: cuenta ?? null, p_ventana_segundos: VENTANA_SEGUNDOS })

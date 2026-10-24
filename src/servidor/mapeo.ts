@@ -9,7 +9,7 @@ export interface Filas {
   participantes: { rol: Rol; usuario: string; email_cavos: string; direccion_stellar: string | null }[]
   actas: { etapa: 'entrada' | 'salida'; cuartos: { id?: string; propio?: boolean; agregado_por?: Rol; nombre: string; nota: string; items: { texto: string; estado: 'bien' | 'detalle' | null }[] }[] }[]
   firmas: { etapa: 'contrato' | 'entrada' | 'salida'; rol: Rol; firmado_en: string }[]
-  fotos: { id: string; etapa: 'entrada' | 'salida' | 'reclamo'; cuarto: number | null; cuarto_id?: string | null; quitada_en?: string | null; por_rol: Rol; ruta: string; sha256: string; sha256_original: string | null
+  fotos: { id: string; etapa: 'entrada' | 'salida' | 'reclamo'; cuarto: number | null; cuarto_id?: string | null; por_rol: Rol; ruta: string; sha256: string; sha256_original: string | null
     tomada_en: string; fecha_archivo: string | null; origen: 'camara' | 'archivo'; posible_galeria: boolean; subido_en: string }[]
   reclamo: { monto: number | string; motivo: string; creado_en: string; respuesta: 'aceptado' | 'rechazado' | null } | null
   eventos: { texto: string; tx_hash: string | null; creado_en: string }[]
@@ -27,10 +27,9 @@ function acta(f: Filas, etapa: 'entrada' | 'salida', url: (r: string) => string)
   const a = f.actas.find(x => x.etapa === etapa); if (!a) return undefined
   return { firmas: firmasDe(f.firmas, etapa), cuartos: a.cuartos.map((c, i) => {
     // Migración 20261024: cada espacio tiene id fijo y cada foto su cuarto_id; las fotos viejas sin cuarto_id se emparejan por índice.
-    // Las fotos de un espacio quitado (quitada_en) no salen en el acta: quedan como respaldo en el servidor.
     const id = c.id ?? CUARTOS[i]?.id ?? 'espacio-' + (i + 1)
     return { id, nombre: c.nombre, ...(c.propio && { propio: true }), ...(c.agregado_por && { agregadoPor: c.agregado_por }), nota: c.nota ?? '', items: c.items.map(it => ({ texto: it.texto, estado: it.estado })),
-      fotos: f.fotos.filter(x => x.etapa === etapa && !x.quitada_en && (x.cuarto_id ? x.cuarto_id === id : x.cuarto === i)).map(x => aFoto(x, url)) }
+      fotos: f.fotos.filter(x => x.etapa === etapa && (x.cuarto_id ? x.cuarto_id === id : x.cuarto === i)).map(x => aFoto(x, url)) }
   }) }
 }
 

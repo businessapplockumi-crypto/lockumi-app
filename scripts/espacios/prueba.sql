@@ -51,10 +51,21 @@ select pg_temp.falla(format('select public.lk_renombrar_cuarto(%L, %L, %L)', :'c
 -- Fotos por id y quitar con fotos (no se borran)
 select public.lk_registrar_foto(:'cid', 'entrada', 4, :'cid' || '/entrada/t.jpg', repeat('b', 64), now(), null, 'camara', false);
 select pg_temp.ok(cuarto_id = :'pid', 'foto nueva: guarda el cuarto_id del espacio') from public.lk_fotos where ruta like '%/t.jpg';
-select pg_temp.ok(public.lk_quitar_cuarto(:'cid', 'cocina') = 1, 'quitar Cocina (con 1 foto)');
-select pg_temp.ok(quitada_en is not null and sha256 = repeat('a', 64), 'la foto de Cocina NO se borra: queda marcada y con su sha256') from public.lk_fotos where ruta like '%/a.jpg';
+-- Los archivos están en el bucket (como los deja la subida)
+reset role; insert into storage.objects(bucket_id, name) values ('lk-fotos', :'cid' || '/entrada/a.jpg'), ('lk-fotos', :'cid' || '/entrada/t.jpg');
+select public.lk_quitar_cuarto(:'cid', 'cocina') as rutas \gset
+select pg_temp.ok(:'rutas' = '{' || :'cid' || '/entrada/a.jpg}', 'ANTES de firmar: quitar Cocina devuelve la ruta de su foto para borrar el archivo');
+select pg_temp.ok(not exists (select 1 from public.lk_fotos where ruta like '%/a.jpg'), 'ANTES de firmar: la foto de Cocina se borra de lk_fotos (sin copia)');
+select pg_temp.ok(not exists (select 1 from public.lk_actas, jsonb_array_elements(cuartos) c where contrato_id = :'cid' and etapa = 'entrada' and c->>'id' = 'cocina'), 'ANTES de firmar: su lista se borra con el espacio');
+-- Borrar el archivo del bucket como la app (rol authenticated, con RLS): solo el que ya salió de lk_fotos
+set role authenticated;
+with b as (delete from storage.objects where name = :'cid' || '/entrada/a.jpg' returning 1) select pg_temp.ok(count(*) = 1, 'ANTES de firmar: el ARCHIVO de la foto quitada se borra del bucket (política lk_fotos_borrar)') from b;
+with b as (delete from storage.objects where name = :'cid' || '/entrada/t.jpg' returning 1) select pg_temp.ok(count(*) = 0, 'el archivo de una foto que sigue en la lista NO se puede borrar') from b;
+reset role;
 select pg_temp.ok(cuarto = 3 and cuarto_id = :'pid', 'la foto de Terraza sigue emparejada (índice corrido y mismo id)') from public.lk_fotos where ruta like '%/t.jpg';
-select pg_temp.ok(exists (select 1 from public.lk_eventos where contrato_id = :'cid' and texto = 'Se quitó el espacio Cocina; sus 1 fotos quedan como respaldo en el historial'), 'quitar: evento con las fotos de respaldo');
+select pg_temp.ok(exists (select 1 from public.lk_eventos where contrato_id = :'cid' and texto = 'Se quitó el espacio Cocina y se borraron sus fotos (1)'), 'quitar: evento en el historial');
+select public.lk_agregar_cuarto(:'cid', 'Cocina') as cid2 \gset
+select pg_temp.ok(:'cid2' <> 'cocina' and not exists (select 1 from public.lk_fotos where cuarto_id = :'cid2'), 'volver a agregar Cocina: espacio nuevo, sin fotos (hay que tomarlas de nuevo)');
 select pg_temp.ok(not public.lk_acta_completa(:'cid', 'entrada'), 'acta incompleta mientras falten fotos o puntos');
 -- Seguridad
 select pg_temp.yo(:C);
@@ -63,17 +74,36 @@ select pg_temp.yo(:B);
 select public.lk_agregar_cuarto(:'cid', 'Balcón');
 select pg_temp.ok(cuartos->-1->>'agregado_por' = 'inquilino', 'el inquilino también puede agregar (agregado_por inquilino)') from public.lk_actas where contrato_id = :'cid' and etapa = 'entrada';
 -- Lista fija con las dos confirmaciones
-insert into public.lk_firmas(contrato_id, etapa, rol, usuario) values (:'cid', 'entrada', 'dueno', :A), (:'cid', 'entrada', 'inquilino', :B);
-select pg_temp.falla(format('select public.lk_agregar_cuarto(%L, %L)', :'cid', 'Jardín'), 'quedó fija');
-select pg_temp.falla(format('select public.lk_quitar_cuarto(%L, %L)', :'cid', 'sala'), 'quedó fija');
-select pg_temp.ok(true, 'con las dos confirmaciones la lista queda fija');
--- La salida copia la entrada
 update public.lk_actas set cuartos = jsonb_set(cuartos, '{0,items,0,estado}', '"bien"') where contrato_id = :'cid' and etapa = 'entrada';
+insert into public.lk_firmas(contrato_id, etapa, rol, usuario) values (:'cid', 'entrada', 'dueno', :A), (:'cid', 'entrada', 'inquilino', :B);
+\set FIJA '''La entrada ya está firmada por los dos'''
+select pg_temp.falla(format('select public.lk_agregar_cuarto(%L, %L)', :'cid', 'Jardín'), :FIJA);
+select pg_temp.falla(format('select public.lk_quitar_cuarto(%L, %L)', :'cid', 'sala'), :FIJA);
+select pg_temp.falla(format('select public.lk_renombrar_cuarto(%L, %L, %L)', :'cid', :'pid', 'Otro'), :FIJA);
+select pg_temp.ok(true, 'DESPUÉS de firmar: las RPC rechazan agregar, quitar y renombrar, con el mensaje que explica qué hacer');
+reset role;   -- aun como dueño de la base (sin RLS) los triggers lo impiden
+select pg_temp.falla(format('delete from public.lk_fotos where contrato_id = %L', :'cid'), :FIJA);
+select pg_temp.falla(format('update public.lk_fotos set sha256 = %L where contrato_id = %L', repeat('c', 64), :'cid'), :FIJA);
+select pg_temp.falla(format('update public.lk_actas set cuartos = cuartos - 0 where contrato_id = %L and etapa = %L', :'cid', 'entrada'), :FIJA);
+select pg_temp.falla(format('update public.lk_actas set cuartos = jsonb_set(cuartos, %L, %L) where contrato_id = %L and etapa = %L', '{0,items,0,estado}', '"detalle"', :'cid', 'entrada'), :FIJA);
+select pg_temp.falla(format('delete from public.lk_actas where contrato_id = %L', :'cid'), :FIJA);
+select pg_temp.falla(format('delete from public.lk_firmas where contrato_id = %L and etapa = %L', :'cid', 'entrada'), :FIJA);
+select pg_temp.falla(format('delete from public.lk_contratos where id = %L', :'cid'), :FIJA);
+select pg_temp.ok(true, 'DESPUÉS de firmar: ni con SQL directo se borran o cambian fotos, espacios, lista ni confirmaciones (ni en cascada)');
+insert into public.lk_fotos(contrato_id, etapa, cuarto, cuarto_id, por_rol, ruta, sha256, tomada_en, origen, posible_galeria) values (:'cid', 'entrada', 0, 'sala', 'inquilino', :'cid' || '/entrada/s.jpg', repeat('d', 64), now(), 'camara', false);
+insert into storage.objects(bucket_id, name) values ('lk-fotos', :'cid' || '/entrada/s.jpg'), ('lk-fotos', :'cid' || '/entrada/huerfano.jpg');
+select pg_temp.yo(:B); set role authenticated;
+with b as (delete from storage.objects where bucket_id = 'lk-fotos' returning 1) select pg_temp.ok(count(*) = 0, 'DESPUÉS de firmar: el bucket no deja borrar ningún archivo (ni uno suelto)') from b;
+select pg_temp.falla(format('select public.lk_editar_item(%L, %L, 0, 0, %L)', :'cid', 'entrada', 'detalle'), 'ya no está abierto|firmada por los dos');
+reset role; select pg_temp.yo(:B);
+-- La salida copia la entrada
 update public.lk_contratos set estado = 'en_curso' where id = :'cid';
 select public.lk_iniciar_salida(:'cid');
 select pg_temp.ok((select jsonb_agg(c->'id') from public.lk_actas, jsonb_array_elements(cuartos) c where contrato_id = :'cid' and etapa = 'salida') = (select jsonb_agg(c->'id') from public.lk_actas, jsonb_array_elements(cuartos) c where contrato_id = :'cid' and etapa = 'entrada')
   and (select cuartos->0->'items'->0->'estado' from public.lk_actas where contrato_id = :'cid' and etapa = 'salida') = 'null'::jsonb
   and (select cuartos->3->>'nombre' from public.lk_actas where contrato_id = :'cid' and etapa = 'salida') = 'Terraza', 'salida: mismos id, nombres y puntos, sin estado');
-select pg_temp.falla(format('select public.lk_agregar_cuarto(%L, %L)', :'cid', 'Jardín'), 'quedó fija');
+select pg_temp.falla(format('select public.lk_agregar_cuarto(%L, %L)', :'cid', 'Jardín'), :FIJA);
 select pg_temp.ok(true, 'en la salida no se agregan espacios');
+select public.lk_editar_item(:'cid', 'salida', 0, 0, 'bien');
+select pg_temp.ok((select cuartos->0->'items'->0->>'estado' from public.lk_actas where contrato_id = :'cid' and etapa = 'salida') = 'bien', 'la salida se sigue llenando normalmente (la protección es solo para la entrada)');
 \echo 'SQL TODO OK'

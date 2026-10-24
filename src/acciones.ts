@@ -7,8 +7,8 @@ import { NOMBRE_PASO, ORDEN, esHash } from './services/comprobantes'
 import { unaVez } from './services/pasos'
 import { firmar as firmarLocal, ambos, NOMBRE } from './flujo'
 import { usd } from './ui'
-import type { Alquiler, Foto, Rol } from './types'
-import { modoServidor, modoTrustless, modoSolo } from './servidor/config'
+import type { Alquiler, Cuarto, Foto, Rol } from './types'
+import { modoServidor, modoTrustless, modoSolo, espaciosServidor } from './servidor/config'
 import { trustless } from './services/trustless'
 import { servidor } from './servidor/repositorio'
 
@@ -35,7 +35,7 @@ export interface Acciones {
    *  faltan las RPC (escritas en supabase/migrations/20261024000000_lk_espacios.sql, sin aplicar). Devuelven el id del espacio. */
   agregarCuarto?(a: Alquiler, nombre: string, items: string[], por: Rol): Promise<string>
   renombrarCuarto?(a: Alquiler, id: string, nombre: string): Promise<void>
-  quitarCuarto?(a: Alquiler, id: string, por: Rol): Promise<void>
+  quitarCuarto?(a: Alquiler, id: string, por?: Rol): Promise<number>
   /** «Deshacer» del aviso «Espacio quitado»: vuelve a su lugar con sus fotos. */
   deshacerQuitar?(a: Alquiler, id: string): Promise<void>
   reclamar(a: Alquiler, monto: number, motivo: string, fotos: Foto[], avance?: Avance): Promise<void>
@@ -115,24 +115,27 @@ const local: Acciones = {
     const n = limpiar(nombre); if (n === c.nombre) return
     store.cambiar(a.id, y => { const k = y.entrada.cuartos.find(q => q.id === id)!; k.nombre = n; y.entrada.firmas = {} }, `Se cambió el nombre del espacio ${c.nombre} a ${n}`)
   },
-  async quitarCuarto(a, id, por) {
+  async quitarCuarto(a, id) {
     const x = store.fresco(a.id); if (!x) throw new Error('No encontramos este alquiler.')
     if (listaFija(x)) throw new Error(ERR.fija)
-    const pos = x.entrada.cuartos.findIndex(k => k.id === id); if (pos < 0) return
+    const pos = x.entrada.cuartos.findIndex(k => k.id === id); if (pos < 0) return 0
     if (x.entrada.cuartos.length <= 1) throw new Error(ERR.ultimo)
     const c = x.entrada.cuartos[pos]
-    store.cambiar(a.id, y => {
-      const [q] = y.entrada.cuartos.splice(pos, 1); y.entrada.firmas = {};
-      (y.quitados ??= []).push({ cuarto: q, pos, fecha: iso(y), por })    // las fotos quedan como respaldo (Legal, 23/10)
-    }, c.fotos.length ? `Se quitó el espacio ${c.nombre}; sus ${c.fotos.length} fotos quedan como respaldo en el historial` : `Se quitó el espacio ${c.nombre}`)
+    // Antes de las dos confirmaciones se borra de verdad: el espacio, su lista y sus fotos (no queda copia guardada).
+    // «Deshacer» solo existe si no tenía fotos (se recuerda en memoria unos segundos, nunca en el almacenamiento).
+    recienQuitado = c.fotos.length ? null : { a: a.id, cuarto: structuredClone(c), pos }
+    store.cambiar(a.id, y => { y.entrada.cuartos.splice(pos, 1); y.entrada.firmas = {} },
+      c.fotos.length ? `Se quitó el espacio ${c.nombre} y se borraron sus fotos (${c.fotos.length})` : `Se quitó el espacio ${c.nombre}`) // LEGAL: revisar (24/10)
+    return c.fotos.length
   },
   async deshacerQuitar(a, id) {
-    const x = store.fresco(a.id); const q = x?.quitados?.findLast(k => k.cuarto.id === id); if (!x || !q || listaFija(x) || x.entrada.cuartos.some(k => k.id === id)) return
+    const q = recienQuitado; const x = store.fresco(a.id)
+    if (!x || !q || q.a !== a.id || q.cuarto.id !== id || listaFija(x) || x.entrada.cuartos.some(k => k.id === id)) return
     if (x.entrada.cuartos.length >= 12) throw new Error(ERR.maximo)
-    store.cambiar(a.id, y => {
-      const i = y.quitados!.findLastIndex(k => k.cuarto.id === id); const [r] = y.quitados!.splice(i, 1); if (!y.quitados!.length) delete y.quitados
-      y.entrada.cuartos.splice(Math.min(r.pos, y.entrada.cuartos.length), 0, r.cuarto); y.entrada.firmas = {}
-    }, `Volvió el espacio ${q.cuarto.nombre} (se deshizo «Quitar espacio»)`)
+    if (errorNombre(x.entrada, q.cuarto.nombre)) throw new Error(ERR.duplicado)
+    recienQuitado = null
+    store.cambiar(a.id, y => { y.entrada.cuartos.splice(Math.min(q.pos, y.entrada.cuartos.length), 0, q.cuarto); y.entrada.firmas = {} },
+      `Volvió el espacio ${q.cuarto.nombre} (se deshizo «Quitar espacio»)`)
   },
   // Reclamo del dueño: primero se registra en la cuenta segura (disputa) y después cambia la pantalla.
   reclamar: (a, monto, motivo, fotos, avance = nada) => paso(a, 'reclamo', async x => {
@@ -169,6 +172,9 @@ const local: Acciones = {
   }),
 }
 
+/** Último espacio quitado SIN fotos, solo en memoria, para «Deshacer». */
+let recienQuitado: { a: string; cuarto: Cuarto; pos: number } | null = null
+
 const remoto: Acciones = {
   crear: (d, email, cuenta) => servidor.crear(d, email, cuenta),
   firmar: async (a, etapa) => { await servidor.firmar(a.id, etapa) },        // el servidor deduce el rol de la sesión
@@ -187,6 +193,12 @@ const remoto: Acciones = {
   },
   ...(modoTrustless ? { aprobarDevolucion: (a: Alquiler) => trustless.aprobarDevolucion(a.id).then(() => {}) } : {}),
   decidir: (a, m, mot) => servidor.decidir(a.id, m, mot).then(() => {}),
+  // Espacios en el servidor: solo con VITE_ESPACIOS_SERVIDOR=1, después de aplicar la migración 20261024000000_lk_espacios.sql.
+  ...(espaciosServidor ? {
+    agregarCuarto: (a: Alquiler, nombre: string, items: string[]) => servidor.agregarCuarto(a.id, nombre, items),
+    renombrarCuarto: (a: Alquiler, id: string, nombre: string) => servidor.renombrarCuarto(a.id, id, nombre),
+    quitarCuarto: (a: Alquiler, id: string) => servidor.quitarCuarto(a.id, id),
+  } : {}),
 }
 
 export const acciones: Acciones = modoServidor ? remoto : local

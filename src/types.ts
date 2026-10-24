@@ -23,8 +23,6 @@ export interface Alquiler {
   escrowId?: string; contrato: { firmas: Partial<Record<Rol, string>> }; entrada: Acta; salida?: Acta; pago?: string
   ventanaInicio?: string; diasSimulados: number
   reclamo?: Reclamo; resultado?: Resultado
-  /** Espacios quitados de la entrada con sus fotos: quedan como respaldo en el historial del alquiler (corrección de Legal del 23/10). */
-  quitados?: { cuarto: Cuarto; pos: number; fecha: string; por: Rol }[]
   /** Fase 1 (testnet real, una sola persona): cuenta segura (C…), cuentas G… y hashes de cada paso en la red de prueba. */
   red?: RedPrueba
 }

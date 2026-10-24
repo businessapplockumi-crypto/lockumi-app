@@ -1,6 +1,7 @@
 // Lista de espacios de las fotos de entrada y de salida, con «+ Agregar espacio», «Cambiar nombre» y «Quitar espacio»
 // (spec diseno/envio/agregar-espacio, 23/10/2026; las correcciones de Legal del 23/10 mandan). El texto libre (nombres y puntos)
 // se muestra siempre como texto de React (escapado); nunca como HTML.
+import { createPortal } from 'react-dom'
 import { useEffect, useId, useRef, useState, type RefObject } from 'react'
 import type { Alquiler, Cuarto, Rol } from '../types'
 import { acciones } from '../acciones'
@@ -44,7 +45,7 @@ export function ListaEspacios({ a, cual, rol, onAbrir }: { a: Alquiler; cual: 'e
   useEffect(() => { if (!nuevo) return; const t = setTimeout(() => setNuevo(null), 1200); return () => clearTimeout(t) }, [nuevo])
   const quitarYa = async (c: Cuarto) => {
     setQuitar(null); setErr('')
-    try { await acciones.quitarCuarto!(a, c.id, rol); avisar(alertaEspacioQuitado(c.nombre, c.id)) } catch (e) { setErr(msj(e)) }
+    try { const n = await acciones.quitarCuarto!(a, c.id, rol); avisar(alertaEspacioQuitado(c.nombre, c.id, !n && Boolean(acciones.deshacerQuitar))) } catch (e) { setErr(msj(e)) }
   }
   return <section className="pila esp" aria-labelledby={`esp-t-${cual}`}>
     <h3 id={`esp-t-${cual}`}>Espacios</h3>
@@ -71,7 +72,7 @@ export function ListaEspacios({ a, cual, rol, onAbrir }: { a: Alquiler; cual: 'e
       <p id="esp-ayuda" className="nota esp__ayuda">{lleno ? ERR.maximo : TXT.ayuda}</p>
       {Object.keys(acta.firmas).length > 0 && <p className="nota">{TXT.reconfirmar}</p>}
     </>}
-    {cual === 'entrada' && listaFija(a) && <p className="esp__nota">🔒 {TXT.bloqueado}</p>}
+    {listaFija(a) && <p className="esp__nota">🔒 {TXT.bloqueado}</p>}
     {cual === 'salida' && <p className="esp__nota">🔒 {TXT.salidaAbajo}</p>}
     {hoja && <HojaAgregar a={a} onCerrar={() => { setHoja(false); setTimeout(() => botonRef.current?.focus(), 0) }} onListo={async (nombre, items) => {
       const id = await acciones.agregarCuarto!(a, nombre, items, rol); setHoja(false); setNuevo(id); avisar(alertaEspacioAgregado(limpiar(nombre), id))
@@ -136,7 +137,7 @@ function HojaAgregar({ a, onCerrar, onListo }: { a: Alquiler; onCerrar: () => vo
     setOcupado(true)
     try { await onListo(nombre, puntos.filter(p => p.on).map(p => p.texto)) } catch (x) { setErrServ(msj(x)); setOcupado(false) }
   }
-  return <div className="velo velo--lado" onClick={ev => ev.target === ev.currentTarget && onCerrar()}>
+  return createPortal(<div className="velo velo--lado" onClick={ev => ev.target === ev.currentTarget && onCerrar()}>
     <div ref={ref} className="hoja esp-hoja" role="dialog" aria-modal="true" aria-labelledby="esp-hoja-t">
       <div className="hoja__asa" aria-hidden="true" />
       <h2 id="esp-hoja-t" className="esp-hoja__t">{TXT.titulo}</h2>
@@ -166,7 +167,7 @@ function HojaAgregar({ a, onCerrar, onListo }: { a: Alquiler; onCerrar: () => vo
         <button type="button" className="boton boton--primario" disabled={!nombre.trim() || ocupado} onClick={() => void enviar()}>{TXT.agregar}</button>
       </div>
     </div>
-  </div>
+  </div>, document.body)
 }
 
 function HojaNombre({ a, c, onCerrar, onListo }: { a: Alquiler; c: Cuarto; onCerrar: () => void; onListo: (n: string) => Promise<void> }) {
@@ -174,7 +175,7 @@ function HojaNombre({ a, c, onCerrar, onListo }: { a: Alquiler; c: Cuarto; onCer
   const [n, setN] = useState(c.nombre); const [intento, setIntento] = useState(false); const [errServ, setErrServ] = useState('')
   const e = errorNombre(a.entrada, n, c.id)
   const guardar = async () => { setIntento(true); if (e) return; try { await onListo(n) } catch (x) { setErrServ(msj(x)) } }
-  return <div className="velo" onClick={ev => ev.target === ev.currentTarget && onCerrar()}>
+  return createPortal(<div className="velo" onClick={ev => ev.target === ev.currentTarget && onCerrar()}>
     <div ref={ref} className="hoja esp-hoja" role="dialog" aria-modal="true" aria-labelledby="esp-ren-t">
       <div className="hoja__asa" aria-hidden="true" />
       <h2 id="esp-ren-t" className="esp-hoja__t">{TXT.cambiarNombre}</h2>
@@ -184,14 +185,14 @@ function HojaNombre({ a, c, onCerrar, onListo }: { a: Alquiler; c: Cuarto; onCer
         <button type="button" className="boton boton--primario" disabled={!n.trim()} onClick={() => void guardar()}>{TXT.guardar}</button>
       </div>
     </div>
-  </div>
+  </div>, document.body)
 }
 
 /** Confirmación de «Quitar espacio» (role=alertdialog). Con fotos: «Mantener el espacio» va primero y tiene el foco. */
 function DialogoQuitar({ c, onCerrar, onQuitar }: { c: Cuarto; onCerrar: () => void; onQuitar: () => void }) {
   const ref = useRef<HTMLDivElement>(null); const n = c.fotos.length
   useTrampa(ref, onCerrar, '.esp-dlg__seguro')
-  return <div className="velo" onClick={ev => ev.target === ev.currentTarget && onCerrar()}>
+  return createPortal(<div className="velo" onClick={ev => ev.target === ev.currentTarget && onCerrar()}>
     <div ref={ref} className="hoja esp-dlg" role="alertdialog" aria-modal="true" aria-labelledby="esp-q-t" aria-describedby="esp-q-d">
       <h2 id="esp-q-t" className="esp-hoja__t">{preguntaQuitar(c.nombre)}</h2>
       <p id="esp-q-d" className={n ? 'esp__nota esp__nota--aviso' : 'nota'}>{n > 0 && <span aria-hidden="true">⚠️ </span>}{textoQuitar(n)}</p>
@@ -203,5 +204,5 @@ function DialogoQuitar({ c, onCerrar, onQuitar }: { c: Cuarto; onCerrar: () => v
         <button type="button" className="boton boton--secundario boton--ancho esp-dlg__seguro" onClick={onCerrar}>{TXT.cancelar}</button>
       </div>}
     </div>
-  </div>
+  </div>, document.body)
 }

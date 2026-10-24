@@ -38,7 +38,7 @@ export const TXT = {
   titulo: 'Agregar espacio', campo: 'Nombre del espacio', ejemplo: 'Ej.: Patio', lista: 'Lista para revisar', opcional: 'Opcional', otroPunto: '+ Otro punto',
   agregar: 'Agregar espacio', cancelar: 'Cancelar', agregado: 'Agregado', cambiarNombre: 'Cambiar nombre', quitar: 'Quitar espacio', guardar: 'Guardar',
   mantener: 'Mantener el espacio',
-  bloqueado: 'La lista de espacios quedó fija cuando los dos confirmaron las fotos de entrada.',
+  bloqueado: 'La entrada ya está firmada por los dos. Los espacios, las fotos y la lista quedan guardados como respaldo y ya no se pueden cambiar ni borrar.', // LEGAL: revisar (24/10) texto final de Legal
   salidaArriba: 'Los mismos espacios que en la entrada, para comparar antes y después.',
   salidaAbajo: 'En la salida no se agregan ni se quitan espacios.',
   reconfirmar: 'Si cambias algo, los dos tienen que volver a confirmar.',
@@ -48,13 +48,15 @@ export const TXT = {
 export const contador = (n: number) => `${n} de ${MAX_NOMBRE}` // LEGAL: revisado (23/10)
 export const alEntrar = (n: number) => `Al entrar: ${n} ${n === 1 ? 'foto' : 'fotos'}` // LEGAL: revisado (23/10)
 export const preguntaQuitar = (nombre: string) => `¿Quitar «${nombre}»?` // LEGAL: revisado (23/10)
-export const textoQuitar = (n: number) => n > 0 // LEGAL: revisado (23/10)
-  ? `Este espacio ya tiene ${n} ${n === 1 ? 'foto' : 'fotos'} y su lista revisada. Si lo quitas, salen de las fotos de entrada, pero quedan guardadas en el historial del alquiler como respaldo.`
+// Regla de Katherine (24/10): antes de las dos confirmaciones, quitar un espacio BORRA sus fotos (archivos incluidos) y su lista.
+export const textoQuitar = (n: number) => n === 1 // LEGAL: revisar (24/10) texto final de Legal
+  ? 'Este espacio ya tiene 1 foto y su lista revisada. Si lo quitas, se borran y no podrás recuperarla. Si lo vuelves a agregar, tendrás que tomar fotos nuevas.' // LEGAL: revisar (24/10)
+  : n > 1 ? `Este espacio ya tiene ${n} fotos y su lista revisada. Si lo quitas, se borran y no podrás recuperarlas. Si lo vuelves a agregar, tendrás que tomar fotos nuevas.` // LEGAL: revisar (24/10)
   : 'También sale de las fotos de salida, para que las dos listas sigan iguales.'
 export const ERR = { // LEGAL: revisado (23/10)
   vacio: 'Escribe un nombre.', corto: `Escribe al menos ${MIN_NOMBRE} letras.`, duplicado: 'Ya hay un espacio con ese nombre.', largo: `Máximo ${MAX_NOMBRE} letras.`,
   maximo: `Llegaste al máximo de ${MAX_ESPACIOS} espacios.`, ultimo: 'Tiene que quedar al menos 1 espacio.', puntos: `Máximo ${MAX_PUNTOS} puntos por espacio.`,
-  puntoLargo: `Máximo ${MAX_PUNTO} letras.`, fija: 'La lista de espacios quedó fija cuando los dos confirmaron las fotos de entrada.',
+  puntoLargo: `Máximo ${MAX_PUNTO} letras.`, fija: 'La entrada ya está firmada por los dos. Los espacios, las fotos y la lista quedan guardados como respaldo y ya no se pueden cambiar ni borrar. Si algo cambió, anótalo en las fotos de salida.', // LEGAL: revisar (24/10) 1.ª oración de Legal + qué hacer
 } as const
 
 /** Error del nombre (o '' si sirve). `excepto`: el id del espacio que se renombra. */

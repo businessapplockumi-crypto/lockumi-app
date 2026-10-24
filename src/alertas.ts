@@ -33,8 +33,10 @@ export const alertaEspacioAgregado = (nombre: string, id: string): Alerta => ({ 
   hecho: `${nombre} está en la lista.`, linea: { texto: `${nombre} está en la lista. Ahora: una foto` }, // LEGAL: revisado (23/10)
   accion: { texto: 'Tomar foto →', etiqueta: `Tomar foto de ${nombre}`, ir: 'espacio', dato: id } }) // LEGAL: revisado (23/10)
 export const alertaNombreCambiado = (nombre: string): Alerta => ({ paso: 'espacio-nombre', titulo: 'Nombre cambiado', hecho: `Ahora se llama ${nombre}`, linea: { texto: `Ahora se llama ${nombre}` } }) // LEGAL: revisado (23/10)
-export const alertaEspacioQuitado = (nombre: string, id: string): Alerta => ({ paso: 'espacio-quitado', titulo: 'Espacio quitado', // LEGAL: revisado (23/10)
-  hecho: `${nombre} salió de la lista`, linea: { texto: `${nombre} salió de la lista` }, accion: { texto: 'Deshacer', etiqueta: `Deshacer: volver a poner ${nombre}`, ir: 'deshacer-espacio', dato: id } }) // LEGAL: revisado (23/10)
+/** «Deshacer» solo si el espacio no tenía fotos: con fotos se borraron y no se pueden recuperar (regla del 24/10). */
+export const alertaEspacioQuitado = (nombre: string, id: string, deshacer = true): Alerta => ({ paso: 'espacio-quitado', titulo: 'Espacio quitado', // LEGAL: revisado (23/10)
+  hecho: `${nombre} salió de la lista`, linea: { texto: `${nombre} salió de la lista` }, // LEGAL: revisado (23/10)
+  ...(deshacer && { accion: { texto: 'Deshacer', etiqueta: `Deshacer: volver a poner ${nombre}`, ir: 'deshacer-espacio' as const, dato: id } }) })
 /** Texto aprobado por Legal (A12) del error de red; el mismo de services/escrow.ts. */
 export const ERROR_RED = 'La red de prueba está lenta o no respondió. Espera un minuto y vuelve a tocar el botón.' // LEGAL: revisado A12 (24/10)
 /** Línea que muestra el aviso v2. */

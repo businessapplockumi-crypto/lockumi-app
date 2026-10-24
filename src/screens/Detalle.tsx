@@ -84,8 +84,8 @@ function PagoSimulado({ a, rol }: P) {
 function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
   const acta = a[cual]!; const n = acta.cuartos.length
   const falta = acta.cuartos.findIndex(c => !cuartoListo(c))
-  const [i0, setI] = useState(acta.firmas[rol] || falta === -1 ? n : falta); const [err, setErr] = useState('')
-  const i = Math.min(i0, n)   // si se quitó un espacio, no se pasa del final
+  const [i0, setI] = useState(acta.firmas[rol] || falta === -1 ? LISTA : falta); const [err, setErr] = useState('')
+  const i = Math.min(i0, n)   // LISTA (o más allá del final, si se quitó un espacio) = la lista y la confirmación
   // Aviso «Espacio agregado» → «Tomar foto →» abre ese espacio; aviso «Espacio quitado» → «Deshacer».
   const ref = useRef({ a, acta }); useEffect(() => { ref.current = { a, acta } })
   useEffect(() => {
@@ -103,7 +103,7 @@ function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
     const c = acta.cuartos[i]
     if (!c.fotos.length) return setErr('Falta una foto de este espacio. Toca "Tomar foto".')
     if (c.items.some(x => !x.estado)) return setErr('Marca "Bien" o "Con detalle" en cada punto de la lista.')
-    setErr(''); setI(i + 1)
+    setErr(''); setI(i + 1 >= n ? LISTA : i + 1)
   }
   const titulo = cual === 'entrada' ? 'Fotos de entrada' : 'Fotos de salida'
   return <div className="pila">
@@ -111,7 +111,7 @@ function Fotos({ a, rol, cual }: P & { cual: 'entrada' | 'salida' }) {
       {Array.from({ length: n + 1 }, (_, k) => <span key={k} className={k < i ? 'hecho' : k === i ? 'actual' : ''} />)}</div>
     {i < n ? <>
       <p className="mini">{titulo} · Espacio {i + 1} de {n}</p>
-      <button type="button" className="enlace esp__ver" onClick={() => { setErr(''); setI(n) }}>{cual === 'entrada' && !listaFija(a) ? `Ver la lista de espacios (${n}) o agregar uno` : `Ver la lista de espacios (${n})`}</button>
+      <button type="button" className="enlace esp__ver" onClick={() => { setErr(''); setI(LISTA) }}>{cual === 'entrada' && !listaFija(a) ? `Ver la lista de espacios (${n}) o agregar uno` : `Ver la lista de espacios (${n})`}</button>
       <CuartoEditor a={a} cual={cual} idx={i} rol={rol} />
       {err && <p className="error" role="alert">{err}</p>}
       <div className="pie-paso">
@@ -291,6 +291,8 @@ function Cerrado({ a, rol }: P) {
 }
 
 /** `ejemplo`: alquiler de ejemplo del recorrido guiado (solo lectura: sin red, sin avisos, sin el dueño de prueba automático). */
+/** Paso «lista de espacios y confirmación»: no es el índice n, que cambia al agregar o quitar espacios. */
+const LISTA = Number.MAX_SAFE_INTEGER
 export function Detalle({ id, u, ejemplo }: { id: string; u: Usuario; ejemplo?: Alquiler }) {
   useAlquileres(); const a = ejemplo ?? obtener(id)
   const real: Rol = a ? rolDe(a, u.email) : 'dueno'

@@ -5,6 +5,8 @@ export const modoServidor = SUPABASE_URL !== '' && SUPABASE_ANON_KEY !== ''
 /** Plazo de reclamos al crear (segundos). 7 días por defecto; para la prueba en testnet se puede acortar (mínimo 60). */
 export const VENTANA_SEGUNDOS = Math.max(60, Math.min(604800, Number(import.meta.env.VITE_VENTANA_SEGUNDOS ?? 604800) || 604800))
 export const BUCKET_FOTOS = 'lk-fotos'
+/** «+ Agregar espacio» en el servidor: apagado hasta que se aplique supabase/migrations/20261024000000_lk_espacios.sql (sin aplicar). */
+export const espaciosServidor = modoServidor && import.meta.env.VITE_ESPACIOS_SERVIDOR === '1'
 /** Trustless Work real (escrow en testnet) a través de /api/tw. Requiere modoServidor y las variables del servidor. */
 export const modoTrustless = modoServidor && import.meta.env.VITE_TRUSTLESS === '1'
 /** Red de prueba sin base de datos (VITE_TRUSTLESS=1 sin Supabase): aviso fijo de red de prueba, dueño de prueba rotulado

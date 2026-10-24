@@ -812,7 +812,7 @@ html.sin-scroll{overflow:hidden}
 .esp__ver{align-self:flex-start}
 .esp-hoja{display:grid;gap:14px}
 .esp-hoja__t{font-size:20px}
-.esp__et{display:flex;justify-content:space-between;gap:8px}
+.campo>.esp__et{display:flex;justify-content:space-between;gap:8px}
 .esp__cont{color:var(--cafe-suave);font-weight:400}.esp__cont--mal{color:var(--error)}
 .esp-chips{display:flex;flex-wrap:wrap;gap:8px}
 .esp-chip{min-height:44px;padding:0 16px;border-radius:var(--r-pildora);border:1.5px solid var(--borde);background:var(--tarjeta);font:600 15px/20px var(--f-texto);color:var(--cafe);cursor:pointer}
