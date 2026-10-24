@@ -275,13 +275,14 @@ function Cerrado({ a, rol }: P) {
   </section>
 }
 
-export function Detalle({ id, u }: { id: string; u: Usuario }) {
-  useAlquileres(); const a = obtener(id)
+/** `ejemplo`: alquiler de ejemplo del recorrido guiado (solo lectura: sin red, sin avisos, sin el dueño de prueba automático). */
+export function Detalle({ id, u, ejemplo }: { id: string; u: Usuario; ejemplo?: Alquiler }) {
+  useAlquileres(); const a = ejemplo ?? obtener(id)
   const real: Rol = a ? rolDe(a, u.email) : 'dueno'
   const rol: Rol = a ? vistaDe(a, u.email) : 'dueno'
   useEffect(() => { window.scrollTo(0, 0) }, [a?.estado, rol])
   // Red de prueba: el dueño de prueba firma/confirma solo apenas firmaste tú (también al abrir un alquiler que quedó esperando).
-  const pendienteDueno = !!a && modoPrueba && !modoSolo && (
+  const pendienteDueno = !ejemplo && !!a && modoPrueba && !modoSolo && (
     (a.estado === 'firmas' && !!a.contrato.firmas.inquilino && !a.contrato.firmas.dueno) ||
     (a.estado === 'fotos_entrada' && !!a.entrada.firmas.inquilino && !a.entrada.firmas.dueno) ||
     (a.estado === 'salida' && !!a.salida?.firmas.inquilino && !a.salida.firmas.dueno))
@@ -294,10 +295,10 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
   const antes = useRef<Instantanea | null>(null)
   useEffect(() => {
     const x = antes.current; antes.current = a ? instantanea(a) : null
-    if (x && a) avisar(alertaPorCambio(x, a, rol))
+    if (x && a && !ejemplo) avisar(alertaPorCambio(x, a, rol))
   })
   if (!a) return <main id="contenido" tabIndex={-1} className="cont"><div className="glass tarjeta">No encontramos ese alquiler. <a href="#/">Volver a tus alquileres</a></div></main>
-  if (modoSolo) return <DetalleSolo a={a} />
+  if (modoSolo && !ejemplo) return <DetalleSolo a={a} />
   const p = { a, rol }; const t = turno(a, rol); const etapa = etapaDe(a)
   const panel = {
     firmas: <Contrato {...p} />, pendiente_pago: <Pago {...p} />, fotos_entrada: <Fotos key={'e' + rol} {...p} cual="entrada" />,
@@ -306,8 +307,9 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
   }[a.estado]
   return <main id="contenido" tabIndex={-1} className="cont" style={{ paddingBottom: 48 }}>
     <a href="#/" className="volver">← Tus alquileres</a>
+    {ejemplo && <p className="ejemplo-cinta">Alquiler de ejemplo · solo para ver</p>}
     <h1 className="h-lugar">{a.direccion}</h1>
-    {!modoServidor && <div className="vista-demo" role="group" aria-label="Demo: cambiar de persona">
+    {!modoServidor && !ejemplo && <div className="vista-demo" role="group" aria-label="Demo: cambiar de persona">
       <span>Estás viendo como <strong>{modoVideo && rol === 'dueno' ? 'dueño de prueba' : NOMBRE[rol]}</strong></span>
       <button type="button" className="boton boton--secundario boton--chico" onClick={() => fijarVista(id, otro(rol))}>{modoVideo ? (rol === 'inquilino' ? 'Ver la pantalla del dueño de prueba' : 'Volver a mi pantalla (inquilino)') : `Ver como ${NOMBRE[otro(rol)]}`}</button>
       <span className="demo">{modoSolo ? 'Una sola persona · red de prueba' : 'Demo en un solo aparato'}</span>
@@ -315,7 +317,7 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
     {modoServidor && rol === 'dueno' && a.inquilinoUnido === false && <Invitacion a={a} />}
     <div className="paso-cab"><p className="paso-cab__n">{a.estado === 'cerrado' ? 'Terminado' : pasoTexto(a)}</p><p className="paso-cab__t">{ETAPAS[etapa]}</p>
       <div className="barra-paso" aria-hidden="true"><span style={{ width: `${((etapa + (a.estado === 'cerrado' ? 1 : 0.5)) / ETAPAS.length) * 100}%` }} /></div></div>
-    <div className="detalle">
+    <div className="detalle" inert={!!ejemplo}>
       <div className="detalle__principal pila">
         {modoVideo && <p className="ahora" role="status" aria-live="polite">{ahoraPrueba(a)}</p>}
         {modoVideo && a.historial.slice(-3).filter(h => h.texto.startsWith('El dueño de prueba') && h.texto.endsWith('automáticamente')).slice(-1).map(h => <p key={h.fecha + h.texto} className="nota auto-dueno">✓ {h.texto}.</p>)}
@@ -329,7 +331,7 @@ export function Detalle({ id, u }: { id: string; u: Usuario }) {
       </div>
       <aside className="detalle__lado pila">
         {escrowReal && <Comprobantes a={a} />}
-        <section className="glass tarjeta" aria-labelledby="t-estado"><h3 id="t-estado">Los pasos</h3><LineaTiempo a={a} /></section>
+        <section className="glass tarjeta" aria-labelledby="t-estado" data-recorrido="pasos"><h3 id="t-estado">Los pasos</h3><LineaTiempo a={a} /></section>
         {a.estado !== 'firmas' && <section className="glass tarjeta" aria-label="Contrato"><ContratoDoc a={a} /></section>}
         <details className="glass tarjeta detalles"><summary>Detalles</summary>
           <ul className="lista"><li><span>Dueño</span><span className="cortar">{a.duenoEmail}</span></li><li><span>Inquilino</span><span className="cortar">{a.inquilinoEmail}</span></li>

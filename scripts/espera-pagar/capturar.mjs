@@ -15,7 +15,9 @@ const TERRACOTA = 'rgb(219, 59, 0)', T1 = 'rgb(227, 242, 232)', T2 = 'rgb(111, 1
 async function contexto(w, { reducir = false } = {}) {
   const movil = w < 600
   const ctx = await browser.newContext({ viewport: { width: w, height: movil ? 844 : 900 }, deviceScaleFactor: 2, isMobile: movil, hasTouch: movil, locale: 'es-CR', timezoneId: 'America/Costa_Rica', ...(reducir && { reducedMotion: 'reduce' }) })
-  await ctx.addInitScript(() => localStorage.setItem('lockumi.usuario', JSON.stringify({ email: 'kattmoresol@gmail.com', nombre: 'Katherine', metodo: 'google' })))
+  // El recorrido guiado ya «visto» (si no, se abre solo en Inicio y tapa la pantalla de la prueba).
+  await ctx.addInitScript(() => localStorage.setItem('lockumi.recorrido.v1.059bcb6c5fd0cda5', 'captura'))
+  await ctx.addInitScript(() => localStorage.setItem('lockumi.usuario', JSON.stringify({ email: 'demo@lockumi.com', nombre: 'Demo', metodo: 'google' })))
   await ctx.route(u => !/^https?:\/\/localhost/.test(u.href) && /stellar|horizon|soroban|cavos/i.test(u.hostname), r => r.abort())
   const retenidas = {}, falla = new Set()
   const soltar = a => { const r = retenidas[a]; delete retenidas[a]; r?.() }

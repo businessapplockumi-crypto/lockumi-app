@@ -14,9 +14,11 @@ for (const [n, w] of [['movil', 390], ['escritorio', 1280]]) {
   console.log('==', n, w)
   const movil = w < 600
   const ctx = await browser.newContext({ viewport: { width: w, height: movil ? 844 : 900 }, deviceScaleFactor: 2, isMobile: movil, hasTouch: movil, locale: 'es-CR', timezoneId: 'America/Costa_Rica' })
+  // El recorrido guiado ya «visto» (si no, se abre solo en Inicio y tapa la pantalla de la prueba).
+  await ctx.addInitScript(() => localStorage.setItem('lockumi.recorrido.v1.059bcb6c5fd0cda5', 'captura'))
   await ctx.addInitScript(id => {
-    localStorage.setItem('lockumi.usuario', JSON.stringify({ email: 'kattmoresol@gmail.com', nombre: 'Katherine', metodo: 'google' }))
-    localStorage.setItem('cavos-kit:identity:' + id, JSON.stringify({ userId: 'google-oauth2|simulado-katherine', email: 'kattmoresol@gmail.com', name: 'Katherine' }))
+    localStorage.setItem('lockumi.usuario', JSON.stringify({ email: 'demo@lockumi.com', nombre: 'Demo', metodo: 'google' }))
+    localStorage.setItem('cavos-kit:identity:' + id, JSON.stringify({ userId: 'google-oauth2|simulado-demo', email: 'demo@lockumi.com', name: 'Demo' }))
   }, APP_ID)
   const p = await ctx.newPage(); p.on('pageerror', e => console.log('  pageerror', e.message))
   await ctx.route('**/api/solo', async r => {

@@ -193,7 +193,7 @@ export function Crear({ u }: { u: Usuario }) {
     </section>}
 
     <form className="glass glass--fuerte na-form" noValidate onSubmit={e => { e.preventDefault(); crear() }}>
-      <section className="na-sec">
+      <section className="na-sec" data-recorrido="datos">
         <label htmlFor="f-direccion" className="na-et"><Ico n="lugar" />Lugar</label>
         <div className={'na-input' + (ver('direccion') ? ' na-input--error' : '')}><input id="f-direccion" value={f.direccion} onChange={e => poner('direccion', e.target.value)} onBlur={tocar('direccion')} placeholder="Ej.: Apartamento 3B, Escazú" autoComplete="off" maxLength={140}
           aria-invalid={!!ver('direccion')} aria-describedby={ver('direccion') ? 'f-direccion-err' : undefined} /></div>
@@ -245,7 +245,7 @@ export function Crear({ u }: { u: Usuario }) {
         </div>
       </section>
 
-      <section className="na-sec">
+      <section className="na-sec" data-recorrido="reglas">
         <div className="na-et" id="et-reglas"><Ico n="reglas" />Reglas</div>
         <ul className="na-reglas" aria-labelledby="et-reglas">{reglas.map((r, i) => <li key={i}><span className="na-reglas__ico"><Ico n={/mascota/i.test(r) ? 'pata' : 'check'} /></span><span className="na-reglas__txt">{r}</span>
           <button type="button" className="na-quitar" aria-label={'Quitar regla: ' + r} onClick={() => setReglas(reglas.filter((_, j) => j !== i))}><Ico n="x" /></button></li>)}</ul>
